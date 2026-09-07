@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/domain/models/focus_area_target.dart';
+import '../../focus_areas/presentation/focus_area_form_page.dart';
 import '../../focus_areas/presentation/focus_areas_page.dart';
 import 'widgets/today_summary.dart';
 import 'widgets/focus_areas.dart';
@@ -42,8 +43,8 @@ class _HomePageState extends State<HomePage> {
         final content = switch (_selectedIndex) {
           0 => const _OverviewContent(),
           1 => FocusAreasPage(
-            onCreate: () => _showPendingAction('Create Focus Area'),
-            onAreaSelected: (area) => _showPendingAction('Edit ${area.name}'),
+            onCreate: () => _openFocusAreaForm(),
+            onAreaSelected: (area) => _openFocusAreaForm(area),
           ),
           _ => _FeaturePlaceholder(destination: _destinations[_selectedIndex]),
         };
@@ -96,9 +97,9 @@ class _HomePageState extends State<HomePage> {
     setState(() => _selectedIndex = index);
   }
 
-  void _showPendingAction(String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$action will be added in the next step.')),
+  Future<void> _openFocusAreaForm([FocusArea? area]) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => FocusAreaFormPage(area: area)),
     );
   }
 }
