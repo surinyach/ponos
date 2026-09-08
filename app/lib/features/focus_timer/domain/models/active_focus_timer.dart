@@ -61,4 +61,27 @@ class ActiveFocusTimer {
   final bool focusTransitionNotified;
 
   bool get isPaused => activity == FocusTimerActivity.paused;
+
+  ActiveFocusTimer copyWith({
+    FocusTimerPhase? phase,
+    FocusTimerActivity? activity,
+    Duration? accumulatedFocusTime,
+    Duration? accumulatedRestTime,
+    DateTime? runningSince,
+    bool clearRunningSince = false,
+    bool? focusTransitionNotified,
+  }) => ActiveFocusTimer(
+    focusAreaId: focusAreaId,
+    workDate: workDate,
+    startedAt: startedAt,
+    focusDuration: focusDuration,
+    restDuration: restDuration,
+    phase: phase ?? this.phase,
+    activity: activity ?? this.activity,
+    accumulatedFocusTime: accumulatedFocusTime ?? this.accumulatedFocusTime,
+    accumulatedRestTime: accumulatedRestTime ?? this.accumulatedRestTime,
+    runningSince: clearRunningSince ? null : runningSince ?? this.runningSince,
+    focusTransitionNotified:
+        focusTransitionNotified ?? this.focusTransitionNotified,
+  );
 }

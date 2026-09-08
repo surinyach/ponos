@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ponos_app/features/focus_timer/data/active_focus_timer_codec.dart';
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 
 void main() {
@@ -29,24 +30,27 @@ void main() {
     expect(state.isPaused, isFalse);
   });
 
-  test('paused state retains accumulated phase time without a running instant', () {
-    final state = ActiveFocusTimer(
-      focusAreaId: 1,
-      workDate: DateTime(2026, 9, 8),
-      startedAt: DateTime.utc(2026, 9, 8, 8),
-      focusDuration: const Duration(minutes: 50),
-      restDuration: const Duration(minutes: 10),
-      phase: FocusTimerPhase.focus,
-      activity: FocusTimerActivity.paused,
-      accumulatedFocusTime: const Duration(minutes: 12),
-      accumulatedRestTime: Duration.zero,
-      focusTransitionNotified: false,
-    );
+  test(
+    'paused state retains accumulated phase time without a running instant',
+    () {
+      final state = ActiveFocusTimer(
+        focusAreaId: 1,
+        workDate: DateTime(2026, 9, 8),
+        startedAt: DateTime.utc(2026, 9, 8, 8),
+        focusDuration: const Duration(minutes: 50),
+        restDuration: const Duration(minutes: 10),
+        phase: FocusTimerPhase.focus,
+        activity: FocusTimerActivity.paused,
+        accumulatedFocusTime: const Duration(minutes: 12),
+        accumulatedRestTime: Duration.zero,
+        focusTransitionNotified: false,
+      );
 
-    expect(state.isPaused, isTrue);
-    expect(state.runningSince, isNull);
-    expect(state.accumulatedFocusTime, const Duration(minutes: 12));
-  });
+      expect(state.isPaused, isTrue);
+      expect(state.runningSince, isNull);
+      expect(state.accumulatedFocusTime, const Duration(minutes: 12));
+    },
+  );
 
   test('rejects snapshots whose activity and running instant disagree', () {
     expect(
@@ -64,5 +68,35 @@ void main() {
       ),
       throwsAssertionError,
     );
+  });
+
+  test('serialized state round-trips all recovery fields', () {
+    final original = ActiveFocusTimer(
+      focusAreaId: 9,
+      workDate: DateTime(2026, 9, 8),
+      startedAt: DateTime.utc(2026, 9, 8, 23, 58),
+      focusDuration: const Duration(minutes: 45),
+      restDuration: const Duration(minutes: 15),
+      phase: FocusTimerPhase.rest,
+      activity: FocusTimerActivity.paused,
+      accumulatedFocusTime: const Duration(minutes: 45),
+      accumulatedRestTime: const Duration(seconds: 42),
+      focusTransitionNotified: true,
+    );
+
+    const codec = ActiveFocusTimerCodec();
+    final restored = codec.decode(codec.encode(original));
+
+    expect(restored.focusAreaId, original.focusAreaId);
+    expect(restored.workDate, original.workDate);
+    expect(restored.startedAt, original.startedAt);
+    expect(restored.focusDuration, original.focusDuration);
+    expect(restored.restDuration, original.restDuration);
+    expect(restored.phase, original.phase);
+    expect(restored.activity, original.activity);
+    expect(restored.accumulatedFocusTime, original.accumulatedFocusTime);
+    expect(restored.accumulatedRestTime, original.accumulatedRestTime);
+    expect(restored.runningSince, original.runningSince);
+    expect(restored.focusTransitionNotified, original.focusTransitionNotified);
   });
 }
