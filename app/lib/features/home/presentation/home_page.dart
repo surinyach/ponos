@@ -5,6 +5,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/focus_area_form_page.dart';
 import '../../focus_areas/presentation/focus_areas_page.dart';
+import '../../focus_timer/presentation/focus_timer_page.dart';
 import 'state/today_overview_provider.dart';
 import 'widgets/today_summary.dart';
 import 'widgets/focus_areas.dart';
@@ -49,6 +50,7 @@ class _HomePageState extends State<HomePage> {
             onCreate: () => _openFocusAreaForm(),
             onAreaSelected: (area) => _openFocusAreaForm(area),
           ),
+          2 => const FocusTimerPage(),
           _ => _FeaturePlaceholder(destination: _destinations[_selectedIndex]),
         };
 

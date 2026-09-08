@@ -120,7 +120,7 @@ void main() {
     expect(current().elapsedRestTime, const Duration(minutes: 3));
   });
 
-  test('natural completion persists one execution and clears state', () async {
+  test('natural completion persists and exposes completion state', () async {
     await initialize();
     await controller.start(
       focusAreaId: 8,
@@ -132,7 +132,7 @@ void main() {
 
     await controller.synchronize();
 
-    expect(current().status, FocusTimerStatus.inactive);
+    expect(current().status, FocusTimerStatus.completed);
     expect(store.value, isNull);
     expect(recorder.executions, hasLength(1));
     final execution = recorder.executions.single;
@@ -141,6 +141,9 @@ void main() {
     expect(execution.restTime, const Duration(minutes: 1));
     expect(execution.workDate, workDate);
     expect(execution.endedAt, DateTime.utc(2026, 9, 8, 21, 3));
+
+    controller.prepareNextExecution();
+    expect(current().status, FocusTimerStatus.inactive);
   });
 
   test('partial reset requires pause and persists elapsed values', () async {
@@ -180,6 +183,7 @@ void main() {
       focusAreaId: 3,
       workDate: DateTime(2026, 9, 8),
       startedAt: clock().toUtc(),
+      startedAtUtcOffset: const Duration(hours: 2),
       focusDuration: const Duration(minutes: 20),
       restDuration: const Duration(minutes: 5),
       phase: FocusTimerPhase.focus,

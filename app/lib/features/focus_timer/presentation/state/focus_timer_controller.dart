@@ -28,7 +28,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     _transitionEffect = ref.watch(focusTimerTransitionEffectProvider);
     _clock = ref.watch(focusTimerClockProvider);
     ref.onDispose(() => _ticker?.cancel());
-    Future<void>.microtask(_restore);
+    Future<void>.microtask(restore);
     return const FocusTimerState.restoring();
   }
 
@@ -49,6 +49,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
       focusAreaId: focusAreaId,
       workDate: DateTime(localNow.year, localNow.month, localNow.day),
       startedAt: now,
+      startedAtUtcOffset: localNow.timeZoneOffset,
       focusDuration: focusDuration,
       restDuration: restDuration,
       phase: FocusTimerPhase.focus,
@@ -125,6 +126,10 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     }
   }
 
+  void prepareNextExecution() {
+    if (state.status == FocusTimerStatus.completed) _setInactive();
+  }
+
   /// Reconciles state against an absolute timestamp. Periodic ticks only
   /// refresh exposure; correctness does not depend on their frequency.
   Future<void> synchronize() async {
@@ -139,7 +144,8 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     }
   }
 
-  Future<void> _restore() async {
+  Future<void> restore() async {
+    state = const FocusTimerState.restoring();
     try {
       final timer = await _store.load();
       if (!ref.mounted) return;
@@ -211,9 +217,10 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     final completed = timer.copyWith(accumulatedRestTime: timer.restDuration);
     state = _snapshot(completed, status: FocusTimerStatus.persisting);
     try {
-      await _recorder.save(_draft(completed, endedAt));
+      final execution = _draft(completed, endedAt);
+      await _recorder.save(execution);
       await _store.clear();
-      _setInactive();
+      _setCompleted(execution);
     } catch (error) {
       _ticker?.cancel();
       _setError(completed, error);
@@ -245,7 +252,9 @@ class FocusTimerController extends Notifier<FocusTimerState> {
         focusAreaId: timer.focusAreaId,
         workDate: timer.workDate,
         startedAt: timer.startedAt,
+        startedAtUtcOffset: timer.startedAtUtcOffset,
         endedAt: endedAt,
+        endedAtUtcOffset: endedAt.toLocal().timeZoneOffset,
         focusedTime: timer.accumulatedFocusTime,
         restTime: timer.accumulatedRestTime,
       );
@@ -291,6 +300,17 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     _ticker?.cancel();
     _ticker = null;
     state = const FocusTimerState.inactive();
+  }
+
+  void _setCompleted(TimerExecutionDraft execution) {
+    _ticker?.cancel();
+    _ticker = null;
+    state = FocusTimerState(
+      status: FocusTimerStatus.completed,
+      completedExecution: execution,
+      elapsedFocusTime: execution.focusedTime,
+      elapsedRestTime: execution.restTime,
+    );
   }
 
   void _configureTicker(ActiveFocusTimer timer) {

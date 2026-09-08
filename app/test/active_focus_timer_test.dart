@@ -11,6 +11,7 @@ void main() {
       focusAreaId: 7,
       workDate: DateTime(2026, 9, 8),
       startedAt: startedAt,
+      startedAtUtcOffset: const Duration(hours: 2),
       focusDuration: const Duration(minutes: 25),
       restDuration: const Duration(minutes: 5),
       phase: FocusTimerPhase.rest,
@@ -37,6 +38,7 @@ void main() {
         focusAreaId: 1,
         workDate: DateTime(2026, 9, 8),
         startedAt: DateTime.utc(2026, 9, 8, 8),
+        startedAtUtcOffset: const Duration(hours: 2),
         focusDuration: const Duration(minutes: 50),
         restDuration: const Duration(minutes: 10),
         phase: FocusTimerPhase.focus,
@@ -58,6 +60,7 @@ void main() {
         focusAreaId: 1,
         workDate: DateTime(2026, 9, 8),
         startedAt: DateTime.utc(2026, 9, 8, 8),
+        startedAtUtcOffset: const Duration(hours: 2),
         focusDuration: const Duration(minutes: 25),
         restDuration: const Duration(minutes: 5),
         phase: FocusTimerPhase.focus,
@@ -75,6 +78,7 @@ void main() {
       focusAreaId: 9,
       workDate: DateTime(2026, 9, 8),
       startedAt: DateTime.utc(2026, 9, 8, 23, 58),
+      startedAtUtcOffset: const Duration(hours: 2),
       focusDuration: const Duration(minutes: 45),
       restDuration: const Duration(minutes: 15),
       phase: FocusTimerPhase.rest,
@@ -90,6 +94,7 @@ void main() {
     expect(restored.focusAreaId, original.focusAreaId);
     expect(restored.workDate, original.workDate);
     expect(restored.startedAt, original.startedAt);
+    expect(restored.startedAtUtcOffset, original.startedAtUtcOffset);
     expect(restored.focusDuration, original.focusDuration);
     expect(restored.restDuration, original.restDuration);
     expect(restored.phase, original.phase);

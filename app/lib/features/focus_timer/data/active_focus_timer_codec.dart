@@ -10,6 +10,7 @@ class ActiveFocusTimerCodec {
     'focusAreaId': timer.focusAreaId,
     'workDate': _date(timer.workDate),
     'startedAt': timer.startedAt.toUtc().toIso8601String(),
+    'startedAtUtcOffsetMinutes': timer.startedAtUtcOffset.inMinutes,
     'focusDurationMicros': timer.focusDuration.inMicroseconds,
     'restDurationMicros': timer.restDuration.inMicroseconds,
     'phase': timer.phase.name,
@@ -31,6 +32,13 @@ class ActiveFocusTimerCodec {
       focusAreaId: json['focusAreaId'] as int,
       workDate: DateTime(workDateParts[0], workDateParts[1], workDateParts[2]),
       startedAt: DateTime.parse(json['startedAt'] as String),
+      startedAtUtcOffset: Duration(
+        minutes:
+            json['startedAtUtcOffsetMinutes'] as int? ??
+            DateTime.parse(
+              json['startedAt'] as String,
+            ).toLocal().timeZoneOffset.inMinutes,
+      ),
       focusDuration: Duration(microseconds: json['focusDurationMicros'] as int),
       restDuration: Duration(microseconds: json['restDurationMicros'] as int),
       phase: FocusTimerPhase.values.byName(json['phase'] as String),
