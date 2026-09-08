@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/app.dart';
 import 'package:ponos_app/app/theme/app_colors.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
+import 'package:ponos_app/features/home/presentation/state/today_overview_provider.dart';
 import 'package:ponos_app/features/home/presentation/widgets/today_summary.dart';
 import 'package:ponos_app/features/home/presentation/widgets/focus_areas.dart';
 import 'package:ponos_app/features/home/presentation/widgets/work_statistics.dart';
@@ -12,7 +15,7 @@ import 'package:ponos_app/features/home/presentation/widgets/streak_consistency.
 
 void main() {
   testWidgets('shows wide navigation in a wide viewport', (tester) async {
-    await tester.pumpWidget(const PonosApp());
+    await tester.pumpWidget(_testApp());
 
     expect(find.text('Ponos'), findsOneWidget);
     expect(find.text('Overview'), findsWidgets);
@@ -20,7 +23,7 @@ void main() {
   });
 
   testWidgets('opens another feature from the navigation bar', (tester) async {
-    await tester.pumpWidget(const PonosApp());
+    await tester.pumpWidget(_testApp());
 
     await tester.tap(find.text('Focus'));
     await tester.pumpAndSettle();
@@ -179,7 +182,8 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const PonosApp());
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
 
     final summaryRect = tester.getRect(find.byType(TodaySummary));
     final statisticsRect = tester.getRect(find.byType(WorkStatistics));
@@ -188,4 +192,70 @@ void main() {
     expect(summaryRect.top, areasRect.top);
     expect(statisticsRect.bottom, areasRect.bottom);
   });
+
+  testWidgets('overview shows empty and error states', (tester) async {
+    await tester.pumpWidget(_testApp(overview: _overview(areas: const [])));
+    await tester.pumpAndSettle();
+    expect(find.text('No active focus areas'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          todayOverviewProvider.overrideWith(
+            (ref) => Future<TodayOverview>.error(Exception('offline')),
+          ),
+        ],
+        child: const PonosApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Unable to load today’s overview'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+  });
+}
+
+Widget _testApp({TodayOverview? overview}) => ProviderScope(
+  overrides: [
+    todayOverviewProvider.overrideWith(
+      (ref) async => overview ?? _overview(areas: [_progress()]),
+    ),
+  ],
+  child: const PonosApp(),
+);
+
+TodayOverview _overview({required List<FocusAreaTodayProgress> areas}) =>
+    TodayOverview(
+      date: DateTime(2026, 9, 7),
+      expectedFocusTime: const Duration(hours: 1),
+      actualFocusedTime: const Duration(minutes: 30),
+      completedFocusAreas: 0,
+      targetedFocusAreas: areas.isEmpty ? 0 : 1,
+      areas: areas,
+    );
+
+FocusAreaTodayProgress _progress() {
+  final date = DateTime(2026, 9, 7);
+  final area = FocusArea(
+    id: 1,
+    name: 'Work placement',
+    priority: 1,
+    createdAt: date,
+    updatedAt: date,
+    targets: [
+      FocusAreaTarget(
+        id: 1,
+        focusAreaId: 1,
+        weekday: DateTime.monday,
+        targetMinutes: 60,
+        validFrom: date,
+      ),
+    ],
+  );
+  return FocusAreaTodayProgress(
+    focusArea: area,
+    focusedTime: const Duration(minutes: 30),
+    targetTime: const Duration(hours: 1),
+    completed: false,
+  );
 }

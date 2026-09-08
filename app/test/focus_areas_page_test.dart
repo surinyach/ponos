@@ -9,6 +9,7 @@ import 'package:ponos_app/core/errors/app_exception.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_input.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
 import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_repository.dart';
 import 'package:ponos_app/features/focus_areas/presentation/focus_areas_page.dart';
 
@@ -242,6 +243,9 @@ class FakeRepository implements FocusAreaRepository {
 
   @override
   Future<List<FocusArea>> getActive() => load();
+  @override
+  Future<TodayOverview> getTodayOverview(DateTime localDate) =>
+      throw UnimplementedError();
   @override
   Future<FocusArea> archive(int id) async {
     archivedIds.add(id);

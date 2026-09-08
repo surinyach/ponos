@@ -9,6 +9,7 @@ import 'package:ponos_app/core/errors/app_exception.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_input.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
 import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_repository.dart';
 import 'package:ponos_app/features/focus_areas/presentation/focus_area_form_data.dart';
 import 'package:ponos_app/features/focus_areas/presentation/focus_area_form_page.dart';
@@ -250,6 +251,10 @@ class FormRepository implements FocusAreaRepository {
 
   @override
   Future<List<FocusArea>> getActive() async => [];
+
+  @override
+  Future<TodayOverview> getTodayOverview(DateTime localDate) =>
+      throw UnimplementedError();
 
   @override
   Future<FocusArea> create(FocusAreaCreateInput input) {

@@ -27,6 +27,51 @@ void main() {
       expect(areas.single.targets.single.targetMinutes, 480);
     });
 
+    test(
+      'loads and maps the daily overview using the local timezone',
+      () async {
+        final localDate = DateTime(2026, 9, 7);
+        final repository = _repository((request) async {
+          expect(request.method, 'GET');
+          expect(request.url.path, '/ponos/api/v1/overview/today');
+          expect(request.url.queryParameters['date'], '2026-09-07');
+          expect(
+            DateTime.parse(request.url.queryParameters['day_start_utc']!),
+            DateTime(2026, 9, 7).toUtc(),
+          );
+          expect(
+            DateTime.parse(request.url.queryParameters['day_end_utc']!),
+            DateTime(2026, 9, 8).toUtc(),
+          );
+          return http.Response(
+            jsonEncode({
+              'date': '2026-09-07',
+              'expected_focus_seconds': 3600,
+              'actual_focused_seconds': 1800,
+              'completed_focus_areas': 0,
+              'targeted_focus_areas': 1,
+              'areas': [
+                {
+                  'focus_area': _response(),
+                  'target_seconds': 3600,
+                  'focused_seconds': 1800,
+                  'completed': false,
+                },
+              ],
+            }),
+            200,
+          );
+        });
+
+        final overview = await repository.getTodayOverview(localDate);
+
+        expect(overview.expectedFocusTime, const Duration(hours: 1));
+        expect(overview.actualFocusedTime, const Duration(minutes: 30));
+        expect(overview.areas.single.focusArea.name, 'Work placement');
+        expect(overview.areas.single.completed, isFalse);
+      },
+    );
+
     test('serializes create inputs using the backend field names', () async {
       final repository = _repository((request) async {
         final body = jsonDecode(request.body) as Map<String, Object?>;
@@ -96,6 +141,48 @@ void main() {
 
       expect(result, hasLength(2));
     });
+
+    test('maps the daily overview and sends local day context', () async {
+      final localDate = DateTime(2026, 9, 7);
+      final repository = _repository((request) async {
+        expect(request.method, 'GET');
+        expect(request.url.path, '/ponos/api/v1/overview/today');
+        expect(request.url.queryParameters['date'], '2026-09-07');
+        expect(
+          DateTime.parse(request.url.queryParameters['day_start_utc']!),
+          DateTime(2026, 9, 7).toUtc(),
+        );
+        expect(
+          DateTime.parse(request.url.queryParameters['day_end_utc']!),
+          DateTime(2026, 9, 8).toUtc(),
+        );
+        return http.Response(
+          jsonEncode({
+            'date': '2026-09-07',
+            'expected_focus_seconds': 3600,
+            'actual_focused_seconds': 1800,
+            'completed_focus_areas': 0,
+            'targeted_focus_areas': 1,
+            'areas': [
+              {
+                'focus_area': _response(),
+                'target_seconds': 3600,
+                'focused_seconds': 1800,
+                'completed': false,
+              },
+            ],
+          }),
+          200,
+        );
+      });
+
+      final overview = await repository.getTodayOverview(localDate);
+
+      expect(overview.expectedFocusTime, const Duration(hours: 1));
+      expect(overview.actualFocusedTime, const Duration(minutes: 30));
+      expect(overview.areas.single.focusArea.name, 'Work placement');
+      expect(overview.areas.single.completed, isFalse);
+    });
   });
 
   group('FocusAreaApiClient errors', () {
@@ -132,6 +219,28 @@ void main() {
     test('maps HTTP transport failures', () async {
       final client = _api((_) async => throw http.ClientException('offline'));
       expect(client.getActive(), throwsA(isA<NetworkException>()));
+    });
+
+    test('maps request timeouts instead of loading indefinitely', () async {
+      final client = FocusAreaApiClient(
+        MockClient((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return http.Response('[]', 200);
+        }),
+        ApiConfig('https://home.example/ponos'),
+        requestTimeout: Duration.zero,
+      );
+
+      expect(
+        client.getActive(),
+        throwsA(
+          isA<NetworkException>().having(
+            (error) => error.message,
+            'message',
+            'The server took too long to respond',
+          ),
+        ),
+      );
     });
   });
 

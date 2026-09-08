@@ -8,6 +8,8 @@ class FocusAreas extends StatelessWidget {
   const FocusAreas({
     required this.areas,
     required this.workedTodayByAreaId,
+    this.dailyTargetByAreaId,
+    this.completedByAreaId,
     this.targetDate,
     this.onAreaPressed,
     super.key,
@@ -15,6 +17,8 @@ class FocusAreas extends StatelessWidget {
 
   final List<FocusArea> areas;
   final Map<int, Duration> workedTodayByAreaId;
+  final Map<int, Duration?>? dailyTargetByAreaId;
+  final Map<int, bool>? completedByAreaId;
   final DateTime? targetDate;
   final ValueChanged<FocusArea>? onAreaPressed;
 
@@ -57,7 +61,10 @@ class FocusAreas extends StatelessWidget {
             else
               ...List.generate(sortedAreas.length, (index) {
                 final area = sortedAreas[index];
-                final target = area.targetFor(date)?.targetDuration;
+                final target =
+                    dailyTargetByAreaId?.containsKey(area.id) ?? false
+                    ? dailyTargetByAreaId![area.id]
+                    : area.targetFor(date)?.targetDuration;
                 final workedToday =
                     workedTodayByAreaId[area.id] ?? Duration.zero;
 
@@ -67,6 +74,7 @@ class FocusAreas extends StatelessWidget {
                       area: area,
                       dailyTarget: target,
                       workedToday: workedToday,
+                      completed: completedByAreaId?[area.id],
                       onPressed: onAreaPressed == null
                           ? null
                           : () => onAreaPressed!(area),
@@ -88,15 +96,18 @@ class _FocusAreaRow extends StatelessWidget {
     required this.area,
     required this.dailyTarget,
     required this.workedToday,
+    this.completed,
     this.onPressed,
   });
 
   final FocusArea area;
   final Duration? dailyTarget;
   final Duration workedToday;
+  final bool? completed;
   final VoidCallback? onPressed;
 
-  bool get isCompleted => dailyTarget != null && workedToday >= dailyTarget!;
+  bool get isCompleted =>
+      completed ?? (dailyTarget != null && workedToday >= dailyTarget!);
 
   double get progress {
     if (dailyTarget == null) return 0;

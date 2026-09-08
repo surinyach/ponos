@@ -1,16 +1,42 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../../core/config/api_config.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../dtos/focus_area_dto.dart';
+import '../dtos/focus_area_target_dto.dart';
+import '../dtos/today_overview_dto.dart';
 
 class FocusAreaApiClient {
-  FocusAreaApiClient(this._client, this._config);
+  FocusAreaApiClient(
+    this._client,
+    this._config, {
+    this.requestTimeout = const Duration(seconds: 10),
+  });
   final http.Client _client;
   final ApiConfig _config;
+  final Duration requestTimeout;
   Future<List<FocusAreaDto>> getActive() => _list('/api/v1/focus-areas');
   Future<List<FocusAreaDto>> getArchived() =>
       _list('/api/v1/focus-areas/archived');
+  Future<TodayOverviewDto> getTodayOverview(DateTime localDate) async {
+    final dayStart = DateTime(localDate.year, localDate.month, localDate.day);
+    final dayEnd = DateTime(localDate.year, localDate.month, localDate.day + 1);
+    final query = Uri(
+      queryParameters: {
+        'date': dateToJson(localDate),
+        'day_start_utc': dayStart.toUtc().toIso8601String(),
+        'day_end_utc': dayEnd.toUtc().toIso8601String(),
+      },
+    ).query;
+    final value = await _request('GET', '/api/v1/overview/today?$query');
+    try {
+      return TodayOverviewDto.fromJson(_object(value));
+    } on FormatException catch (error) {
+      throw InvalidResponseException(error.message);
+    }
+  }
+
   Future<FocusAreaDto> getById(int id) =>
       _one('GET', '/api/v1/focus-areas/$id');
   Future<FocusAreaDto> create(Map<String, Object?> body) =>
@@ -66,13 +92,17 @@ class FocusAreaApiClient {
       request.headers['content-type'] = 'application/json';
       request.body = jsonEncode(body);
     }
-    late http.StreamedResponse streamed;
+    late http.Response response;
     try {
-      streamed = await _client.send(request);
+      response = await _client
+          .send(request)
+          .then(http.Response.fromStream)
+          .timeout(requestTimeout);
+    } on TimeoutException {
+      throw const NetworkException('The server took too long to respond');
     } on http.ClientException catch (error) {
       throw NetworkException(error.message);
     }
-    final response = await http.Response.fromStream(streamed);
     final decoded = _decode(response.body);
     if (response.statusCode >= 200 && response.statusCode < 300) return decoded;
     final message = _message(decoded);

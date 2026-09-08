@@ -1,5 +1,6 @@
 import '../../domain/models/focus_area.dart';
 import '../../domain/models/focus_area_input.dart';
+import '../../domain/models/today_overview.dart';
 import '../../domain/repositories/focus_area_repository.dart';
 import '../data_sources/focus_area_api_client.dart';
 import '../dtos/focus_area_dto.dart';
@@ -13,6 +14,9 @@ class RemoteFocusAreaRepository implements FocusAreaRepository {
   @override
   Future<List<FocusArea>> getArchived() async =>
       _domain(await _apiClient.getArchived());
+  @override
+  Future<TodayOverview> getTodayOverview(DateTime localDate) async =>
+      (await _apiClient.getTodayOverview(localDate)).toDomain();
   @override
   Future<FocusArea> getById(int id) async =>
       (await _apiClient.getById(id)).toDomain();

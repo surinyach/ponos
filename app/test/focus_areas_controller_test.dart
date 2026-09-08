@@ -6,6 +6,7 @@ import 'package:ponos_app/app/providers/focus_area_providers.dart';
 import 'package:ponos_app/core/errors/app_exception.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_input.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
 import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_repository.dart';
 import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_controller.dart';
 import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_state.dart';
@@ -301,6 +302,9 @@ class FakeRepository implements FocusAreaRepository {
 
   @override
   Future<List<FocusArea>> getActive() => load();
+  @override
+  Future<TodayOverview> getTodayOverview(DateTime localDate) =>
+      throw UnimplementedError();
   Future<FocusArea> mutate(String action) async {
     lastAction = action;
     return (await change()).single;
