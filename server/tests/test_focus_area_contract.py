@@ -9,6 +9,7 @@ from app.schemas.focus_area import (
     FocusAreaPrioritiesUpdate,
     FocusAreaUpdate,
 )
+from app.schemas.today_overview import TodayOverviewResponse
 
 
 def target(weekday: int = 1) -> dict[str, object]:
@@ -28,6 +29,7 @@ def test_openapi_exposes_only_the_requested_operations() -> None:
     assert set(paths["/api/v1/focus-areas/{focus_area_id}"]) == {"get", "patch"}
     assert set(paths["/api/v1/focus-areas/{focus_area_id}/archive"]) == {"post"}
     assert set(paths["/api/v1/focus-areas/{focus_area_id}/restore"]) == {"post"}
+    assert set(paths["/api/v1/overview/today"]) == {"get"}
     assert all("delete" not in operations for operations in paths.values())
 
 
@@ -88,3 +90,21 @@ def test_priority_contract_allows_duplicate_priorities() -> None:
     )
 
     assert request.items[0].priority == request.items[1].priority
+
+
+def test_today_overview_contract_requires_derived_totals_and_progress() -> None:
+    operation = app.openapi()["paths"]["/api/v1/overview/today"]["get"]
+    parameters = {parameter["name"]: parameter for parameter in operation["parameters"]}
+
+    assert set(parameters) == {"date", "day_start_utc", "day_end_utc"}
+    assert all(parameter["required"] for parameter in parameters.values())
+    assert operation["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ] == {"$ref": "#/components/schemas/TodayOverviewResponse"}
+    assert {
+        "expected_focus_seconds",
+        "actual_focused_seconds",
+        "completed_focus_areas",
+        "targeted_focus_areas",
+        "areas",
+    }.issubset(TodayOverviewResponse.model_fields)

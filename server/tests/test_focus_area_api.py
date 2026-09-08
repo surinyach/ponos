@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 import httpx
 import pytest
@@ -119,6 +119,69 @@ async def test_archive_and_restore_move_area_between_lists(client):
     assert restored.status_code == 200
     assert restored.json()["archived_at"] is None
     assert (await client.get("/api/v1/focus-areas/archived")).json() == []
+
+
+@pytest.mark.asyncio
+async def test_archive_and_restore_preserve_targets_and_timer_history(client):
+    area = await create_area(client)
+    versioned = await client.patch(
+        f"/api/v1/focus-areas/{area['id']}",
+        json={
+            "targets": [
+                {
+                    "weekday": 1,
+                    "target_minutes": 360,
+                    "valid_from": "2026-09-14",
+                }
+            ]
+        },
+    )
+    assert versioned.status_code == 200
+
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                "INSERT INTO timer_executions "
+                "(focus_area_id, started_at, ended_at, focused_seconds, rest_seconds) "
+                "VALUES (:area_id, :started_at, :ended_at, 1800, 300)"
+            ),
+            {
+                "area_id": area["id"],
+                "started_at": datetime(2026, 9, 7, 8, tzinfo=timezone.utc),
+                "ended_at": datetime(2026, 9, 7, 8, 35, tzinfo=timezone.utc),
+            },
+        )
+
+    archived = await client.post(f"/api/v1/focus-areas/{area['id']}/archive")
+    assert archived.status_code == 200
+    assert len(archived.json()["targets"]) == 2
+
+    async with engine.connect() as connection:
+        target_count = await connection.scalar(
+            text(
+                "SELECT count(*) FROM focus_area_targets "
+                "WHERE focus_area_id = :area_id"
+            ),
+            {"area_id": area["id"]},
+        )
+        execution = (
+            await connection.execute(
+                text(
+                    "SELECT focused_seconds, rest_seconds FROM timer_executions "
+                    "WHERE focus_area_id = :area_id"
+                ),
+                {"area_id": area["id"]},
+            )
+        ).one()
+
+    assert target_count == 2
+    assert tuple(execution) == (1800, 300)
+
+    restored = await client.post(f"/api/v1/focus-areas/{area['id']}/restore")
+    fetched = await client.get(f"/api/v1/focus-areas/{area['id']}")
+    assert restored.status_code == 200
+    assert fetched.status_code == 200
+    assert fetched.json()["targets"] == restored.json()["targets"]
 
 
 @pytest.mark.asyncio
