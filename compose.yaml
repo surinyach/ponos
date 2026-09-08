@@ -1,0 +1,48 @@
+services:
+  database:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ponos_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./server
+    environment:
+      PONOS_ENVIRONMENT: ${PONOS_ENVIRONMENT:-production}
+      PONOS_DATABASE_HOST: database
+      PONOS_DATABASE_PORT: 5432
+      PONOS_DATABASE_NAME: ${POSTGRES_DB}
+      PONOS_DATABASE_USER: ${POSTGRES_USER}
+      PONOS_DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  ponos_postgres_data:

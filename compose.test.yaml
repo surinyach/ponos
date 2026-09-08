@@ -1,0 +1,30 @@
+services:
+  database-test:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ponos_test
+      POSTGRES_USER: ponos_test
+      POSTGRES_PASSWORD: ponos_test
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ponos_test -d ponos_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  api-test:
+    build:
+      context: ./server
+      target: test
+    environment:
+      PONOS_ENVIRONMENT: test
+      PONOS_DATABASE_HOST: database-test
+      PONOS_DATABASE_PORT: 5432
+      PONOS_DATABASE_NAME: ponos_test
+      PONOS_DATABASE_USER: ponos_test
+      PONOS_DATABASE_PASSWORD: ponos_test
+    depends_on:
+      database-test:
+        condition: service_healthy
+    command: ["/bin/sh", "-c", "alembic upgrade head && pytest"]

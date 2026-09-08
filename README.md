@@ -27,5 +27,7 @@ See [app/README.md](app/README.md) for the client structure and design language.
 
 ## Server
 
-The API will be implemented incrementally under `server/`. Database credentials,
-local environment files, and database volumes must never be committed.
+The self-hosted FastAPI and PostgreSQL stack lives under `server/` and is
+orchestrated by the root `compose.yaml`. See [server/README.md](server/README.md)
+for setup and health-check instructions. Database credentials, local environment
+files, and database volumes must never be committed.
