@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,8 +15,6 @@ from app.schemas.today_overview import (
 async def get_today_overview(
     db: AsyncSession,
     work_date: date,
-    day_start_utc: datetime,
-    day_end_utc: datetime,
 ) -> TodayOverviewResponse:
     areas = list(
         (
@@ -39,8 +37,7 @@ async def get_today_overview(
                 .join(FocusArea)
                 .where(
                     FocusArea.archived_at.is_(None),
-                    TimerExecution.started_at >= day_start_utc,
-                    TimerExecution.started_at < day_end_utc,
+                    TimerExecution.work_date == work_date,
                 )
                 .group_by(TimerExecution.focus_area_id)
             )

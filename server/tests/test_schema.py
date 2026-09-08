@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, DateTime, Integer, SmallInteger
+from sqlalchemy import BigInteger, Date, DateTime, Integer, SmallInteger
 from sqlalchemy.dialects.postgresql import ExcludeConstraint
 
 import app.models  # noqa: F401
@@ -42,9 +42,14 @@ def test_timer_executions_store_only_source_durations() -> None:
 
     assert isinstance(table.c.id.type, BigInteger)
     assert isinstance(table.c.started_at.type, DateTime)
+    assert isinstance(table.c.work_date.type, Date)
+    assert table.c.work_date.nullable is False
     assert table.c.started_at.type.timezone is True
     assert table.c.ended_at.type.timezone is True
     assert {"focused_seconds", "rest_seconds"}.issubset(table.c.keys())
     assert not {"total_focused_time", "total_rest_time", "total_time"}.intersection(
         table.c.keys()
     )
+    assert "ix_timer_executions_work_date" in {
+        index.name for index in table.indexes
+    }
