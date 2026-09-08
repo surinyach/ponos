@@ -13,6 +13,33 @@ import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_re
 import 'package:ponos_app/features/focus_areas/presentation/focus_areas_page.dart';
 
 void main() {
+  testWidgets(
+    'archive requires confirmation and restore returns area to active',
+    (tester) async {
+      final repository = FakeRepository(() async => [area(1, 'First', 1, 60)]);
+      await pumpPage(tester, repository);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Archive First'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(repository.archivedIds, isEmpty);
+      await tester.tap(find.byTooltip('Archive First'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archive'));
+      await tester.pumpAndSettle();
+      expect(find.text('First'), findsNothing);
+      await tester.tap(find.text('Archived'));
+      await tester.pumpAndSettle();
+      expect(find.text('First'), findsOneWidget);
+      await tester.tap(find.text('Restore'));
+      await tester.pumpAndSettle();
+      expect(find.text('No archived Focus Areas'), findsOneWidget);
+      await tester.tap(find.text('Active'));
+      await tester.pumpAndSettle();
+      expect(find.text('First'), findsOneWidget);
+    },
+  );
   testWidgets('shows loading while the repository request is pending', (
     tester,
   ) async {
@@ -114,6 +141,54 @@ void main() {
     expect(find.byKey(const Key('focus-areas-list')), findsOneWidget);
     expect(find.byKey(const Key('focus-areas-grid')), findsNothing);
   });
+
+  testWidgets('shows drag handles for reordering on mobile', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = FakeRepository(
+      () async => [area(1, 'First', 1, 60), area(2, 'Second', 2, 60)],
+    );
+    await pumpPage(tester, repository);
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('focus-areas-reorder-toggle')));
+    await tester.pump();
+
+    expect(find.byType(ReorderableDragStartListener), findsNWidgets(2));
+    expect(find.byKey(const Key('move-down-1')), findsNothing);
+
+    await tester.timedDrag(
+      find.byType(ReorderableDragStartListener).first,
+      const Offset(0, 220),
+      const Duration(milliseconds: 600),
+    );
+    await tester.pumpAndSettle();
+    expect(repository.priorities!.map((item) => item.id), [2, 1]);
+  });
+
+  testWidgets('move buttons persist the new order on wide layouts', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = FakeRepository(
+      () async => [
+        area(1, 'First', 1, 60),
+        area(2, 'Second', 2, 60),
+        area(3, 'Third', 3, 60),
+      ],
+    );
+    await pumpPage(tester, repository);
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('focus-areas-reorder-toggle')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('move-down-1')));
+    await tester.pumpAndSettle();
+
+    expect(repository.priorities!.map((item) => item.id), [2, 1, 3]);
+    expect(repository.priorities!.map((item) => item.priority), [1, 2, 3]);
+  });
 }
 
 Future<void> pumpPage(
@@ -162,25 +237,65 @@ FocusArea area(int id, String name, int priority, int? targetMinutes) {
 class FakeRepository implements FocusAreaRepository {
   FakeRepository(this.load);
   final Future<List<FocusArea>> Function() load;
+  List<FocusAreaPriorityInput>? priorities;
+  final archivedIds = <int>{};
 
   @override
   Future<List<FocusArea>> getActive() => load();
   @override
-  Future<FocusArea> archive(int id) => throw UnimplementedError();
+  Future<FocusArea> archive(int id) async {
+    archivedIds.add(id);
+    final original = (await load()).firstWhere((area) => area.id == id);
+    return FocusArea(
+      id: original.id,
+      name: original.name,
+      priority: original.priority,
+      createdAt: original.createdAt,
+      updatedAt: original.updatedAt,
+      targets: original.targets,
+      archivedAt: DateTime.now(),
+    );
+  }
+
   @override
   Future<FocusArea> create(FocusAreaCreateInput input) =>
       throw UnimplementedError();
   @override
-  Future<List<FocusArea>> getArchived() => throw UnimplementedError();
+  Future<List<FocusArea>> getArchived() async => [
+    for (final id in archivedIds.toList()) await archive(id),
+  ];
   @override
   Future<FocusArea> getById(int id) => throw UnimplementedError();
   @override
-  Future<FocusArea> restore(int id) => throw UnimplementedError();
+  Future<FocusArea> restore(int id) async {
+    archivedIds.remove(id);
+    return (await load()).firstWhere((area) => area.id == id);
+  }
+
   @override
   Future<FocusArea> update(int id, FocusAreaUpdateInput input) =>
       throw UnimplementedError();
   @override
   Future<List<FocusArea>> updatePriorities(
-    List<FocusAreaPriorityInput> priorities,
-  ) => throw UnimplementedError();
+    List<FocusAreaPriorityInput> values,
+  ) async {
+    priorities = values;
+    final byId = {for (final item in await load()) item.id: item};
+    return [
+      for (final value in values)
+        _withPriority(byId[value.id]!, value.priority),
+    ];
+  }
 }
+
+FocusArea _withPriority(FocusArea area, int priority) => FocusArea(
+  id: area.id,
+  name: area.name,
+  description: area.description,
+  priority: priority,
+  targetEndDate: area.targetEndDate,
+  archivedAt: area.archivedAt,
+  createdAt: area.createdAt,
+  updatedAt: area.updatedAt,
+  targets: area.targets,
+);

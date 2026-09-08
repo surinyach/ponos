@@ -207,6 +207,60 @@ void main() {
     },
   );
 
+  test(
+    'reorder is optimistic and restores the exact list on failure',
+    () async {
+      repository.load = () async => [
+        area(1, priority: 1),
+        area(2, priority: 2),
+        area(3, priority: 3),
+      ];
+      await settle();
+      final pending = Completer<List<FocusArea>>();
+      repository.change = () => pending.future;
+
+      final result = controller.reorder(const [
+        FocusAreaPriorityInput(id: 3, priority: 1),
+        FocusAreaPriorityInput(id: 1, priority: 2),
+        FocusAreaPriorityInput(id: 2, priority: 3),
+      ]);
+      await settle();
+
+      expect(current().status, FocusAreasStatus.saving);
+      expect(current().areas.map((area) => area.id), [3, 1, 2]);
+      expect(current().areas.map((area) => area.priority), [1, 2, 3]);
+
+      pending.completeError(const ConflictException('priority conflict'));
+      expect(await result, isFalse);
+      expect(current().status, FocusAreasStatus.error);
+      expect(current().areas.map((area) => area.id), [1, 2, 3]);
+      expect(current().areas.map((area) => area.priority), [1, 2, 3]);
+    },
+  );
+
+  test(
+    'reorder forwards duplicate priorities without rejecting them',
+    () async {
+      repository.load = () async => [area(1), area(2), area(3)];
+      await settle();
+      repository.change = () async => [
+        area(2, priority: 1),
+        area(3, priority: 1),
+        area(1, priority: 2),
+      ];
+
+      expect(
+        await controller.reorder(const [
+          FocusAreaPriorityInput(id: 2, priority: 1),
+          FocusAreaPriorityInput(id: 3, priority: 1),
+          FocusAreaPriorityInput(id: 1, priority: 2),
+        ]),
+        isTrue,
+      );
+      expect(repository.priorities!.map((item) => item.priority), [1, 1, 2]);
+    },
+  );
+
   test('disposal ignores a pending response', () async {
     await settle();
     final pending = Completer<List<FocusArea>>();

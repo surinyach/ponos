@@ -5,10 +5,11 @@ import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/errors/app_exception.dart';
 import '../domain/models/focus_area.dart';
+import '../domain/models/focus_area_input.dart';
 import 'state/focus_areas_controller.dart';
 import 'state/focus_areas_state.dart';
 
-class FocusAreasPage extends ConsumerWidget {
+class FocusAreasPage extends ConsumerStatefulWidget {
   const FocusAreasPage({
     this.onCreate,
     this.onAreaSelected,
@@ -21,10 +22,52 @@ class FocusAreasPage extends ConsumerWidget {
   final DateTime? today;
 
   @override
+  ConsumerState<FocusAreasPage> createState() => _FocusAreasPageState();
+}
+
+class _FocusAreasPageState extends ConsumerState<FocusAreasPage> {
+  bool _archived = false;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: false, label: Text('Active')),
+            ButtonSegment(value: true, label: Text('Archived')),
+          ],
+          selected: {_archived},
+          onSelectionChanged: (values) =>
+              setState(() => _archived = values.single),
+        ),
+      ),
+      Expanded(
+        child: _archived
+            ? const _ArchivedAreas()
+            : _ActiveAreas(
+                onCreate: widget.onCreate,
+                onAreaSelected: widget.onAreaSelected,
+                today: widget.today,
+              ),
+      ),
+    ],
+  );
+}
+
+class _ActiveAreas extends ConsumerWidget {
+  const _ActiveAreas({this.onCreate, this.onAreaSelected, this.today});
+  final VoidCallback? onCreate;
+  final ValueChanged<FocusArea>? onAreaSelected;
+  final DateTime? today;
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(focusAreasProvider);
     final currentDate = today ?? DateTime.now();
     final refresh = ref.read(focusAreasProvider.notifier).refresh;
+    final reorder = ref.read(focusAreasProvider.notifier).reorder;
 
     return switch (state.status) {
       FocusAreasStatus.loading => const Center(
@@ -41,16 +84,18 @@ class FocusAreasPage extends ConsumerWidget {
         onCreate: onCreate,
         onAreaSelected: onAreaSelected,
         onRefresh: refresh,
+        onReorder: reorder,
       ),
     };
   }
 }
 
-class _AreaList extends StatelessWidget {
+class _AreaList extends StatefulWidget {
   const _AreaList({
     required this.state,
     required this.today,
     required this.onRefresh,
+    required this.onReorder,
     this.onCreate,
     this.onAreaSelected,
   });
@@ -58,25 +103,31 @@ class _AreaList extends StatelessWidget {
   final FocusAreasState state;
   final DateTime today;
   final Future<bool> Function() onRefresh;
+  final Future<bool> Function(List<FocusAreaPriorityInput>) onReorder;
   final VoidCallback? onCreate;
   final ValueChanged<FocusArea>? onAreaSelected;
 
   @override
+  State<_AreaList> createState() => _AreaListState();
+}
+
+class _AreaListState extends State<_AreaList> {
+  bool _reordering = false;
+
+  @override
   Widget build(BuildContext context) {
-    final areas = [...state.areas]
-      ..sort((a, b) {
-        final priority = a.priority.compareTo(b.priority);
-        return priority == 0 ? a.id.compareTo(b.id) : priority;
-      });
-    final scheduled = areas.where((area) => area.targetFor(today) != null);
+    final areas = widget.state.areas;
+    final scheduled = areas.where(
+      (area) => area.targetFor(widget.today) != null,
+    );
     final totalMinutes = scheduled.fold(
       0,
-      (total, area) => total + area.targetFor(today)!.targetMinutes,
+      (total, area) => total + area.targetFor(widget.today)!.targetMinutes,
     );
     final busy = {
       FocusAreasStatus.refreshing,
       FocusAreasStatus.saving,
-    }.contains(state.status);
+    }.contains(widget.state.status);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -86,7 +137,7 @@ class _AreaList extends StatelessWidget {
             : AppSpacing.pagePadding;
 
         return RefreshIndicator(
-          onRefresh: () async => onRefresh(),
+          onRefresh: () async => widget.onRefresh(),
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
@@ -97,19 +148,23 @@ class _AreaList extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _Header(
-                        onCreate: onCreate,
-                        onRefresh: busy ? null : onRefresh,
+                        onCreate: widget.onCreate,
+                        onRefresh: busy ? null : widget.onRefresh,
+                        isReordering: _reordering,
+                        onToggleReordering: busy || areas.length < 2
+                            ? null
+                            : () => setState(() => _reordering = !_reordering),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       _DailySummary(
                         totalMinutes: totalMinutes,
                         scheduledAreas: scheduled.length,
                       ),
-                      if (state.status == FocusAreasStatus.error) ...[
+                      if (widget.state.status == FocusAreasStatus.error) ...[
                         const SizedBox(height: AppSpacing.md),
                         _ErrorNotice(
-                          message: _errorMessage(state.error),
-                          onRetry: onRefresh,
+                          message: _errorMessage(widget.state.error),
+                          onRetry: widget.onRefresh,
                         ),
                       ],
                       if (busy) ...[
@@ -134,7 +189,32 @@ class _AreaList extends StatelessWidget {
                               crossAxisSpacing: AppSpacing.md,
                               mainAxisSpacing: AppSpacing.md,
                             ),
-                        delegate: _delegate(areas),
+                        delegate: _delegate(
+                          areas,
+                          showMoveButtons: _reordering,
+                          busy: busy,
+                        ),
+                      )
+                    : _reordering
+                    ? SliverReorderableList(
+                        key: const Key('focus-areas-list'),
+                        itemCount: areas.length,
+                        onReorderItem: busy ? (_, _) {} : _move,
+                        itemBuilder: (context, index) => Padding(
+                          key: ValueKey(areas[index].id),
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: _AreaCard(
+                            area: areas[index],
+                            today: widget.today,
+                            reorderHandle: ReorderableDragStartListener(
+                              index: index,
+                              child: const Padding(
+                                padding: EdgeInsets.all(AppSpacing.sm),
+                                child: Icon(Icons.drag_handle),
+                              ),
+                            ),
+                          ),
+                        ),
                       )
                     : SliverList(
                         key: const Key('focus-areas-list'),
@@ -151,25 +231,53 @@ class _AreaList extends StatelessWidget {
   SliverChildBuilderDelegate _delegate(
     List<FocusArea> areas, {
     bool addSpacing = false,
+    bool showMoveButtons = false,
+    bool busy = false,
   }) => SliverChildBuilderDelegate(
     (context, index) => Padding(
       padding: EdgeInsets.only(bottom: addSpacing ? AppSpacing.sm : 0),
       child: _AreaCard(
         area: areas[index],
-        today: today,
-        onPressed: onAreaSelected == null
+        today: widget.today,
+        archiveAction: _reordering ? null : _ArchiveAction(area: areas[index]),
+        onPressed: _reordering || widget.onAreaSelected == null
             ? null
-            : () => onAreaSelected!(areas[index]),
+            : () => widget.onAreaSelected!(areas[index]),
+        onMoveUp: showMoveButtons && !busy && index > 0
+            ? () => _move(index, index - 1)
+            : null,
+        onMoveDown: showMoveButtons && !busy && index < areas.length - 1
+            ? () => _move(index, index + 1)
+            : null,
+        showMoveButtons: showMoveButtons,
       ),
     ),
     childCount: areas.length,
   );
+
+  void _move(int oldIndex, int newIndex) {
+    if (oldIndex == newIndex) return;
+    final ordered = [...widget.state.areas];
+    final moved = ordered.removeAt(oldIndex);
+    ordered.insert(newIndex, moved);
+    widget.onReorder([
+      for (var index = 0; index < ordered.length; index++)
+        FocusAreaPriorityInput(id: ordered[index].id, priority: index + 1),
+    ]);
+  }
 }
 
 class _Header extends StatelessWidget {
-  const _Header({this.onCreate, this.onRefresh});
+  const _Header({
+    required this.isReordering,
+    this.onCreate,
+    this.onRefresh,
+    this.onToggleReordering,
+  });
   final VoidCallback? onCreate;
   final Future<bool> Function()? onRefresh;
+  final bool isReordering;
+  final VoidCallback? onToggleReordering;
 
   @override
   Widget build(BuildContext context) => Row(
@@ -195,6 +303,12 @@ class _Header extends StatelessWidget {
         tooltip: 'Refresh Focus Areas',
         onPressed: onRefresh == null ? null : () => onRefresh!(),
         icon: const Icon(Icons.refresh),
+      ),
+      IconButton(
+        key: const Key('focus-areas-reorder-toggle'),
+        tooltip: isReordering ? 'Finish reordering' : 'Reorder Focus Areas',
+        onPressed: onToggleReordering,
+        icon: Icon(isReordering ? Icons.check : Icons.swap_vert),
       ),
       const SizedBox(width: AppSpacing.xs),
       FilledButton.icon(
@@ -242,10 +356,24 @@ class _DailySummary extends StatelessWidget {
 }
 
 class _AreaCard extends StatelessWidget {
-  const _AreaCard({required this.area, required this.today, this.onPressed});
+  const _AreaCard({
+    required this.area,
+    required this.today,
+    this.onPressed,
+    this.onMoveUp,
+    this.onMoveDown,
+    this.reorderHandle,
+    this.showMoveButtons = false,
+    this.archiveAction,
+  });
   final FocusArea area;
   final DateTime today;
   final VoidCallback? onPressed;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final Widget? reorderHandle;
+  final bool showMoveButtons;
+  final Widget? archiveAction;
 
   @override
   Widget build(BuildContext context) {
@@ -298,10 +426,150 @@ class _AreaCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onPressed != null)
+              ?archiveAction,
+              if (showMoveButtons)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: Key('move-up-${area.id}'),
+                      tooltip: 'Move ${area.name} up',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onMoveUp,
+                      icon: const Icon(Icons.keyboard_arrow_up),
+                    ),
+                    IconButton(
+                      key: Key('move-down-${area.id}'),
+                      tooltip: 'Move ${area.name} down',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onMoveDown,
+                      icon: const Icon(Icons.keyboard_arrow_down),
+                    ),
+                  ],
+                )
+              else if (reorderHandle != null)
+                reorderHandle!
+              else if (onPressed != null)
                 Icon(Icons.chevron_right, color: colors.onSurfaceVariant),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ArchiveAction extends ConsumerWidget {
+  const _ArchiveAction({required this.area});
+  final FocusArea area;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy =
+        ref.watch(focusAreasProvider).status == FocusAreasStatus.saving;
+    return IconButton(
+      tooltip: 'Archive ${area.name}',
+      icon: const Icon(Icons.archive_outlined),
+      onPressed: busy
+          ? null
+          : () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Archive ${area.name}?'),
+                  content: const Text(
+                    'This area will move to Archived. Historical targets and recorded work will be preserved. You can restore it later.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Archive'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true && context.mounted) {
+                await ref.read(focusAreasProvider.notifier).archive(area.id);
+              }
+            },
+    );
+  }
+}
+
+class _ArchivedAreas extends ConsumerWidget {
+  const _ArchivedAreas();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final archived = ref.watch(archivedFocusAreasProvider);
+    final active = ref.watch(focusAreasProvider);
+    final busy = active.status == FocusAreasStatus.saving;
+    return archived.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => _ErrorState(
+        message: _errorMessage(error),
+        onRetry: () async {
+          ref.invalidate(archivedFocusAreasProvider);
+          return true;
+        },
+      ),
+      data: (areas) => RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(archivedFocusAreasProvider);
+          await ref.read(archivedFocusAreasProvider.future);
+        },
+        child: ListView(
+          padding: AppSpacing.pagePadding,
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: [
+            Text(
+              'Archived Focus Areas',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const Text('Historical targets and recorded work are preserved.'),
+            const SizedBox(height: AppSpacing.md),
+            if (busy) const LinearProgressIndicator(),
+            if (areas.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: Text('No archived Focus Areas'),
+              ),
+            for (final area in areas)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Card(
+                  child: ListTile(
+                    title: Text(area.name),
+                    subtitle: const Text('Archived'),
+                    trailing: TextButton(
+                      onPressed: busy
+                          ? null
+                          : () async {
+                              final success = await ref
+                                  .read(focusAreasProvider.notifier)
+                                  .restore(area.id);
+                              if (!success && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      _errorMessage(
+                                        ref.read(focusAreasProvider).error,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                      child: const Text('Restore'),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

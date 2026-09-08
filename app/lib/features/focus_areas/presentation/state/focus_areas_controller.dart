@@ -13,6 +13,14 @@ final focusAreasProvider =
       FocusAreasController.new,
     );
 
+final archivedFocusAreasProvider = FutureProvider<List<FocusArea>>((ref) async {
+  final areas = await ref.watch(focusAreaRepositoryProvider).getArchived();
+  return areas.where((area) => area.isArchived).toList()..sort((a, b) {
+    final priority = a.priority.compareTo(b.priority);
+    return priority == 0 ? a.id.compareTo(b.id) : priority;
+  });
+});
+
 /// Active Focus Areas only. Actions return false on failure or disposal.
 /// Work is serialized, and failed operations preserve the last good list.
 class FocusAreasController extends Notifier<FocusAreasState> {
@@ -38,16 +46,49 @@ class FocusAreasController extends Notifier<FocusAreasState> {
   Future<bool> update(int id, FocusAreaUpdateInput input) =>
       _save(() async => [await _repository.update(id, input)]);
 
-  Future<bool> archive(int id) =>
-      _save(() async => [await _repository.archive(id)]);
+  Future<bool> archive(int id) => _save(() async {
+    final area = await _repository.archive(id);
+    if (ref.mounted) ref.invalidate(archivedFocusAreasProvider);
+    return [area];
+  });
 
-  Future<bool> restore(int id) =>
-      _save(() async => [await _repository.restore(id)]);
+  Future<bool> restore(int id) => _save(() async {
+    final area = await _repository.restore(id);
+    if (ref.mounted) ref.invalidate(archivedFocusAreasProvider);
+    return [area];
+  });
 
   /// Accepts explicit priorities, including duplicates; ties use IDs.
   Future<bool> reorder(List<FocusAreaPriorityInput> priorities) {
     final snapshot = List<FocusAreaPriorityInput>.unmodifiable(priorities);
-    return _save(() => _repository.updatePriorities(snapshot));
+    return _enqueue(() async {
+      if (!_hasLoaded && !await _load()) return false;
+
+      final previous = state.areas;
+      state = FocusAreasState(
+        status: FocusAreasStatus.saving,
+        areas: _applyPriorities(previous, snapshot),
+      );
+      try {
+        final changed = await _repository.updatePriorities(snapshot);
+        if (!ref.mounted) return false;
+        final byId = {for (final area in previous) area.id: area};
+        for (final area in changed) {
+          byId[area.id] = area;
+        }
+        _loaded(byId.values);
+        return true;
+      } catch (error) {
+        if (ref.mounted) {
+          state = FocusAreasState(
+            status: FocusAreasStatus.error,
+            areas: previous,
+            error: error,
+          );
+        }
+        return false;
+      }
+    });
   }
 
   Future<bool> _enqueue(Future<bool> Function() operation) {
@@ -124,4 +165,30 @@ class FocusAreasController extends Notifier<FocusAreasState> {
       error: error,
     );
   }
+
+  List<FocusArea> _applyPriorities(
+    List<FocusArea> areas,
+    List<FocusAreaPriorityInput> priorities,
+  ) {
+    final byId = {for (final area in areas) area.id: area};
+    final reordered = <FocusArea>[];
+    for (final item in priorities) {
+      final area = byId.remove(item.id);
+      if (area != null) reordered.add(_withPriority(area, item.priority));
+    }
+    reordered.addAll(byId.values);
+    return reordered;
+  }
+
+  FocusArea _withPriority(FocusArea area, int priority) => FocusArea(
+    id: area.id,
+    name: area.name,
+    description: area.description,
+    priority: priority,
+    targetEndDate: area.targetEndDate,
+    archivedAt: area.archivedAt,
+    createdAt: area.createdAt,
+    updatedAt: area.updatedAt,
+    targets: area.targets,
+  );
 }
