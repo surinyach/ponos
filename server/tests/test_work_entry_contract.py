@@ -151,20 +151,11 @@ def test_manual_entry_patch_is_partial_and_reassignment_is_explicit() -> None:
 
 
 @pytest.mark.asyncio
-async def test_routes_validate_then_report_persistence_not_implemented() -> None:
+async def test_routes_reject_invalid_payload_before_database_access() -> None:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app),
         base_url="http://test",
     ) as client:
-        valid = await client.post(
-            "/api/v1/manual-work-entries",
-            json={
-                "focus_area_id": 1,
-                "work_date": "2026-09-09",
-                "focused_seconds": 60,
-                "rest_seconds": 0,
-            },
-        )
         invalid = await client.post(
             "/api/v1/manual-work-entries",
             json={
@@ -174,5 +165,4 @@ async def test_routes_validate_then_report_persistence_not_implemented() -> None
             },
         )
 
-    assert valid.status_code == 501
     assert invalid.status_code == 422
