@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/app.dart';
+import 'package:ponos_app/app/providers/focus_timer_providers.dart';
 import 'package:ponos_app/app/theme/app_colors.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
@@ -12,6 +13,8 @@ import 'package:ponos_app/features/home/presentation/widgets/today_summary.dart'
 import 'package:ponos_app/features/home/presentation/widgets/focus_areas.dart';
 import 'package:ponos_app/features/home/presentation/widgets/work_statistics.dart';
 import 'package:ponos_app/features/home/presentation/widgets/streak_consistency.dart';
+import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
+import 'package:ponos_app/features/focus_timer/domain/repositories/focus_timer_gateways.dart';
 
 void main() {
   testWidgets('shows wide navigation in a wide viewport', (tester) async {
@@ -22,16 +25,13 @@ void main() {
     expect(find.byType(NavigationRail), findsOneWidget);
   });
 
-  testWidgets('opens another feature from the navigation bar', (tester) async {
+  testWidgets('opens the Focus Timer from the navigation bar', (tester) async {
     await tester.pumpWidget(_testApp());
 
     await tester.tap(find.text('Focus'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('This feature will be shaped in the next step.'),
-      findsOneWidget,
-    );
+    expect(find.text('Focus timer'), findsOneWidget);
   });
 
   test('light and dark themes use the Ponos palette', () {
@@ -217,12 +217,24 @@ void main() {
 
 Widget _testApp({TodayOverview? overview}) => ProviderScope(
   overrides: [
+    activeFocusTimerStoreProvider.overrideWithValue(_EmptyTimerStore()),
     todayOverviewProvider.overrideWith(
       (ref) async => overview ?? _overview(areas: [_progress()]),
     ),
   ],
   child: const PonosApp(),
 );
+
+class _EmptyTimerStore implements ActiveFocusTimerStore {
+  @override
+  Future<ActiveFocusTimer?> load() async => null;
+
+  @override
+  Future<void> save(ActiveFocusTimer timer) async {}
+
+  @override
+  Future<void> clear() async {}
+}
 
 TodayOverview _overview({required List<FocusAreaTodayProgress> areas}) =>
     TodayOverview(

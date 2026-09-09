@@ -25,6 +25,9 @@ flutter run -d chrome
 
 See [app/README.md](app/README.md) for the client structure and design language.
 
+Fixed cross-platform business requirements are documented under `docs/`,
+including the [Focus Timer domain rules](docs/focus-timer-domain-rules.md).
+
 ## Server
 
 The self-hosted FastAPI and PostgreSQL stack lives under `server/` and is

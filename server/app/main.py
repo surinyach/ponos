@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.focus_areas import router as focus_areas_router
 from app.api.health import router as health_router
+from app.api.timer_executions import router as timer_executions_router
 from app.api.today_overview import router as today_overview_router
 from app.core.config import get_settings
 from app.db.session import engine
@@ -33,4 +34,5 @@ app.add_middleware(
 )
 app.include_router(health_router)
 app.include_router(focus_areas_router)
+app.include_router(timer_executions_router)
 app.include_router(today_overview_router)

@@ -31,4 +31,4 @@ async def today_overview(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Day boundaries must describe one local calendar day",
         )
-    return await get_today_overview(db, date_, start, end)
+    return await get_today_overview(db, date_)

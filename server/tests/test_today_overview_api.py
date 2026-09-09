@@ -70,8 +70,9 @@ async def test_today_overview_uses_local_day_and_valid_target_version(client):
         await connection.execute(
             text(
                 "INSERT INTO timer_executions "
-                "(focus_area_id, started_at, ended_at, focused_seconds, rest_seconds) "
-                "VALUES (:area_id, :started_at, :ended_at, 3600, 0)"
+                "(focus_area_id, work_date, started_at, ended_at, "
+                "focused_seconds, rest_seconds) "
+                "VALUES (:area_id, '2026-09-07', :started_at, :ended_at, 3600, 0)"
             ),
             {
                 "area_id": area["id"],

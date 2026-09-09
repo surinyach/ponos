@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Identity,
@@ -27,6 +28,7 @@ class TimerExecution(Base):
         ForeignKey("focus_areas.id", ondelete="RESTRICT"),
         nullable=False,
     )
+    work_date: Mapped[date] = mapped_column(Date, nullable=False)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -52,6 +54,7 @@ class TimerExecution(Base):
             name="ck_timer_executions_valid_period",
         ),
         Index("ix_timer_executions_focus_area_id", "focus_area_id"),
+        Index("ix_timer_executions_work_date", "work_date"),
         Index("ix_timer_executions_started_at", "started_at"),
     )
 

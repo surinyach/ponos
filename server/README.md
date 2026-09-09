@@ -14,6 +14,7 @@ Alembic owns all schema changes.
 - Focus Area, weekday target, and timer execution schema
 - Database-enforced non-overlapping target periods
 - PostgreSQL-backed, versioned Focus Areas API under `/api/v1/focus-areas`
+- Write-only Timer Executions API at `POST /api/v1/timer-executions`
 
 Authentication and Flutter integration remain outside the current scope.
 
