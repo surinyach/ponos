@@ -305,6 +305,120 @@ void main() {
     expect(store.value, isNotNull);
   });
 
+  test(
+    'retries a failed natural completion without losing the cycle',
+    () async {
+      await initialize();
+      await controller.start(
+        focusAreaId: 1,
+        focusDuration: const Duration(minutes: 1),
+        restDuration: const Duration(minutes: 1),
+      );
+      recorder.error = StateError('offline');
+      clock.advance(const Duration(minutes: 2, seconds: 5));
+      await controller.synchronize();
+
+      recorder.error = null;
+      await controller.synchronize();
+
+      expect(current().status, FocusTimerStatus.inactive);
+      expect(recorder.executions, hasLength(1));
+      expect(store.value, isNull);
+    },
+  );
+
+  test(
+    'restores and persists a cycle completed while the app was closed',
+    () async {
+      store.value = ActiveFocusTimer(
+        focusAreaId: 3,
+        workDate: DateTime(2026, 9, 8),
+        startedAt: clock().toUtc(),
+        startedAtUtcOffset: const Duration(hours: 2),
+        focusDuration: const Duration(minutes: 20),
+        restDuration: const Duration(minutes: 5),
+        phase: FocusTimerPhase.focus,
+        activity: FocusTimerActivity.running,
+        accumulatedFocusTime: Duration.zero,
+        accumulatedRestTime: Duration.zero,
+        runningSince: clock().toUtc(),
+        focusTransitionNotified: false,
+      );
+      clock.advance(const Duration(minutes: 25, seconds: 5));
+
+      await initialize();
+
+      expect(current().status, FocusTimerStatus.inactive);
+      expect(recorder.executions, hasLength(1));
+      expect(
+        recorder.executions.single.focusedTime,
+        const Duration(minutes: 20),
+      );
+      expect(recorder.executions.single.restTime, const Duration(minutes: 5));
+    },
+  );
+
+  test(
+    'rest pause cancels and resume reschedules its completion alert',
+    () async {
+      await initialize();
+      await controller.start(
+        focusAreaId: 1,
+        focusDuration: const Duration(minutes: 1),
+        restDuration: const Duration(minutes: 5),
+      );
+      clock.advance(const Duration(minutes: 2, seconds: 5));
+      await controller.synchronize();
+
+      await controller.pause();
+      expect(notifications.cancelled.last, FocusTimerAlert.restComplete);
+      await controller.resume();
+      expect(notifications.scheduled.last.alert, FocusTimerAlert.restComplete);
+      expect(
+        notifications.scheduled.last.at,
+        DateTime.utc(2026, 9, 8, 21, 6, 5),
+      );
+    },
+  );
+
+  test('midnight crossing retains the local start work date', () async {
+    clock.now = DateTime(2026, 9, 8, 23, 59);
+    await initialize();
+    await controller.start(
+      focusAreaId: 1,
+      focusDuration: const Duration(minutes: 3),
+      restDuration: const Duration(minutes: 2),
+    );
+    clock.advance(const Duration(minutes: 5, seconds: 5));
+
+    await controller.synchronize();
+
+    expect(recorder.executions.single.workDate, DateTime(2026, 9, 8));
+    expect(recorder.executions.single.endedAt.toLocal().day, 9);
+  });
+
+  test('supports consecutive executions with different Focus Areas', () async {
+    await initialize();
+    for (final focusAreaId in [1, 2]) {
+      expect(
+        await controller.start(
+          focusAreaId: focusAreaId,
+          focusDuration: const Duration(minutes: 1),
+          restDuration: const Duration(minutes: 1),
+        ),
+        isTrue,
+      );
+      clock.advance(const Duration(minutes: 2, seconds: 5));
+      await controller.synchronize();
+    }
+
+    expect(recorder.executions.map((execution) => execution.focusAreaId), [
+      1,
+      2,
+    ]);
+    expect(current().status, FocusTimerStatus.inactive);
+  });
+
   test('notification failure does not corrupt timer state', () async {
     await initialize();
     notifications.error = StateError('notifications unavailable');

@@ -120,6 +120,42 @@ async def test_missing_focus_area_returns_404_without_storing(client):
 
 
 @pytest.mark.asyncio
+async def test_archived_focus_area_accepts_an_execution_started_before_archive(client):
+    focus_area_id = await create_area(client)
+    archived = await client.post(f"/api/v1/focus-areas/{focus_area_id}/archive")
+    assert archived.status_code == 200
+
+    response = await client.post(
+        "/api/v1/timer-executions",
+        json=execution_payload(focus_area_id),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["focus_area_id"] == focus_area_id
+    assert await execution_count() == 1
+
+
+@pytest.mark.asyncio
+async def test_midnight_crossing_belongs_to_the_local_start_date(client):
+    focus_area_id = await create_area(client)
+    payload = execution_payload(focus_area_id)
+    payload.update(
+        {
+            "work_date": "2026-09-08",
+            "started_at": "2026-09-08T23:58:00+02:00",
+            "ended_at": "2026-09-09T00:08:00+02:00",
+            "focused_seconds": 480,
+            "rest_seconds": 120,
+        }
+    )
+
+    response = await client.post("/api/v1/timer-executions", json=payload)
+
+    assert response.status_code == 201
+    assert response.json()["work_date"] == "2026-09-08"
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("field", "value"),
     [
