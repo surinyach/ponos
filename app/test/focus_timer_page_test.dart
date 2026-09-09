@@ -8,6 +8,7 @@ import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_st
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 import 'package:ponos_app/features/focus_timer/domain/models/timer_execution_draft.dart';
 import 'package:ponos_app/features/focus_timer/domain/repositories/focus_timer_gateways.dart';
+import 'package:ponos_app/features/focus_timer/domain/repositories/timer_execution_repository.dart';
 import 'package:ponos_app/features/focus_timer/presentation/focus_timer_page.dart';
 import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_controller.dart';
 
@@ -26,7 +27,7 @@ void main() {
         focusAreasProvider.overrideWith(LoadedFocusAreasController.new),
         focusTimerClockProvider.overrideWithValue(clock.call),
         activeFocusTimerStoreProvider.overrideWithValue(store),
-        timerExecutionRecorderProvider.overrideWithValue(recorder),
+        timerExecutionRepositoryProvider.overrideWithValue(recorder),
         focusTimerTransitionEffectProvider.overrideWithValue(NoopEffect()),
       ],
     );
@@ -159,7 +160,7 @@ class MemoryTimerStore implements ActiveFocusTimerStore {
   Future<void> clear() async => value = null;
 }
 
-class RecordingExecutionRecorder implements TimerExecutionRecorder {
+class RecordingExecutionRecorder implements TimerExecutionRepository {
   final executions = <TimerExecutionDraft>[];
   @override
   Future<void> save(TimerExecutionDraft execution) async {

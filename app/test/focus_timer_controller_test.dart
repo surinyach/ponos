@@ -4,6 +4,7 @@ import 'package:ponos_app/app/providers/focus_timer_providers.dart';
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 import 'package:ponos_app/features/focus_timer/domain/models/timer_execution_draft.dart';
 import 'package:ponos_app/features/focus_timer/domain/repositories/focus_timer_gateways.dart';
+import 'package:ponos_app/features/focus_timer/domain/repositories/timer_execution_repository.dart';
 import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_controller.dart';
 import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_state.dart';
 
@@ -32,7 +33,7 @@ void main() {
       overrides: [
         focusTimerClockProvider.overrideWithValue(clock.call),
         activeFocusTimerStoreProvider.overrideWithValue(store),
-        timerExecutionRecorderProvider.overrideWithValue(recorder),
+        timerExecutionRepositoryProvider.overrideWithValue(recorder),
         focusTimerTransitionEffectProvider.overrideWithValue(effect),
       ],
     );
@@ -163,6 +164,30 @@ void main() {
     expect(current().status, FocusTimerStatus.inactive);
   });
 
+  test('failed partial save retains paused state and can be retried', () async {
+    await initialize();
+    await controller.start(
+      focusAreaId: 2,
+      focusDuration: const Duration(minutes: 25),
+      restDuration: const Duration(minutes: 5),
+    );
+    clock.advance(const Duration(minutes: 4));
+    await controller.pause();
+    recorder.error = StateError('offline');
+
+    expect(await controller.resetAndSavePartial(), isFalse);
+    expect(current().status, FocusTimerStatus.error);
+    expect(current().activeTimer!.isPaused, isTrue);
+    expect(current().elapsedFocusTime, const Duration(minutes: 4));
+    expect(store.value, isNotNull);
+    expect(recorder.executions, isEmpty);
+
+    recorder.error = null;
+    expect(await controller.resetAndSavePartial(), isTrue);
+    expect(recorder.executions.single.focusedTime, const Duration(minutes: 4));
+    expect(current().status, FocusTimerStatus.inactive);
+  });
+
   test('discarded reset clears state without creating a record', () async {
     await initialize();
     await controller.start(
@@ -237,7 +262,7 @@ class MemoryTimerStore implements ActiveFocusTimerStore {
   Future<void> clear() async => value = null;
 }
 
-class RecordingExecutionRecorder implements TimerExecutionRecorder {
+class RecordingExecutionRecorder implements TimerExecutionRepository {
   final executions = <TimerExecutionDraft>[];
   Object? error;
 

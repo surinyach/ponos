@@ -6,17 +6,21 @@ import 'package:http/testing.dart';
 import 'package:ponos_app/core/config/api_config.dart';
 import 'package:ponos_app/core/errors/app_exception.dart';
 import 'package:ponos_app/features/focus_timer/data/timer_execution_api_client.dart';
+import 'package:ponos_app/features/focus_timer/data/dtos/timer_execution_dto.dart';
+import 'package:ponos_app/features/focus_timer/data/remote_timer_execution_repository.dart';
 import 'package:ponos_app/features/focus_timer/domain/models/timer_execution_draft.dart';
 
 void main() {
   test('posts execution values with the captured local offsets', () async {
     late http.Request captured;
-    final client = TimerExecutionApiClient(
-      MockClient((request) async {
-        captured = request;
-        return http.Response('{"id":1}', 201);
-      }),
-      ApiConfig('http://server.test'),
+    final repository = RemoteTimerExecutionRepository(
+      TimerExecutionApiClient(
+        MockClient((request) async {
+          captured = request;
+          return http.Response('{"id":1}', 201);
+        }),
+        ApiConfig('http://server.test'),
+      ),
     );
     final execution = TimerExecutionDraft(
       focusAreaId: 7,
@@ -29,7 +33,7 @@ void main() {
       restTime: const Duration(minutes: 5),
     );
 
-    await client.create(execution);
+    await repository.save(execution);
 
     expect(captured.method, 'POST');
     expect(captured.url.path, '/api/v1/timer-executions');
@@ -53,15 +57,17 @@ void main() {
 
     expect(
       () => client.create(
-        TimerExecutionDraft(
-          focusAreaId: 1,
-          workDate: DateTime(2026, 9, 8),
-          startedAt: DateTime.utc(2026, 9, 8, 8),
-          startedAtUtcOffset: Duration.zero,
-          endedAt: DateTime.utc(2026, 9, 8, 8, 1),
-          endedAtUtcOffset: Duration.zero,
-          focusedTime: const Duration(minutes: 1),
-          restTime: Duration.zero,
+        TimerExecutionCreateDto.fromDomain(
+          TimerExecutionDraft(
+            focusAreaId: 1,
+            workDate: DateTime(2026, 9, 8),
+            startedAt: DateTime.utc(2026, 9, 8, 8),
+            startedAtUtcOffset: Duration.zero,
+            endedAt: DateTime.utc(2026, 9, 8, 8, 1),
+            endedAtUtcOffset: Duration.zero,
+            focusedTime: const Duration(minutes: 1),
+            restTime: Duration.zero,
+          ),
         ),
       ),
       throwsA(

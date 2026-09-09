@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../core/config/api_config.dart';
 import '../../../core/errors/app_exception.dart';
-import '../domain/models/timer_execution_draft.dart';
+import 'dtos/timer_execution_dto.dart';
 
 class TimerExecutionApiClient {
   const TimerExecutionApiClient(
@@ -18,25 +18,12 @@ class TimerExecutionApiClient {
   final ApiConfig _config;
   final Duration requestTimeout;
 
-  Future<void> create(TimerExecutionDraft execution) async {
+  Future<void> create(TimerExecutionCreateDto execution) async {
     final request =
         http.Request('POST', _config.endpoint('/api/v1/timer-executions'))
           ..headers['accept'] = 'application/json'
           ..headers['content-type'] = 'application/json'
-          ..body = jsonEncode({
-            'focus_area_id': execution.focusAreaId,
-            'work_date': _date(execution.workDate),
-            'started_at': _timestamp(
-              execution.startedAt,
-              execution.startedAtUtcOffset,
-            ),
-            'ended_at': _timestamp(
-              execution.endedAt,
-              execution.endedAtUtcOffset,
-            ),
-            'focused_seconds': execution.focusedTime.inSeconds,
-            'rest_seconds': execution.restTime.inSeconds,
-          });
+          ..body = jsonEncode(execution.toJson());
 
     late http.Response response;
     try {
@@ -61,25 +48,6 @@ class TimerExecutionApiClient {
         if (response.statusCode >= 500) throw ServerException(message);
         throw InvalidResponseException(message);
     }
-  }
-
-  String _date(DateTime value) =>
-      '${value.year.toString().padLeft(4, '0')}-'
-      '${value.month.toString().padLeft(2, '0')}-'
-      '${value.day.toString().padLeft(2, '0')}';
-
-  String _timestamp(DateTime instant, Duration offset) {
-    final localParts = instant.toUtc().add(offset);
-    final timestamp = localParts.toIso8601String().replaceFirst(
-      RegExp(r'Z$'),
-      '',
-    );
-    final minutes = offset.inMinutes;
-    final sign = minutes < 0 ? '-' : '+';
-    final absolute = minutes.abs();
-    final hours = (absolute ~/ 60).toString().padLeft(2, '0');
-    final remainder = (absolute % 60).toString().padLeft(2, '0');
-    return '$timestamp$sign$hours:$remainder';
   }
 
   String _message(String body) {

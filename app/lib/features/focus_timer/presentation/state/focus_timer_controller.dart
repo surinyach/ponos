@@ -6,6 +6,7 @@ import '../../../../app/providers/focus_timer_providers.dart';
 import '../../domain/models/active_focus_timer.dart';
 import '../../domain/models/timer_execution_draft.dart';
 import '../../domain/repositories/focus_timer_gateways.dart';
+import '../../domain/repositories/timer_execution_repository.dart';
 import 'focus_timer_state.dart';
 
 final focusTimerProvider =
@@ -15,7 +16,7 @@ final focusTimerProvider =
 
 class FocusTimerController extends Notifier<FocusTimerState> {
   late ActiveFocusTimerStore _store;
-  late TimerExecutionRecorder _recorder;
+  late TimerExecutionRepository _repository;
   late FocusTimerTransitionEffect _transitionEffect;
   late DateTime Function() _clock;
   Timer? _ticker;
@@ -24,7 +25,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
   @override
   FocusTimerState build() {
     _store = ref.watch(activeFocusTimerStoreProvider);
-    _recorder = ref.watch(timerExecutionRecorderProvider);
+    _repository = ref.watch(timerExecutionRepositoryProvider);
     _transitionEffect = ref.watch(focusTimerTransitionEffectProvider);
     _clock = ref.watch(focusTimerClockProvider);
     ref.onDispose(() => _ticker?.cancel());
@@ -103,7 +104,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     if (timer == null || !timer.isPaused) return false;
     state = _snapshot(timer, status: FocusTimerStatus.persisting);
     try {
-      await _recorder.save(_draft(timer, _clock().toUtc()));
+      await _repository.save(_draft(timer, _clock().toUtc()));
       await _store.clear();
       _setInactive();
       return true;
@@ -218,7 +219,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     state = _snapshot(completed, status: FocusTimerStatus.persisting);
     try {
       final execution = _draft(completed, endedAt);
-      await _recorder.save(execution);
+      await _repository.save(execution);
       await _store.clear();
       _setCompleted(execution);
     } catch (error) {
