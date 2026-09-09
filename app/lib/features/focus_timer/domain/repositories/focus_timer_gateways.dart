@@ -6,7 +6,12 @@ abstract interface class ActiveFocusTimerStore {
   Future<void> clear();
 }
 
-/// Boundary for the alarm and platform notification implementation.
-abstract interface class FocusTimerTransitionEffect {
-  Future<void> onRestStarted();
+enum FocusTimerAlert { focusComplete, restComplete }
+
+/// Boundary for timestamp-based alarm and notification scheduling.
+abstract interface class FocusTimerNotificationScheduler {
+  Future<void> requestPermissions();
+  Future<void> schedule(FocusTimerAlert alert, DateTime scheduledAt);
+  Future<void> cancel(FocusTimerAlert alert);
+  Future<void> cancelAll();
 }

@@ -1,5 +1,4 @@
 import '../../domain/models/active_focus_timer.dart';
-import '../../domain/models/timer_execution_draft.dart';
 
 enum FocusTimerStatus {
   restoring,
@@ -8,7 +7,6 @@ enum FocusTimerStatus {
   paused,
   persisting,
   error,
-  completed,
 }
 
 class FocusTimerState {
@@ -17,7 +15,6 @@ class FocusTimerState {
     this.activeTimer,
     this.elapsedFocusTime = Duration.zero,
     this.elapsedRestTime = Duration.zero,
-    this.completedExecution,
     this.error,
   });
 
@@ -28,7 +25,6 @@ class FocusTimerState {
   final ActiveFocusTimer? activeTimer;
   final Duration elapsedFocusTime;
   final Duration elapsedRestTime;
-  final TimerExecutionDraft? completedExecution;
   final Object? error;
 
   Duration get phaseElapsed => switch (activeTimer?.phase) {

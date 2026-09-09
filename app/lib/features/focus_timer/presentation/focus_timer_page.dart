@@ -69,12 +69,6 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
                       label: const Text('Try again'),
                     ),
                   ),
-                FocusTimerStatus.completed => _CompletionState(
-                  state: timer,
-                  onContinue: ref
-                      .read(focusTimerProvider.notifier)
-                      .prepareNextExecution,
-                ),
                 _ => _ActiveTimerPanel(
                   state: timer,
                   areaName: _areaName(
@@ -438,28 +432,6 @@ class _ActiveTimerPanel extends StatelessWidget {
   }
 }
 
-class _CompletionState extends StatelessWidget {
-  const _CompletionState({required this.state, required this.onContinue});
-
-  final FocusTimerState state;
-  final VoidCallback onContinue;
-
-  @override
-  Widget build(BuildContext context) => _MessageCard(
-    key: const Key('timer-completed'),
-    icon: Icons.check_circle_outline_rounded,
-    title: 'Execution complete',
-    message:
-        '${_formatLong(state.elapsedFocusTime)} focused · '
-        '${_formatLong(state.elapsedRestTime)} rested',
-    action: FilledButton.icon(
-      onPressed: onContinue,
-      icon: const Icon(Icons.replay_rounded),
-      label: const Text('New execution'),
-    ),
-  );
-}
-
 class _LoadingState extends StatelessWidget {
   const _LoadingState();
 
@@ -478,7 +450,6 @@ class _MessageCard extends StatelessWidget {
     required this.title,
     required this.message,
     this.action,
-    super.key,
   });
 
   final IconData icon;
@@ -514,14 +485,6 @@ String _formatDuration(Duration duration) {
   final remainder = seconds % 60;
   return '${minutes.toString().padLeft(2, '0')}:'
       '${remainder.toString().padLeft(2, '0')}';
-}
-
-String _formatLong(Duration duration) {
-  final minutes = duration.inMinutes;
-  if (minutes < 60) return '$minutes min';
-  final hours = minutes ~/ 60;
-  final remainder = minutes % 60;
-  return remainder == 0 ? '${hours}h' : '${hours}h ${remainder}m';
 }
 
 String _errorMessage(Object? error) => switch (error) {

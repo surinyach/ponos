@@ -12,7 +12,7 @@ void main() {
   late FakeClock clock;
   late MemoryTimerStore store;
   late RecordingExecutionRecorder recorder;
-  late RecordingTransitionEffect effect;
+  late RecordingNotificationScheduler notifications;
   late ProviderContainer container;
   late FocusTimerController controller;
 
@@ -28,13 +28,15 @@ void main() {
     clock = FakeClock(DateTime.utc(2026, 9, 8, 21));
     store = MemoryTimerStore();
     recorder = RecordingExecutionRecorder();
-    effect = RecordingTransitionEffect();
+    notifications = RecordingNotificationScheduler();
     container = ProviderContainer(
       overrides: [
         focusTimerClockProvider.overrideWithValue(clock.call),
         activeFocusTimerStoreProvider.overrideWithValue(store),
         timerExecutionRepositoryProvider.overrideWithValue(recorder),
-        focusTimerTransitionEffectProvider.overrideWithValue(effect),
+        focusTimerNotificationSchedulerProvider.overrideWithValue(
+          notifications,
+        ),
       ],
     );
   });
@@ -60,6 +62,10 @@ void main() {
     expect(current().elapsedFocusTime, const Duration(minutes: 7));
     expect(current().phaseRemaining, const Duration(minutes: 18));
     expect(store.value, isNotNull);
+    expect(notifications.permissionRequests, 1);
+    expect(notifications.cancelAllCalls, 1);
+    expect(notifications.scheduled.single.alert, FocusTimerAlert.focusComplete);
+    expect(notifications.scheduled.single.at, DateTime.utc(2026, 9, 8, 21, 25));
   });
 
   test('automatically transitions to rest and emits its effect once', () async {
@@ -76,9 +82,61 @@ void main() {
 
     expect(current().activeTimer!.phase, FocusTimerPhase.rest);
     expect(current().elapsedFocusTime, const Duration(minutes: 10));
-    expect(current().elapsedRestTime, const Duration(minutes: 2));
-    expect(effect.calls, 1);
+    expect(current().elapsedRestTime, const Duration(minutes: 1, seconds: 55));
+    expect(
+      notifications.scheduled.where(
+        (entry) => entry.alert == FocusTimerAlert.restComplete,
+      ),
+      hasLength(1),
+    );
     expect(store.value!.focusTransitionNotified, isTrue);
+    expect(
+      notifications.scheduled.last.at,
+      DateTime.utc(2026, 9, 8, 21, 15, 5),
+    );
+  });
+
+  test('waits five seconds before consuming rest time', () async {
+    await initialize();
+    await controller.start(
+      focusAreaId: 1,
+      focusDuration: const Duration(minutes: 1),
+      restDuration: const Duration(minutes: 5),
+    );
+
+    clock.advance(const Duration(minutes: 1, seconds: 4));
+    await controller.synchronize();
+    expect(current().activeTimer!.phase, FocusTimerPhase.rest);
+    expect(current().elapsedRestTime, Duration.zero);
+
+    clock.advance(const Duration(seconds: 2));
+    await controller.synchronize();
+    expect(current().elapsedRestTime, const Duration(seconds: 1));
+  });
+
+  test('preserves the transition delay across pause and resume', () async {
+    await initialize();
+    await controller.start(
+      focusAreaId: 1,
+      focusDuration: const Duration(minutes: 1),
+      restDuration: const Duration(minutes: 5),
+    );
+    clock.advance(const Duration(minutes: 1, seconds: 2));
+    await controller.pause();
+
+    expect(
+      current().activeTimer!.restStartDelayRemaining,
+      const Duration(seconds: 3),
+    );
+    clock.advance(const Duration(minutes: 10));
+    await controller.resume();
+    clock.advance(const Duration(seconds: 2));
+    await controller.synchronize();
+    expect(current().elapsedRestTime, Duration.zero);
+
+    clock.advance(const Duration(seconds: 2));
+    await controller.synchronize();
+    expect(current().elapsedRestTime, const Duration(seconds: 1));
   });
 
   test('pauses and resumes without counting paused time', () async {
@@ -92,11 +150,14 @@ void main() {
 
     expect(await controller.pause(), isTrue);
     expect(current().status, FocusTimerStatus.paused);
+    expect(notifications.cancelled.last, FocusTimerAlert.focusComplete);
     clock.advance(const Duration(minutes: 30));
     await controller.synchronize();
     expect(current().elapsedFocusTime, const Duration(minutes: 3));
 
     expect(await controller.resume(), isTrue);
+    expect(notifications.scheduled.last.alert, FocusTimerAlert.focusComplete);
+    expect(notifications.scheduled.last.at, DateTime.utc(2026, 9, 8, 21, 50));
     clock.advance(const Duration(minutes: 2));
     await controller.synchronize();
     expect(current().elapsedFocusTime, const Duration(minutes: 5));
@@ -109,7 +170,7 @@ void main() {
       focusDuration: const Duration(minutes: 1),
       restDuration: const Duration(minutes: 10),
     );
-    clock.advance(const Duration(minutes: 3));
+    clock.advance(const Duration(minutes: 3, seconds: 5));
     await controller.synchronize();
 
     expect(await controller.pause(), isTrue);
@@ -121,7 +182,7 @@ void main() {
     expect(current().elapsedRestTime, const Duration(minutes: 3));
   });
 
-  test('natural completion persists and exposes completion state', () async {
+  test('natural completion persists and resets to inactive', () async {
     await initialize();
     await controller.start(
       focusAreaId: 8,
@@ -129,11 +190,11 @@ void main() {
       restDuration: const Duration(minutes: 1),
     );
     final workDate = store.value!.workDate;
-    clock.advance(const Duration(minutes: 3));
+    clock.advance(const Duration(minutes: 3, seconds: 5));
 
     await controller.synchronize();
 
-    expect(current().status, FocusTimerStatus.completed);
+    expect(current().status, FocusTimerStatus.inactive);
     expect(store.value, isNull);
     expect(recorder.executions, hasLength(1));
     final execution = recorder.executions.single;
@@ -141,10 +202,7 @@ void main() {
     expect(execution.focusedTime, const Duration(minutes: 2));
     expect(execution.restTime, const Duration(minutes: 1));
     expect(execution.workDate, workDate);
-    expect(execution.endedAt, DateTime.utc(2026, 9, 8, 21, 3));
-
-    controller.prepareNextExecution();
-    expect(current().status, FocusTimerStatus.inactive);
+    expect(execution.endedAt, DateTime.utc(2026, 9, 8, 21, 3, 5));
   });
 
   test('partial reset requires pause and persists elapsed values', () async {
@@ -162,6 +220,7 @@ void main() {
     expect(recorder.executions.single.focusedTime, const Duration(minutes: 6));
     expect(recorder.executions.single.restTime, Duration.zero);
     expect(current().status, FocusTimerStatus.inactive);
+    expect(notifications.cancelAllCalls, 2);
   });
 
   test('failed partial save retains paused state and can be retried', () async {
@@ -201,6 +260,7 @@ void main() {
     expect(recorder.executions, isEmpty);
     expect(store.value, isNull);
     expect(current().status, FocusTimerStatus.inactive);
+    expect(notifications.cancelAllCalls, 2);
   });
 
   test('restores persisted running state and catches up from time', () async {
@@ -224,6 +284,8 @@ void main() {
 
     expect(current().status, FocusTimerStatus.running);
     expect(current().elapsedFocusTime, const Duration(minutes: 9));
+    expect(notifications.permissionRequests, 0);
+    expect(notifications.scheduled.single.at, DateTime.utc(2026, 9, 8, 21, 20));
   });
 
   test('persistence failure exposes error and retains active state', () async {
@@ -234,12 +296,29 @@ void main() {
       restDuration: const Duration(minutes: 1),
     );
     recorder.error = StateError('offline');
-    clock.advance(const Duration(minutes: 2));
+    clock.advance(const Duration(minutes: 2, seconds: 5));
 
     await controller.synchronize();
 
     expect(current().status, FocusTimerStatus.error);
     expect(current().activeTimer, isNotNull);
+    expect(store.value, isNotNull);
+  });
+
+  test('notification failure does not corrupt timer state', () async {
+    await initialize();
+    notifications.error = StateError('notifications unavailable');
+
+    expect(
+      await controller.start(
+        focusAreaId: 1,
+        focusDuration: const Duration(minutes: 25),
+        restDuration: const Duration(minutes: 5),
+      ),
+      isTrue,
+    );
+
+    expect(current().status, FocusTimerStatus.running);
     expect(store.value, isNotNull);
   });
 }
@@ -273,9 +352,41 @@ class RecordingExecutionRecorder implements TimerExecutionRepository {
   }
 }
 
-class RecordingTransitionEffect implements FocusTimerTransitionEffect {
-  int calls = 0;
+class ScheduledAlert {
+  const ScheduledAlert(this.alert, this.at);
+  final FocusTimerAlert alert;
+  final DateTime at;
+}
+
+class RecordingNotificationScheduler
+    implements FocusTimerNotificationScheduler {
+  final scheduled = <ScheduledAlert>[];
+  final cancelled = <FocusTimerAlert>[];
+  int permissionRequests = 0;
+  int cancelAllCalls = 0;
+  Object? error;
 
   @override
-  Future<void> onRestStarted() async => calls++;
+  Future<void> requestPermissions() async {
+    permissionRequests++;
+    if (error case final error?) throw error;
+  }
+
+  @override
+  Future<void> schedule(FocusTimerAlert alert, DateTime scheduledAt) async {
+    if (error case final error?) throw error;
+    scheduled.add(ScheduledAlert(alert, scheduledAt));
+  }
+
+  @override
+  Future<void> cancel(FocusTimerAlert alert) async {
+    if (error case final error?) throw error;
+    cancelled.add(alert);
+  }
+
+  @override
+  Future<void> cancelAll() async {
+    if (error case final error?) throw error;
+    cancelAllCalls++;
+  }
 }

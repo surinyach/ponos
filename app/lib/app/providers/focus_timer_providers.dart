@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/focus_timer/data/local_focus_timer_notification_scheduler.dart';
 import '../../features/focus_timer/data/remote_timer_execution_repository.dart';
 import '../../features/focus_timer/data/shared_preferences_focus_timer_store.dart';
 import '../../features/focus_timer/data/timer_execution_api_client.dart';
@@ -27,13 +28,7 @@ final timerExecutionRepositoryProvider = Provider<TimerExecutionRepository>((
   );
 });
 
-final focusTimerTransitionEffectProvider = Provider<FocusTimerTransitionEffect>(
-  (ref) => const _NoopFocusTimerTransitionEffect(),
-);
-
-class _NoopFocusTimerTransitionEffect implements FocusTimerTransitionEffect {
-  const _NoopFocusTimerTransitionEffect();
-
-  @override
-  Future<void> onRestStarted() async {}
-}
+final focusTimerNotificationSchedulerProvider =
+    Provider<FocusTimerNotificationScheduler>(
+      (ref) => LocalFocusTimerNotificationScheduler(),
+    );

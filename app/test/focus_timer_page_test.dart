@@ -28,7 +28,9 @@ void main() {
         focusTimerClockProvider.overrideWithValue(clock.call),
         activeFocusTimerStoreProvider.overrideWithValue(store),
         timerExecutionRepositoryProvider.overrideWithValue(recorder),
-        focusTimerTransitionEffectProvider.overrideWithValue(NoopEffect()),
+        focusTimerNotificationSchedulerProvider.overrideWithValue(
+          NoopNotificationScheduler(),
+        ),
       ],
     );
   });
@@ -96,14 +98,14 @@ void main() {
     expect(find.text('New execution'), findsOneWidget);
   });
 
-  testWidgets('shows rest and natural completion states', (tester) async {
+  testWidgets('returns to setup after natural completion', (tester) async {
     await pumpPage(tester);
     await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '1');
     await tester.enterText(find.byKey(const Key('timer-rest-minutes')), '1');
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
 
-    clock.advance(const Duration(minutes: 1));
+    clock.advance(const Duration(minutes: 1, seconds: 5));
     await container.read(focusTimerProvider.notifier).synchronize();
     await tester.pump();
     expect(find.text('Rest phase'), findsOneWidget);
@@ -113,7 +115,7 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('active-timer')), findsNothing);
     expect(find.byKey(const Key('timer-remaining')), findsNothing);
-    expect(find.text('Execution complete'), findsOneWidget);
+    expect(find.text('New execution'), findsOneWidget);
     expect(recorder.executions, hasLength(1));
   });
 
@@ -168,7 +170,16 @@ class RecordingExecutionRecorder implements TimerExecutionRepository {
   }
 }
 
-class NoopEffect implements FocusTimerTransitionEffect {
+class NoopNotificationScheduler implements FocusTimerNotificationScheduler {
   @override
-  Future<void> onRestStarted() async {}
+  Future<void> cancel(FocusTimerAlert alert) async {}
+
+  @override
+  Future<void> cancelAll() async {}
+
+  @override
+  Future<void> requestPermissions() async {}
+
+  @override
+  Future<void> schedule(FocusTimerAlert alert, DateTime scheduledAt) async {}
 }

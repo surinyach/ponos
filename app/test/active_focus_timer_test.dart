@@ -85,6 +85,7 @@ void main() {
       activity: FocusTimerActivity.paused,
       accumulatedFocusTime: const Duration(minutes: 45),
       accumulatedRestTime: const Duration(seconds: 42),
+      restStartDelayRemaining: const Duration(seconds: 3),
       focusTransitionNotified: true,
     );
 
@@ -101,6 +102,10 @@ void main() {
     expect(restored.activity, original.activity);
     expect(restored.accumulatedFocusTime, original.accumulatedFocusTime);
     expect(restored.accumulatedRestTime, original.accumulatedRestTime);
+    expect(
+      restored.restStartDelayRemaining,
+      original.restStartDelayRemaining,
+    );
     expect(restored.runningSince, original.runningSince);
     expect(restored.focusTransitionNotified, original.focusTransitionNotified);
   });

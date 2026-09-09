@@ -19,12 +19,14 @@ class ActiveFocusTimer {
     required this.accumulatedFocusTime,
     required this.accumulatedRestTime,
     required this.focusTransitionNotified,
+    this.restStartDelayRemaining = Duration.zero,
     this.runningSince,
   }) : assert(focusAreaId > 0),
        assert(focusDuration.inMicroseconds > 0),
        assert(restDuration.inMicroseconds > 0),
        assert(!accumulatedFocusTime.isNegative),
        assert(!accumulatedRestTime.isNegative),
+       assert(!restStartDelayRemaining.isNegative),
        assert(
          workDate.hour == 0 &&
              workDate.minute == 0 &&
@@ -58,6 +60,9 @@ class ActiveFocusTimer {
   final Duration accumulatedFocusTime;
   final Duration accumulatedRestTime;
 
+  /// Uncounted transition time remaining before the rest phase starts.
+  final Duration restStartDelayRemaining;
+
   /// Start instant of the current running segment, or null while paused.
   final DateTime? runningSince;
 
@@ -71,6 +76,7 @@ class ActiveFocusTimer {
     FocusTimerActivity? activity,
     Duration? accumulatedFocusTime,
     Duration? accumulatedRestTime,
+    Duration? restStartDelayRemaining,
     DateTime? runningSince,
     bool clearRunningSince = false,
     bool? focusTransitionNotified,
@@ -85,6 +91,8 @@ class ActiveFocusTimer {
     activity: activity ?? this.activity,
     accumulatedFocusTime: accumulatedFocusTime ?? this.accumulatedFocusTime,
     accumulatedRestTime: accumulatedRestTime ?? this.accumulatedRestTime,
+    restStartDelayRemaining:
+        restStartDelayRemaining ?? this.restStartDelayRemaining,
     runningSince: clearRunningSince ? null : runningSince ?? this.runningSince,
     focusTransitionNotified:
         focusTransitionNotified ?? this.focusTransitionNotified,

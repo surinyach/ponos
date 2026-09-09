@@ -17,6 +17,7 @@ class ActiveFocusTimerCodec {
     'activity': timer.activity.name,
     'accumulatedFocusMicros': timer.accumulatedFocusTime.inMicroseconds,
     'accumulatedRestMicros': timer.accumulatedRestTime.inMicroseconds,
+    'restStartDelayMicros': timer.restStartDelayRemaining.inMicroseconds,
     'runningSince': timer.runningSince?.toUtc().toIso8601String(),
     'focusTransitionNotified': timer.focusTransitionNotified,
   });
@@ -48,6 +49,9 @@ class ActiveFocusTimerCodec {
       ),
       accumulatedRestTime: Duration(
         microseconds: json['accumulatedRestMicros'] as int,
+      ),
+      restStartDelayRemaining: Duration(
+        microseconds: json['restStartDelayMicros'] as int? ?? 0,
       ),
       runningSince: switch (json['runningSince']) {
         final String value => DateTime.parse(value),

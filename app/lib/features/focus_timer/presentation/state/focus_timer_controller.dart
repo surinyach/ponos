@@ -7,6 +7,7 @@ import '../../domain/models/active_focus_timer.dart';
 import '../../domain/models/timer_execution_draft.dart';
 import '../../domain/repositories/focus_timer_gateways.dart';
 import '../../domain/repositories/timer_execution_repository.dart';
+import '../../../home/presentation/state/today_overview_provider.dart';
 import 'focus_timer_state.dart';
 
 final focusTimerProvider =
@@ -15,9 +16,10 @@ final focusTimerProvider =
     );
 
 class FocusTimerController extends Notifier<FocusTimerState> {
+  static const restStartDelay = Duration(seconds: 5);
   late ActiveFocusTimerStore _store;
   late TimerExecutionRepository _repository;
-  late FocusTimerTransitionEffect _transitionEffect;
+  late FocusTimerNotificationScheduler _notifications;
   late DateTime Function() _clock;
   Timer? _ticker;
   bool _busy = false;
@@ -26,7 +28,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
   FocusTimerState build() {
     _store = ref.watch(activeFocusTimerStoreProvider);
     _repository = ref.watch(timerExecutionRepositoryProvider);
-    _transitionEffect = ref.watch(focusTimerTransitionEffectProvider);
+    _notifications = ref.watch(focusTimerNotificationSchedulerProvider);
     _clock = ref.watch(focusTimerClockProvider);
     ref.onDispose(() => _ticker?.cancel());
     Future<void>.microtask(restore);
@@ -44,6 +46,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
         restDuration <= Duration.zero) {
       return false;
     }
+    await _ignoreNotificationFailure(_notifications.requestPermissions);
     final localNow = _clock().toLocal();
     final now = localNow.toUtc();
     final timer = ActiveFocusTimer(
@@ -60,7 +63,12 @@ class FocusTimerController extends Notifier<FocusTimerState> {
       runningSince: now,
       focusTransitionNotified: false,
     );
-    return _replace(timer);
+    final started = await _replace(timer);
+    if (started) {
+      await _ignoreNotificationFailure(_notifications.cancelAll);
+      await _scheduleCurrentAlert(timer);
+    }
+    return started;
   }
 
   Future<bool> pause() async {
@@ -75,6 +83,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     }
     final now = _clock().toUtc();
     final elapsed = _runningElapsed(current, now);
+    final remainingRestDelay = _remainingRestDelay(current, now);
     final paused = current.copyWith(
       activity: FocusTimerActivity.paused,
       accumulatedFocusTime: current.phase == FocusTimerPhase.focus
@@ -83,20 +92,24 @@ class FocusTimerController extends Notifier<FocusTimerState> {
       accumulatedRestTime: current.phase == FocusTimerPhase.rest
           ? elapsed
           : current.accumulatedRestTime,
+      restStartDelayRemaining: remainingRestDelay,
       clearRunningSince: true,
     );
-    return _replace(paused);
+    final didPause = await _replace(paused);
+    if (didPause) await _cancelPhaseAlert(current.phase);
+    return didPause;
   }
 
   Future<bool> resume() async {
     final timer = state.activeTimer;
     if (timer == null || !timer.isPaused) return false;
-    return _replace(
-      timer.copyWith(
-        activity: FocusTimerActivity.running,
-        runningSince: _clock().toUtc(),
-      ),
+    final resumed = timer.copyWith(
+      activity: FocusTimerActivity.running,
+      runningSince: _clock().toUtc(),
     );
+    final didResume = await _replace(resumed);
+    if (didResume) await _scheduleCurrentAlert(resumed);
+    return didResume;
   }
 
   Future<bool> resetAndSavePartial() async {
@@ -105,7 +118,9 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     state = _snapshot(timer, status: FocusTimerStatus.persisting);
     try {
       await _repository.save(_draft(timer, _clock().toUtc()));
+      ref.invalidate(todayOverviewProvider);
       await _store.clear();
+      await _ignoreNotificationFailure(_notifications.cancelAll);
       _setInactive();
       return true;
     } catch (error) {
@@ -119,16 +134,13 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     if (timer == null || !timer.isPaused) return false;
     try {
       await _store.clear();
+      await _ignoreNotificationFailure(_notifications.cancelAll);
       _setInactive();
       return true;
     } catch (error) {
       _setError(timer, error);
       return false;
     }
-  }
-
-  void prepareNextExecution() {
-    if (state.status == FocusTimerStatus.completed) _setInactive();
   }
 
   /// Reconciles state against an absolute timestamp. Periodic ticks only
@@ -154,7 +166,10 @@ class FocusTimerController extends Notifier<FocusTimerState> {
         _setInactive();
       } else {
         _publish(timer);
-        if (!timer.isPaused) await synchronize();
+        if (!timer.isPaused) {
+          await _scheduleCurrentAlert(timer);
+          await synchronize();
+        }
       }
     } catch (error) {
       if (ref.mounted) {
@@ -177,6 +192,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
       final restTimer = timer.copyWith(
         phase: FocusTimerPhase.rest,
         accumulatedFocusTime: timer.focusDuration,
+        restStartDelayRemaining: restStartDelay,
         runningSince: transitionAt,
         focusTransitionNotified: timer.focusTransitionNotified,
       );
@@ -199,7 +215,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
 
   Future<ActiveFocusTimer> _ensureRestEffect(ActiveFocusTimer timer) async {
     if (timer.focusTransitionNotified) return timer;
-    await _transitionEffect.onRestStarted();
+    await _scheduleCurrentAlert(timer);
     final notified = timer.copyWith(focusTransitionNotified: true);
     await _store.save(notified);
     _publish(notified);
@@ -213,15 +229,18 @@ class FocusTimerController extends Notifier<FocusTimerState> {
       return;
     }
     final endedAt = timer.runningSince!.add(
-      timer.restDuration - timer.accumulatedRestTime,
+      timer.restStartDelayRemaining +
+          timer.restDuration -
+          timer.accumulatedRestTime,
     );
     final completed = timer.copyWith(accumulatedRestTime: timer.restDuration);
     state = _snapshot(completed, status: FocusTimerStatus.persisting);
     try {
       final execution = _draft(completed, endedAt);
       await _repository.save(execution);
+      ref.invalidate(todayOverviewProvider);
       await _store.clear();
-      _setCompleted(execution);
+      _setInactive();
     } catch (error) {
       _ticker?.cancel();
       _setError(completed, error);
@@ -240,12 +259,63 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     }
   }
 
+  Future<void> _scheduleCurrentAlert(ActiveFocusTimer timer) async {
+    if (timer.isPaused || timer.runningSince == null) return;
+    final accumulated = timer.phase == FocusTimerPhase.focus
+        ? timer.accumulatedFocusTime
+        : timer.accumulatedRestTime;
+    final duration = timer.phase == FocusTimerPhase.focus
+        ? timer.focusDuration
+        : timer.restDuration;
+    final scheduledAt = timer.runningSince!.add(duration - accumulated);
+    final alertAt = timer.phase == FocusTimerPhase.rest
+        ? scheduledAt.add(timer.restStartDelayRemaining)
+        : scheduledAt;
+    final alert = timer.phase == FocusTimerPhase.focus
+        ? FocusTimerAlert.focusComplete
+        : FocusTimerAlert.restComplete;
+    await _ignoreNotificationFailure(
+      () => _notifications.schedule(alert, alertAt),
+    );
+  }
+
+  Future<void> _cancelPhaseAlert(FocusTimerPhase phase) =>
+      _ignoreNotificationFailure(
+        () => _notifications.cancel(
+          phase == FocusTimerPhase.focus
+              ? FocusTimerAlert.focusComplete
+              : FocusTimerAlert.restComplete,
+        ),
+      );
+
+  Future<void> _ignoreNotificationFailure(
+    Future<void> Function() operation,
+  ) async {
+    try {
+      await operation();
+    } catch (_) {
+      // Timer state and persistence remain authoritative if notifications fail.
+    }
+  }
+
   Duration _runningElapsed(ActiveFocusTimer timer, DateTime now) {
     final accumulated = timer.phase == FocusTimerPhase.focus
         ? timer.accumulatedFocusTime
         : timer.accumulatedRestTime;
-    final delta = now.difference(timer.runningSince!);
+    var delta = now.difference(timer.runningSince!);
+    if (timer.phase == FocusTimerPhase.rest) {
+      delta -= timer.restStartDelayRemaining;
+    }
     return accumulated + (delta.isNegative ? Duration.zero : delta);
+  }
+
+  Duration _remainingRestDelay(ActiveFocusTimer timer, DateTime now) {
+    if (timer.phase != FocusTimerPhase.rest || timer.runningSince == null) {
+      return Duration.zero;
+    }
+    final remaining =
+        timer.restStartDelayRemaining - now.difference(timer.runningSince!);
+    return remaining.isNegative ? Duration.zero : remaining;
   }
 
   TimerExecutionDraft _draft(ActiveFocusTimer timer, DateTime endedAt) =>
@@ -301,17 +371,6 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     _ticker?.cancel();
     _ticker = null;
     state = const FocusTimerState.inactive();
-  }
-
-  void _setCompleted(TimerExecutionDraft execution) {
-    _ticker?.cancel();
-    _ticker = null;
-    state = FocusTimerState(
-      status: FocusTimerStatus.completed,
-      completedExecution: execution,
-      elapsedFocusTime: execution.focusedTime,
-      elapsedRestTime: execution.restTime,
-    );
   }
 
   void _configureTicker(ActiveFocusTimer timer) {
