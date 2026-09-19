@@ -6,6 +6,7 @@ import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/focus_area_form_page.dart';
 import '../../focus_areas/presentation/focus_areas_page.dart';
 import '../../focus_timer/presentation/focus_timer_page.dart';
+import '../../work_entries/presentation/log_work_page.dart';
 import 'state/today_overview_provider.dart';
 import 'widgets/today_summary.dart';
 import 'widgets/focus_areas.dart';
@@ -28,6 +29,7 @@ class _HomePageState extends State<HomePage> {
       Icons.track_changes,
     ),
     _Destination('Focus', Icons.timer_outlined, Icons.timer),
+    _Destination('Log work', Icons.edit_note_outlined, Icons.edit_note),
     _Destination(
       'Progress',
       Icons.calendar_month_outlined,
@@ -51,6 +53,7 @@ class _HomePageState extends State<HomePage> {
             onAreaSelected: (area) => _openFocusAreaForm(area),
           ),
           2 => const FocusTimerPage(),
+          3 => const LogWorkPage(),
           _ => _FeaturePlaceholder(destination: _destinations[_selectedIndex]),
         };
 
