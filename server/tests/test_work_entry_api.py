@@ -58,7 +58,6 @@ async def create_special_activity(client: httpx.AsyncClient) -> dict:
         json={
             "name": "Release day",
             "description": "Ship the app",
-            "work_date": "2026-09-09",
         },
     )
     assert response.status_code == 201
@@ -80,6 +79,7 @@ def entry_payload(**changes) -> dict:
 async def test_special_activity_crud_archive_and_restore(client):
     created = await create_special_activity(client)
     activity_id = created["id"]
+    assert "work_date" not in created
 
     active = await client.get("/api/v1/special-activities")
     fetched = await client.get(f"/api/v1/special-activities/{activity_id}")

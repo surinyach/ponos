@@ -7,7 +7,6 @@ import '../../../core/errors/app_exception.dart';
 import '../../focus_areas/presentation/state/focus_areas_controller.dart';
 import '../../focus_areas/presentation/state/focus_areas_state.dart';
 import '../domain/models/manual_work_entry.dart';
-import '../domain/models/special_activity.dart';
 import 'state/manual_work_entries_controller.dart';
 import 'state/manual_work_entries_state.dart';
 import 'state/special_activities_controller.dart';
@@ -21,7 +20,7 @@ class LogWorkFormPage extends ConsumerStatefulWidget {
   ConsumerState<LogWorkFormPage> createState() => _LogWorkFormPageState();
 }
 
-enum _WorkSubjectKind { focusArea, existingSpecial, newSpecial }
+enum _WorkSubjectKind { focusArea, existingSpecial }
 
 class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
   final _formKey = GlobalKey<FormState>();
@@ -29,14 +28,11 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
   late final TextEditingController _focusSeconds;
   late final TextEditingController _restMinutes;
   late final TextEditingController _restSeconds;
-  late final TextEditingController _specialName;
-  late final TextEditingController _specialDescription;
   late DateTime _date;
   String? _subject;
   String? _validationError;
   bool _attemptedSave = false;
   bool _submitting = false;
-  int? _createdActivityId;
   late _WorkSubjectKind _kind;
 
   @override
@@ -52,8 +48,6 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
     _kind = entry?.specialActivityId != null
         ? _WorkSubjectKind.existingSpecial
         : _WorkSubjectKind.focusArea;
-    _specialName = TextEditingController();
-    _specialDescription = TextEditingController();
     _focusMinutes = TextEditingController(
       text: (entry?.focusedTime.inMinutes ?? 0).toString(),
     );
@@ -74,8 +68,6 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
     _focusSeconds.dispose();
     _restMinutes.dispose();
     _restSeconds.dispose();
-    _specialName.dispose();
-    _specialDescription.dispose();
     super.dispose();
   }
 
@@ -99,11 +91,9 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
       final archived = activities.archived.where(
         (activity) => 'special:${activity.id}' == _subject,
       );
-      if (_kind != _WorkSubjectKind.newSpecial) {
-        subjects[_subject!] = archived.isNotEmpty
-            ? '${archived.first.name} (archived)'
-            : 'Archived Focus Area #${widget.entry?.focusAreaId ?? '?'}';
-      }
+      subjects[_subject!] = archived.isNotEmpty
+          ? '${archived.first.name} (archived)'
+          : 'Archived Focus Area #${widget.entry?.focusAreaId ?? '?'}';
     }
 
     return Scaffold(
@@ -133,12 +123,11 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
                       for (final (kind, label) in [
                         (_WorkSubjectKind.focusArea, 'Focus Area'),
                         (_WorkSubjectKind.existingSpecial, 'Existing special'),
-                        (_WorkSubjectKind.newSpecial, 'New special'),
                       ])
                         ChoiceChip(
                           label: Text(label),
                           selected: _kind == kind,
-                          onSelected: saving || _createdActivityId != null
+                          onSelected: saving
                               ? null
                               : (_) => setState(() {
                                   _kind = kind;
@@ -149,67 +138,34 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
                     ],
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  if (_kind == _WorkSubjectKind.newSpecial) ...[
-                    TextFormField(
-                      key: const Key('special-activity-name'),
-                      controller: _specialName,
-                      enabled: !saving && _createdActivityId == null,
-                      maxLength: 100,
-                      decoration: const InputDecoration(
-                        labelText: 'Special Activity name',
-                      ),
-                      validator: (value) =>
-                          _kind == _WorkSubjectKind.newSpecial &&
-                              (value == null || value.trim().isEmpty)
-                          ? 'Enter a name'
-                          : null,
+                  DropdownButtonFormField<String>(
+                    key: ValueKey('work-subject-${_kind.name}'),
+                    initialValue: _subject,
+                    decoration: InputDecoration(
+                      labelText: _kind == _WorkSubjectKind.focusArea
+                          ? 'Focus Area'
+                          : 'Existing Special Activity',
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextFormField(
-                      key: const Key('special-activity-description'),
-                      controller: _specialDescription,
-                      enabled: !saving && _createdActivityId == null,
-                      decoration: const InputDecoration(
-                        labelText: 'Description (optional)',
-                      ),
-                    ),
-                    if (_createdActivityId != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      const Text(
-                        'Special Activity created. Retry saving the work entry; '
-                        'it will not be created again.',
-                        key: Key('created-special-activity-notice'),
-                      ),
-                    ],
-                  ] else
-                    DropdownButtonFormField<String>(
-                      key: ValueKey('work-subject-${_kind.name}'),
-                      initialValue: _subject,
-                      decoration: InputDecoration(
-                        labelText: _kind == _WorkSubjectKind.focusArea
-                            ? 'Focus Area'
-                            : 'Existing Special Activity',
-                      ),
-                      items: subjects.entries
-                          .map(
-                            (item) => DropdownMenuItem(
-                              value: item.key,
-                              child: Text(
-                                item.value,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                    items: subjects.entries
+                        .map(
+                          (item) => DropdownMenuItem(
+                            value: item.key,
+                            child: Text(
+                              item.value,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          )
-                          .toList(),
-                      onChanged: saving
-                          ? null
-                          : (value) => setState(() {
-                              _subject = value;
-                              _validationError = null;
-                            }),
-                      validator: (value) =>
-                          value == null ? 'Select an activity' : null,
-                    ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: saving
+                        ? null
+                        : (value) => setState(() {
+                            _subject = value;
+                            _validationError = null;
+                          }),
+                    validator: (value) =>
+                        value == null ? 'Select an activity' : null,
+                  ),
                   if (areas.status == FocusAreasStatus.loading ||
                       activities.status == SpecialActivitiesStatus.loading) ...[
                     const SizedBox(height: AppSpacing.sm),
@@ -235,9 +191,7 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
                   const SizedBox(height: AppSpacing.md),
                   OutlinedButton.icon(
                     key: const Key('work-date'),
-                    onPressed: saving || _createdActivityId != null
-                        ? null
-                        : _chooseDate,
+                    onPressed: saving ? null : _chooseDate,
                     icon: const Icon(Icons.calendar_today_outlined),
                     label: Text('Work date: ${_dateLabel(_date)}'),
                   ),
@@ -297,17 +251,6 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
                       ),
                     ),
                   ],
-                  if (_attemptedSave &&
-                      activities.status == SpecialActivitiesStatus.error) ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      _errorMessage(activities.error),
-                      key: const Key('special-activity-save-error'),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: AppSpacing.lg),
                   if (saving)
                     const LinearProgressIndicator(key: Key('work-form-saving')),
@@ -357,32 +300,11 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
       _attemptedSave = true;
       _submitting = true;
     });
-    if (_kind == _WorkSubjectKind.newSpecial && _createdActivityId == null) {
-      final created = await ref
-          .read(specialActivitiesProvider.notifier)
-          .createAndReturn(
-            SpecialActivityCreateInput(
-              name: _specialName.text.trim(),
-              description: _specialDescription.text.trim().isEmpty
-                  ? null
-                  : _specialDescription.text.trim(),
-              workDate: _date,
-            ),
-          );
-      if (!mounted) return;
-      if (created == null) {
-        setState(() => _submitting = false);
-        return;
-      }
-      setState(() => _createdActivityId = created.id);
-    }
     final parts = _subject?.split(':');
     final focusAreaId = _kind == _WorkSubjectKind.focusArea
         ? int.parse(parts!.last)
         : null;
-    final specialActivityId = _kind == _WorkSubjectKind.newSpecial
-        ? _createdActivityId
-        : _kind == _WorkSubjectKind.existingSpecial
+    final specialActivityId = _kind == _WorkSubjectKind.existingSpecial
         ? int.parse(parts!.last)
         : null;
     final controller = ref.read(manualWorkEntriesProvider.notifier);

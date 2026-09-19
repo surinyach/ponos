@@ -5,6 +5,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../focus_areas/presentation/state/focus_areas_controller.dart';
 import '../domain/models/manual_work_entry.dart';
+import 'create_special_activity_page.dart';
 import 'log_work_form_page.dart';
 import 'state/manual_work_entries_controller.dart';
 import 'state/manual_work_entries_state.dart';
@@ -34,19 +35,30 @@ class LogWorkPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Text(
+                    'Log work',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Log work',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ),
                       FilledButton.icon(
                         key: const Key('new-work-entry'),
                         onPressed: busy ? null : () => _openForm(context),
                         icon: const Icon(Icons.add),
                         label: const Text('Add entry'),
+                      ),
+                      OutlinedButton.icon(
+                        key: const Key('new-special-activity'),
+                        onPressed: () => Navigator.of(context).push<void>(
+                          MaterialPageRoute(
+                            builder: (_) => const CreateSpecialActivityPage(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.star_outline),
+                        label: const Text('New Special Activity'),
                       ),
                     ],
                   ),

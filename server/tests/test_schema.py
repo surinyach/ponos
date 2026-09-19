@@ -72,8 +72,7 @@ def test_special_activity_columns_match_storage_contract() -> None:
     assert table.c.name.type.length == 100
     assert table.c.name.nullable is False
     assert table.c.description.nullable is True
-    assert isinstance(table.c.work_date.type, Date)
-    assert table.c.work_date.nullable is False
+    assert "work_date" not in table.c
     assert isinstance(table.c.is_archived.type, Boolean)
     assert table.c.is_archived.nullable is False
     assert str(table.c.is_archived.server_default.arg) == "false"

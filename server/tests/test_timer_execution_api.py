@@ -128,7 +128,7 @@ async def test_missing_focus_area_returns_404_without_storing(client):
 async def test_timer_execution_can_link_to_special_activity(client):
     activity = await client.post(
         "/api/v1/special-activities",
-        json={"name": "Release", "work_date": "2026-09-08"},
+        json={"name": "Release"},
     )
     assert activity.status_code == 201
     payload = execution_payload(1)

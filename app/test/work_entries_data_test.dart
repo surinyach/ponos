@@ -23,7 +23,6 @@ void main() {
       final activities = await repository.getActive();
 
       expect(activities.single.name, 'Release day');
-      expect(activities.single.workDate, DateTime(2026, 9, 9));
       expect(activities.single.isArchived, isFalse);
     });
 
@@ -35,11 +34,7 @@ void main() {
       });
 
       await repository.create(
-        SpecialActivityCreateInput(
-          name: 'Release day',
-          description: 'Deploy',
-          workDate: DateTime(2026, 9, 9),
-        ),
+        SpecialActivityCreateInput(name: 'Release day', description: 'Deploy'),
       );
       await repository.update(
         4,
@@ -51,7 +46,6 @@ void main() {
       expect(jsonDecode(requests.first.body), {
         'name': 'Release day',
         'description': 'Deploy',
-        'work_date': '2026-09-09',
       });
       expect(jsonDecode(requests.last.body), {'description': null});
       expect(requests.last.method, 'PATCH');
@@ -179,9 +173,7 @@ void main() {
     });
 
     test('maps transport failures and timeouts', () {
-      final offline = _api(
-        (_) async => throw http.ClientException('offline'),
-      );
+      final offline = _api((_) async => throw http.ClientException('offline'));
       final timeout = WorkEntriesApiClient(
         MockClient((_) async {
           await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -195,10 +187,7 @@ void main() {
         offline.getActiveSpecialActivities(),
         throwsA(isA<NetworkException>()),
       );
-      expect(
-        timeout.getManualWorkEntries(),
-        throwsA(isA<NetworkException>()),
-      );
+      expect(timeout.getManualWorkEntries(), throwsA(isA<NetworkException>()));
     });
   });
 }
@@ -222,7 +211,6 @@ Map<String, Object?> _activityResponse() => {
   'id': 4,
   'name': 'Release day',
   'description': 'Deploy',
-  'work_date': '2026-09-09',
   'is_archived': false,
 };
 

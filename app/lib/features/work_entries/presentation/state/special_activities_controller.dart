@@ -30,7 +30,7 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
   Future<bool> create(SpecialActivityCreateInput input) async =>
       await createAndReturn(input) != null;
 
-  /// Returns the new ID-bearing activity for flows that immediately link work.
+  /// Returns the newly created activity.
   Future<SpecialActivity?> createAndReturn(
     SpecialActivityCreateInput input,
   ) async {
@@ -103,8 +103,8 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
     Iterable<SpecialActivity> active,
     Iterable<SpecialActivity> archived,
   ) {
-    final activeList = active.toList()..sort(_byDateThenId);
-    final archivedList = archived.toList()..sort(_byDateThenId);
+    final activeList = active.toList()..sort(_byId);
+    final archivedList = archived.toList()..sort(_byId);
     state = SpecialActivitiesState(
       status: activeList.isEmpty && archivedList.isEmpty
           ? SpecialActivitiesStatus.empty
@@ -114,10 +114,7 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
     );
   }
 
-  int _byDateThenId(SpecialActivity a, SpecialActivity b) {
-    final date = b.workDate.compareTo(a.workDate);
-    return date == 0 ? a.id.compareTo(b.id) : date;
-  }
+  int _byId(SpecialActivity a, SpecialActivity b) => a.id.compareTo(b.id);
 
   void _failed(Object error) {
     state = SpecialActivitiesState(

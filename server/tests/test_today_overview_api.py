@@ -146,7 +146,7 @@ async def test_manual_and_timer_time_combine_without_special_completion(client):
     secondary = await create_area(client, "Secondary", 2)
     special_response = await client.post(
         "/api/v1/special-activities",
-        json={"name": "Release", "work_date": "2026-09-07"},
+        json={"name": "Release"},
     )
     assert special_response.status_code == 201
     special_id = special_response.json()["id"]
@@ -236,7 +236,7 @@ async def test_week_boundaries_and_empty_lifetime_totals(client):
     }
     special = await client.post(
         "/api/v1/special-activities",
-        json={"name": "One-off", "work_date": "2026-09-06"},
+        json={"name": "One-off"},
     )
     await client.post(
         "/api/v1/manual-work-entries",
@@ -275,7 +275,7 @@ async def test_edit_delete_and_reassign_manual_entries_recalculate_every_total(c
     area = await create_area(client, "Placement", 1, minutes=30)
     activity = await client.post(
         "/api/v1/special-activities",
-        json={"name": "One-off", "work_date": "2026-09-07"},
+        json={"name": "One-off"},
     )
     activity_id = activity.json()["id"]
     timer = await client.post(

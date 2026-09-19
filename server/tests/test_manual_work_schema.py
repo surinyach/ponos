@@ -30,8 +30,8 @@ async def subjects() -> tuple[int, int]:
         )
         special_activity_id = await connection.scalar(
             text(
-                "INSERT INTO special_activities (name, work_date) "
-                "VALUES ('Release day', '2026-09-09') RETURNING id"
+                "INSERT INTO special_activities (name) "
+                "VALUES ('Release day') RETURNING id"
             )
         )
     return int(focus_area_id), int(special_activity_id)

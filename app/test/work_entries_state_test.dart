@@ -78,10 +78,7 @@ void main() {
         repository.mutate = () => pending.future;
         final result = switch (action) {
           'create' => controller.create(
-            SpecialActivityCreateInput(
-              name: 'New',
-              workDate: DateTime(2026, 9, 19),
-            ),
+            SpecialActivityCreateInput(name: 'New'),
           ),
           'update' => controller.update(
             1,
@@ -127,10 +124,7 @@ void main() {
         repository.mutate = () async => throw error;
         final result = switch (action) {
           'create' => controller.create(
-            SpecialActivityCreateInput(
-              name: 'New',
-              workDate: DateTime(2026, 9, 19),
-            ),
+            SpecialActivityCreateInput(name: 'New'),
           ),
           'update' => controller.update(
             1,
@@ -296,12 +290,7 @@ SpecialActivity special(
   int id, {
   bool archived = false,
   String name = 'Activity',
-}) => SpecialActivity(
-  id: id,
-  name: name,
-  workDate: DateTime(2026, 9, 19),
-  isArchived: archived,
-);
+}) => SpecialActivity(id: id, name: name, isArchived: archived);
 
 ManualWorkEntry entry(int id) => ManualWorkEntry(
   id: id,

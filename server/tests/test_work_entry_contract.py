@@ -50,16 +50,18 @@ def test_special_activity_contract_has_no_recurring_work_fields() -> None:
         {
             "name": "Release day",
             "description": None,
-            "work_date": "2026-09-09",
         }
     )
 
-    assert request.work_date == date(2026, 9, 9)
+    assert request.name == "Release day"
+    with pytest.raises(ValidationError):
+        SpecialActivityCreate.model_validate(
+            {"name": "Release day", "work_date": "2026-09-09"}
+        )
     assert set(SpecialActivityResponse.model_fields) == {
         "id",
         "name",
         "description",
-        "work_date",
         "is_archived",
     }
     assert not {

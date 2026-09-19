@@ -33,7 +33,6 @@ async def create_special_activity(
         activity = SpecialActivity(
             name=payload.name,
             description=payload.description,
-            work_date=payload.work_date,
         )
         await repository.add(session, activity)
         await session.commit()
@@ -72,7 +71,6 @@ async def update_special_activity(
         for field_name in {
             "name",
             "description",
-            "work_date",
         }.intersection(payload.model_fields_set):
             setattr(activity, field_name, getattr(payload, field_name))
         await session.commit()

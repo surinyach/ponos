@@ -1,5 +1,3 @@
-from datetime import date
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
@@ -10,7 +8,6 @@ class ContractModel(BaseModel):
 class SpecialActivityCreate(ContractModel):
     name: str = Field(min_length=1, max_length=100)
     description: str | None = None
-    work_date: date
 
     @field_validator("name")
     @classmethod
@@ -24,7 +21,6 @@ class SpecialActivityCreate(ContractModel):
 class SpecialActivityUpdate(ContractModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     description: str | None = None
-    work_date: date | None = None
 
     @field_validator("name")
     @classmethod
@@ -40,9 +36,7 @@ class SpecialActivityUpdate(ContractModel):
     def validate_updated_fields(self) -> "SpecialActivityUpdate":
         if not self.model_fields_set:
             raise ValueError("at least one field must be provided")
-        for field_name in {"name", "work_date"}.intersection(
-            self.model_fields_set
-        ):
+        for field_name in {"name"}.intersection(self.model_fields_set):
             if getattr(self, field_name) is None:
                 raise ValueError(f"{field_name} may not be null")
         return self
@@ -54,5 +48,4 @@ class SpecialActivityResponse(ContractModel):
     id: int
     name: str
     description: str | None
-    work_date: date
     is_archived: bool

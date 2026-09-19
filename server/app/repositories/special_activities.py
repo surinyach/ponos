@@ -21,7 +21,7 @@ async def list_by_archive_state(
     result = await session.scalars(
         select(SpecialActivity)
         .where(SpecialActivity.is_archived.is_(archived))
-        .order_by(SpecialActivity.work_date.desc(), SpecialActivity.id)
+        .order_by(SpecialActivity.id)
     )
     return list(result.all())
 

@@ -2,7 +2,6 @@ class SpecialActivity {
   const SpecialActivity({
     required this.id,
     required this.name,
-    required this.workDate,
     required this.isArchived,
     this.description,
   });
@@ -10,32 +9,24 @@ class SpecialActivity {
   final int id;
   final String name;
   final String? description;
-  final DateTime workDate;
   final bool isArchived;
 }
 
 class SpecialActivityCreateInput {
-  const SpecialActivityCreateInput({
-    required this.name,
-    required this.workDate,
-    this.description,
-  });
+  const SpecialActivityCreateInput({required this.name, this.description});
 
   final String name;
   final String? description;
-  final DateTime workDate;
 }
 
 class SpecialActivityUpdateInput {
   const SpecialActivityUpdateInput({
     this.name,
     this.description = const OptionalValue.absent(),
-    this.workDate,
   });
 
   final String? name;
   final OptionalValue<String> description;
-  final DateTime? workDate;
 }
 
 class OptionalValue<T> {
