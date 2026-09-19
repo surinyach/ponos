@@ -268,3 +268,98 @@ async def test_week_boundaries_and_empty_lifetime_totals(client):
     assert special_only_day.json()["areas"] == []
     assert special_only_day.json()["actual_focused_seconds"] == 120
     assert special_only_day.json()["completed_focus_areas"] == 0
+
+
+@pytest.mark.asyncio
+async def test_edit_delete_and_reassign_manual_entries_recalculate_every_total(client):
+    area = await create_area(client, "Placement", 1, minutes=30)
+    activity = await client.post(
+        "/api/v1/special-activities",
+        json={"name": "One-off", "work_date": "2026-09-07"},
+    )
+    activity_id = activity.json()["id"]
+    timer = await client.post(
+        "/api/v1/timer-executions",
+        json={
+            "focus_area_id": area["id"],
+            "work_date": "2026-09-07",
+            "started_at": "2026-09-07T08:00:00+02:00",
+            "ended_at": "2026-09-07T08:20:00+02:00",
+            "focused_seconds": 900,
+            "rest_seconds": 300,
+        },
+    )
+    assert timer.status_code == 201
+    area_entry = await client.post(
+        "/api/v1/manual-work-entries",
+        json={
+            "focus_area_id": area["id"],
+            "work_date": "2026-09-07",
+            "focused_seconds": 900,
+            "rest_seconds": 0,
+        },
+    )
+    special_entry = await client.post(
+        "/api/v1/manual-work-entries",
+        json={
+            "special_activity_id": activity_id,
+            "work_date": "2026-09-07",
+            "focused_seconds": 600,
+            "rest_seconds": 120,
+        },
+    )
+    assert area_entry.status_code == special_entry.status_code == 201
+
+    async def snapshot():
+        daily = await client.get(
+            "/api/v1/overview/today",
+            params={
+                "date": "2026-09-07",
+                "day_start_utc": "2026-09-06T22:00:00Z",
+                "day_end_utc": "2026-09-07T22:00:00Z",
+            },
+        )
+        week = await client.get(
+            "/api/v1/overview/week", params={"date": "2026-09-07"}
+        )
+        overall = await client.get("/api/v1/overview/overall")
+        assert daily.status_code == week.status_code == overall.status_code == 200
+        return daily.json(), week.json(), overall.json()
+
+    daily, week, overall = await snapshot()
+    assert daily["actual_focused_seconds"] == 2400
+    assert daily["actual_rest_seconds"] == 420
+    assert daily["areas"][0]["focused_seconds"] == 1800
+    assert daily["completed_focus_areas"] == 1
+    assert week["tracked_seconds"] == overall["tracked_seconds"] == 2820
+
+    updated = await client.patch(
+        f"/api/v1/manual-work-entries/{area_entry.json()['id']}",
+        json={"focused_seconds": 300, "rest_seconds": 60},
+    )
+    assert updated.status_code == 200
+    daily, week, overall = await snapshot()
+    assert daily["areas"][0]["focused_seconds"] == 1200
+    assert daily["completed_focus_areas"] == 0
+    assert daily["actual_focused_seconds"] == 1800
+    assert daily["actual_rest_seconds"] == 480
+    assert week["tracked_seconds"] == overall["tracked_seconds"] == 2280
+
+    reassigned = await client.patch(
+        f"/api/v1/manual-work-entries/{area_entry.json()['id']}",
+        json={"focus_area_id": None, "special_activity_id": activity_id},
+    )
+    assert reassigned.status_code == 200
+    daily, _, _ = await snapshot()
+    assert daily["areas"][0]["focused_seconds"] == 900
+    assert daily["actual_focused_seconds"] == 1800
+
+    deleted = await client.delete(
+        f"/api/v1/manual-work-entries/{special_entry.json()['id']}"
+    )
+    assert deleted.status_code == 204
+    daily, week, overall = await snapshot()
+    assert daily["actual_focused_seconds"] == 1200
+    assert daily["actual_rest_seconds"] == 360
+    assert week["tracked_seconds"] == overall["tracked_seconds"] == 1560
+    assert overall["days_worked"] == 1

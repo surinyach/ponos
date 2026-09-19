@@ -219,6 +219,19 @@ async def test_archived_activity_rejects_new_entries_but_preserves_existing(clie
     assert updated.status_code == 200
     assert updated.json()["focused_seconds"] == 2000
 
+    restored = await client.post(
+        f"/api/v1/special-activities/{activity_id}/restore"
+    )
+    accepted = await client.post(
+        "/api/v1/manual-work-entries",
+        json=entry_payload(
+            focus_area_id=None,
+            special_activity_id=activity_id,
+        ),
+    )
+    assert restored.status_code == 200
+    assert accepted.status_code == 201
+
 
 @pytest.mark.asyncio
 async def test_update_validates_merged_durations(client):

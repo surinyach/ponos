@@ -75,6 +75,24 @@ void main() {
     expect(find.text('Placement'), findsOneWidget);
   });
 
+  testWidgets('rejects out-of-range seconds before saving on web', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(1100, 800));
+    await tester.tap(find.byKey(const Key('new-work-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('work-subject-focusArea')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Placement').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('focus-seconds')), '60');
+    await tester.tap(find.byKey(const Key('save-work-entry')));
+    await tester.pump();
+
+    expect(find.text('Use 0–59'), findsOneWidget);
+    expect(entries.created, isNull);
+  });
+
   testWidgets('creates for a Special Activity on a chosen date', (
     tester,
   ) async {

@@ -18,7 +18,8 @@ async def clean_database():
     async with engine.begin() as connection:
         await connection.execute(
             text(
-                "TRUNCATE timer_executions, focus_area_targets, focus_areas "
+                "TRUNCATE manual_work_entries, special_activities, "
+                "timer_executions, focus_area_targets, focus_areas "
                 "RESTART IDENTITY CASCADE"
             )
         )
@@ -117,6 +118,27 @@ async def test_missing_focus_area_returns_404_without_storing(client):
     assert response.status_code == 404
     assert response.json()["detail"] == "Focus Area 999 was not found"
     assert await execution_count() == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.xfail(
+    strict=True,
+    reason="Timer schema and API still require focus_area_id; Special Activity linking is not implemented",
+)
+async def test_timer_execution_can_link_to_special_activity(client):
+    activity = await client.post(
+        "/api/v1/special-activities",
+        json={"name": "Release", "work_date": "2026-09-08"},
+    )
+    assert activity.status_code == 201
+    payload = execution_payload(1)
+    payload.pop("focus_area_id")
+    payload["special_activity_id"] = activity.json()["id"]
+
+    response = await client.post("/api/v1/timer-executions", json=payload)
+
+    assert response.status_code == 201
+    assert response.json()["special_activity_id"] == activity.json()["id"]
 
 
 @pytest.mark.asyncio
