@@ -133,24 +133,36 @@ class _OverviewContent extends ConsumerWidget {
               onRetry: () => ref.invalidate(todayOverviewProvider),
             ),
             data: (data) {
+              final summary = TodaySummary(
+                workedDuration: data.actualFocusedTime,
+                expectedDuration: data.expectedFocusTime,
+                restDuration: data.actualRestTime,
+                trackedDuration: data.actualTrackedTime,
+                weekFocusedDuration: data.week.focusedTime,
+                weekRestDuration: data.week.restTime,
+                completedFocusAreas: data.completedFocusAreas,
+                totalFocusAreas: data.targetedFocusAreas,
+              );
+              final statistics = WorkStatistics(
+                totalDaysWorked: data.overall.daysWorked,
+                totalFocusedTime: data.overall.focusedTime,
+                totalRestTime: data.overall.restTime,
+                totalTrackedTime: data.overall.trackedTime,
+              );
               if (data.areas.isEmpty) {
-                return _OverviewEmpty(onManageFocusAreas: onManageFocusAreas);
+                return Column(
+                  children: [
+                    _OverviewEmpty(onManageFocusAreas: onManageFocusAreas),
+                    const SizedBox(height: AppSpacing.md),
+                    summary,
+                    const SizedBox(height: AppSpacing.md),
+                    statistics,
+                  ],
+                );
               }
 
               return LayoutBuilder(
                 builder: (context, constraints) {
-                  final summary = TodaySummary(
-                    workedDuration: data.actualFocusedTime,
-                    expectedDuration: data.expectedFocusTime,
-                    completedFocusAreas: data.completedFocusAreas,
-                    totalFocusAreas: data.targetedFocusAreas,
-                  );
-                  const statistics = WorkStatistics(
-                    totalDaysWorked: 128,
-                    totalFocusedTime: Duration(hours: 342, minutes: 30),
-                    totalRestTime: Duration(hours: 86, minutes: 15),
-                    totalTrackedTime: Duration(hours: 428, minutes: 45),
-                  );
                   final focusAreas = FocusAreas(
                     targetDate: data.date,
                     areas: data.areas.map((item) => item.focusArea).toList(),

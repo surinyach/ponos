@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.schemas.today_overview import TodayOverviewResponse
+from app.schemas.work_totals import OverallTotalsResponse, WeekTotalsResponse
 from app.services.today_overview import get_today_overview
+from app.services.work_totals import lifetime_totals, totals_between
 
 router = APIRouter(prefix="/api/v1/overview", tags=["overview"])
 DatabaseSession = Annotated[AsyncSession, Depends(get_db)]
@@ -32,3 +34,31 @@ async def today_overview(
             detail="Day boundaries must describe one local calendar day",
         )
     return await get_today_overview(db, date_)
+
+
+@router.get("/week", response_model=WeekTotalsResponse)
+async def week_totals(
+    db: DatabaseSession,
+    date_: Annotated[date, Query(alias="date")],
+) -> WeekTotalsResponse:
+    week_start = date_ - timedelta(days=date_.weekday())
+    week_end = week_start + timedelta(days=6)
+    focused, rest = await totals_between(db, week_start, week_end)
+    return WeekTotalsResponse(
+        week_start=week_start,
+        week_end=week_end,
+        focused_seconds=focused,
+        rest_seconds=rest,
+        tracked_seconds=focused + rest,
+    )
+
+
+@router.get("/overall", response_model=OverallTotalsResponse)
+async def overall_totals(db: DatabaseSession) -> OverallTotalsResponse:
+    days, focused, rest = await lifetime_totals(db)
+    return OverallTotalsResponse(
+        days_worked=days,
+        focused_seconds=focused,
+        rest_seconds=rest,
+        tracked_seconds=focused + rest,
+    )

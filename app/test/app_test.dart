@@ -8,6 +8,7 @@ import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/work_totals.dart';
 import 'package:ponos_app/features/home/presentation/state/today_overview_provider.dart';
 import 'package:ponos_app/features/home/presentation/widgets/today_summary.dart';
 import 'package:ponos_app/features/home/presentation/widgets/focus_areas.dart';
@@ -62,6 +63,35 @@ void main() {
     expect(find.text('Focused today'), findsOneWidget);
     expect(find.text('Expected today'), findsOneWidget);
     expect(find.text('1 / 3 focus areas completed'), findsOneWidget);
+  });
+
+  testWidgets('today metrics align across focused and rest rows', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(
+          body: TodaySummary(
+            workedDuration: Duration(hours: 6),
+            expectedDuration: Duration(hours: 8),
+            restDuration: Duration(minutes: 15),
+            trackedDuration: Duration(hours: 6, minutes: 15),
+            completedFocusAreas: 1,
+            totalFocusAreas: 2,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.getTopLeft(find.byIcon(Icons.schedule)).dx,
+      tester.getTopLeft(find.byIcon(Icons.self_improvement_outlined)).dx,
+    );
+    expect(
+      tester.getTopLeft(find.text('Focused today')).dx,
+      tester.getTopLeft(find.text('Rest today')).dx,
+    );
   });
 
   testWidgets('shows focus areas ordered by priority with daily progress', (
@@ -193,10 +223,25 @@ void main() {
     expect(statisticsRect.bottom, areasRect.bottom);
   });
 
+  testWidgets('overview shows aggregated daily, weekly, and lifetime data', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Rest today'), findsOneWidget);
+    expect(find.text('Tracked today'), findsOneWidget);
+    expect(find.text('This week · 30m focused · 5m rest'), findsOneWidget);
+    expect(find.text('Days worked'), findsOneWidget);
+    expect(find.text('128'), findsNothing);
+  });
+
   testWidgets('overview shows empty and error states', (tester) async {
     await tester.pumpWidget(_testApp(overview: _overview(areas: const [])));
     await tester.pumpAndSettle();
     expect(find.text('No active focus areas'), findsOneWidget);
+    expect(find.byType(WorkStatistics), findsOneWidget);
+    expect(find.byType(TodaySummary), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(
@@ -241,9 +286,24 @@ TodayOverview _overview({required List<FocusAreaTodayProgress> areas}) =>
       date: DateTime(2026, 9, 7),
       expectedFocusTime: const Duration(hours: 1),
       actualFocusedTime: const Duration(minutes: 30),
+      actualRestTime: const Duration(minutes: 5),
+      actualTrackedTime: const Duration(minutes: 35),
       completedFocusAreas: 0,
       targetedFocusAreas: areas.isEmpty ? 0 : 1,
       areas: areas,
+      week: WeeklyWorkTotals(
+        weekStart: DateTime(2026, 9, 7),
+        weekEnd: DateTime(2026, 9, 13),
+        focusedTime: const Duration(minutes: 30),
+        restTime: const Duration(minutes: 5),
+        trackedTime: const Duration(minutes: 35),
+      ),
+      overall: const OverallWorkTotals(
+        daysWorked: 1,
+        focusedTime: Duration(minutes: 30),
+        restTime: Duration(minutes: 5),
+        trackedTime: Duration(minutes: 35),
+      ),
     );
 
 FocusAreaTodayProgress _progress() {

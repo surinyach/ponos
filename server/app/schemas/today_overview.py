@@ -3,6 +3,7 @@ from datetime import date
 from pydantic import Field
 
 from app.schemas.focus_area import ContractModel, FocusAreaResponse
+from app.schemas.work_totals import OverallTotalsResponse, WeekTotalsResponse
 
 
 class FocusAreaTodayProgress(ContractModel):
@@ -16,6 +17,10 @@ class TodayOverviewResponse(ContractModel):
     date: date
     expected_focus_seconds: int = Field(ge=0)
     actual_focused_seconds: int = Field(ge=0)
+    actual_rest_seconds: int = Field(ge=0)
+    actual_tracked_seconds: int = Field(ge=0)
     completed_focus_areas: int = Field(ge=0)
     targeted_focus_areas: int = Field(ge=0)
     areas: list[FocusAreaTodayProgress]
+    week: WeekTotalsResponse
+    overall: OverallTotalsResponse

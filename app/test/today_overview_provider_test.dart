@@ -4,6 +4,7 @@ import 'package:ponos_app/app/providers/focus_area_providers.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_input.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/work_totals.dart';
 import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_repository.dart';
 import 'package:ponos_app/features/home/presentation/state/today_overview_provider.dart';
 
@@ -11,59 +12,80 @@ void main() {
   test(
     'loads today through the repository using the local calendar date',
     () async {
-    final repository = OverviewRepository();
-    final overview = TodayOverview(
-      date: DateTime(2026, 9, 7),
-      expectedFocusTime: const Duration(hours: 2),
-      actualFocusedTime: const Duration(hours: 1),
-      completedFocusAreas: 0,
-      targetedFocusAreas: 1,
-      areas: const [],
-    );
-    repository.load = () async => overview;
-    final container = ProviderContainer(
-      overrides: [
-        focusAreaRepositoryProvider.overrideWithValue(repository),
-        currentDateTimeProvider.overrideWithValue(
-          DateTime(2026, 9, 7, 18, 30),
+      final repository = OverviewRepository();
+      final overview = TodayOverview(
+        date: DateTime(2026, 9, 7),
+        expectedFocusTime: const Duration(hours: 2),
+        actualFocusedTime: const Duration(hours: 1),
+        actualRestTime: Duration.zero,
+        actualTrackedTime: const Duration(hours: 1),
+        completedFocusAreas: 0,
+        targetedFocusAreas: 1,
+        areas: const [],
+        week: WeeklyWorkTotals(
+          weekStart: DateTime(2026, 9, 7),
+          weekEnd: DateTime(2026, 9, 13),
+          focusedTime: const Duration(hours: 1),
+          restTime: Duration.zero,
+          trackedTime: const Duration(hours: 1),
         ),
-      ],
-    );
-    addTearDown(container.dispose);
-    final subscription = container.listen(
-      todayOverviewProvider,
-      (_, _) {},
-      fireImmediately: true,
-    );
-    addTearDown(subscription.close);
+        overall: const OverallWorkTotals(
+          daysWorked: 1,
+          focusedTime: Duration(hours: 1),
+          restTime: Duration.zero,
+          trackedTime: Duration(hours: 1),
+        ),
+      );
+      repository.load = () async => overview;
+      final container = ProviderContainer(
+        overrides: [
+          focusAreaRepositoryProvider.overrideWithValue(repository),
+          currentDateTimeProvider.overrideWithValue(
+            DateTime(2026, 9, 7, 18, 30),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        todayOverviewProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
 
-    expect(
-      container.read(todayOverviewProvider),
-      isA<AsyncLoading<TodayOverview>>(),
-    );
-    expect(await container.read(todayOverviewProvider.future), same(overview));
-    expect(repository.requestedDate, DateTime(2026, 9, 7));
-    expect(container.read(todayOverviewProvider).hasValue, isTrue);
+      expect(
+        container.read(todayOverviewProvider),
+        isA<AsyncLoading<TodayOverview>>(),
+      );
+      expect(
+        await container.read(todayOverviewProvider.future),
+        same(overview),
+      );
+      expect(repository.requestedDate, DateTime(2026, 9, 7));
+      expect(container.read(todayOverviewProvider).hasValue, isTrue);
     },
   );
 
-  test('exposes repository failures through the Riverpod error state', () async {
-    final repository = OverviewRepository()
-      ..load = () async => throw Exception('offline');
-    final container = ProviderContainer(
-      overrides: [focusAreaRepositoryProvider.overrideWithValue(repository)],
-    );
-    addTearDown(container.dispose);
-    final subscription = container.listen(
-      todayOverviewProvider,
-      (_, _) {},
-      fireImmediately: true,
-    );
-    addTearDown(subscription.close);
+  test(
+    'exposes repository failures through the Riverpod error state',
+    () async {
+      final repository = OverviewRepository()
+        ..load = () async => throw Exception('offline');
+      final container = ProviderContainer(
+        overrides: [focusAreaRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      final subscription = container.listen(
+        todayOverviewProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(subscription.close);
 
-    await Future<void>.delayed(Duration.zero);
-    expect(container.read(todayOverviewProvider).hasError, isTrue);
-  });
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(todayOverviewProvider).hasError, isTrue);
+    },
+  );
 }
 
 class OverviewRepository implements FocusAreaRepository {
