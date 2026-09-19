@@ -54,7 +54,7 @@ void main() {
     await tester.pump();
     expect(find.text('Select an activity'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('work-subject')));
+    await tester.tap(find.byKey(const Key('work-subject-focusArea')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Placement').last);
     await tester.pumpAndSettle();
@@ -81,7 +81,9 @@ void main() {
     await pumpPage(tester, size: const Size(1100, 800));
     await tester.tap(find.byKey(const Key('new-work-entry')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('work-subject')));
+    await tester.tap(find.text('Existing special'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('work-subject-existingSpecial')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Release day').last);
     await tester.pumpAndSettle();
@@ -145,7 +147,7 @@ void main() {
     await pumpPage(tester);
     await tester.tap(find.byKey(const Key('new-work-entry')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('work-subject')));
+    await tester.tap(find.byKey(const Key('work-subject-focusArea')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Placement').last);
     await tester.pumpAndSettle();
@@ -164,7 +166,7 @@ void main() {
     await pumpPage(tester);
     await tester.tap(find.byKey(const Key('new-work-entry')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('work-subject')));
+    await tester.tap(find.byKey(const Key('work-subject-focusArea')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Placement').last);
     await tester.pumpAndSettle();
@@ -183,6 +185,107 @@ void main() {
     pending.complete();
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('work-form-saving')), findsNothing);
+  });
+
+  testWidgets('creates a new Special Activity and links the entry', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    await tester.tap(find.byKey(const Key('new-work-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New special'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('save-work-entry')));
+    await tester.pump();
+    expect(find.text('Enter a name'), findsOneWidget);
+    expect(activities.createCalls, 0);
+
+    await tester.enterText(
+      find.byKey(const Key('special-activity-name')),
+      'Conference',
+    );
+    await tester.enterText(
+      find.byKey(const Key('special-activity-description')),
+      'Talk prep',
+    );
+    await tester.enterText(find.byKey(const Key('focus-minutes')), '25');
+    await tester.tap(find.byKey(const Key('save-work-entry')));
+    await tester.pumpAndSettle();
+
+    expect(activities.createCalls, 1);
+    expect(activities.created!.name, 'Conference');
+    expect(activities.created!.description, 'Talk prep');
+    expect(entries.created!.specialActivityId, 5);
+    expect(entries.created!.focusAreaId, isNull);
+    expect(entries.created!.workDate, activities.created!.workDate);
+  });
+
+  testWidgets('retries a failed entry save without duplicating the activity', (
+    tester,
+  ) async {
+    entries.failSave = true;
+    await pumpPage(tester);
+    await tester.tap(find.byKey(const Key('new-work-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New special'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('special-activity-name')),
+      'Conference',
+    );
+    await tester.enterText(find.byKey(const Key('rest-minutes')), '10');
+    await tester.tap(find.byKey(const Key('save-work-entry')));
+    await tester.pumpAndSettle();
+
+    expect(activities.createCalls, 1);
+    expect(
+      find.byKey(const Key('created-special-activity-notice')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('work-save-error')), findsOneWidget);
+
+    entries.failSave = false;
+    await tester.ensureVisible(find.byKey(const Key('save-work-entry')));
+    await tester.tap(find.byKey(const Key('save-work-entry')));
+    await tester.pumpAndSettle();
+    expect(activities.createCalls, 1);
+    expect(entries.created!.specialActivityId, 5);
+    expect(find.byKey(const Key('save-work-entry')), findsNothing);
+  });
+
+  testWidgets('activity creation failure keeps the form and skips entry save', (
+    tester,
+  ) async {
+    activities.failCreate = true;
+    await pumpPage(tester);
+    await tester.tap(find.byKey(const Key('new-work-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New special'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('special-activity-name')),
+      'Conference',
+    );
+    await tester.enterText(find.byKey(const Key('focus-minutes')), '5');
+    await tester.tap(find.byKey(const Key('save-work-entry')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('special-activity-save-error')),
+      findsOneWidget,
+    );
+    expect(entries.created, isNull);
+  });
+
+  testWidgets('new Special Activity option remains usable on a narrow phone', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(320, 700));
+    await tester.tap(find.byKey(const Key('new-work-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New special'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('special-activity-name')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
 
@@ -247,6 +350,10 @@ class FakeManualEntries implements ManualWorkEntryRepository {
 }
 
 class FakeSpecialActivities implements SpecialActivityRepository {
+  SpecialActivityCreateInput? created;
+  int createCalls = 0;
+  bool failCreate = false;
+  final List<SpecialActivity> values = [];
   @override
   Future<List<SpecialActivity>> getActive() async => [
     SpecialActivity(
@@ -255,14 +362,28 @@ class FakeSpecialActivities implements SpecialActivityRepository {
       workDate: DateTime(2026, 9, 9),
       isArchived: false,
     ),
+    ...values,
   ];
   @override
   Future<List<SpecialActivity>> getArchived() async => [];
   @override
   Future<SpecialActivity> getById(int id) => throw UnimplementedError();
   @override
-  Future<SpecialActivity> create(SpecialActivityCreateInput input) =>
-      throw UnimplementedError();
+  Future<SpecialActivity> create(SpecialActivityCreateInput input) async {
+    createCalls++;
+    created = input;
+    if (failCreate) throw const ValidationException('Activity failed');
+    final activity = SpecialActivity(
+      id: 5,
+      name: input.name,
+      description: input.description,
+      workDate: input.workDate,
+      isArchived: false,
+    );
+    values.add(activity);
+    return activity;
+  }
+
   @override
   Future<SpecialActivity> update(int id, SpecialActivityUpdateInput input) =>
       throw UnimplementedError();

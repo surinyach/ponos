@@ -27,8 +27,21 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
   }
 
   Future<bool> refresh() => _enqueue(_load);
-  Future<bool> create(SpecialActivityCreateInput input) =>
-      _save(() => _repository.create(input));
+  Future<bool> create(SpecialActivityCreateInput input) async =>
+      await createAndReturn(input) != null;
+
+  /// Returns the new ID-bearing activity for flows that immediately link work.
+  Future<SpecialActivity?> createAndReturn(
+    SpecialActivityCreateInput input,
+  ) async {
+    SpecialActivity? created;
+    final success = await _save(() async {
+      created = await _repository.create(input);
+      return created!;
+    });
+    return success ? created : null;
+  }
+
   Future<bool> update(int id, SpecialActivityUpdateInput input) =>
       _save(() => _repository.update(id, input));
   Future<bool> archive(int id) => _save(() => _repository.archive(id));
