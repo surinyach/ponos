@@ -1,6 +1,7 @@
 class TimerExecutionDraft {
   const TimerExecutionDraft({
-    required this.focusAreaId,
+    this.focusAreaId,
+    this.specialActivityId,
     required this.workDate,
     required this.startedAt,
     required this.startedAtUtcOffset,
@@ -8,9 +9,10 @@ class TimerExecutionDraft {
     required this.endedAtUtcOffset,
     required this.focusedTime,
     required this.restTime,
-  });
+  }) : assert((focusAreaId == null) != (specialActivityId == null));
 
-  final int focusAreaId;
+  final int? focusAreaId;
+  final int? specialActivityId;
   final DateTime workDate;
   final DateTime startedAt;
   final Duration startedAtUtcOffset;

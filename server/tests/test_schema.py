@@ -54,6 +54,12 @@ def test_timer_executions_store_only_source_durations() -> None:
     assert isinstance(table.c.started_at.type, DateTime)
     assert isinstance(table.c.work_date.type, Date)
     assert table.c.work_date.nullable is False
+    assert table.c.focus_area_id.nullable is True
+    assert table.c.special_activity_id.nullable is True
+    assert any(
+        constraint.name == "ck_timer_executions_exactly_one_owner"
+        for constraint in table.constraints
+    )
     assert table.c.started_at.type.timezone is True
     assert table.c.ended_at.type.timezone is True
     assert {"focused_seconds", "rest_seconds"}.issubset(table.c.keys())

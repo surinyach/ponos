@@ -6,7 +6,8 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validato
 class TimerExecutionCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    focus_area_id: int = Field(gt=0)
+    focus_area_id: int | None = Field(default=None, gt=0)
+    special_activity_id: int | None = Field(default=None, gt=0)
     work_date: date
     started_at: AwareDatetime
     ended_at: AwareDatetime
@@ -15,6 +16,8 @@ class TimerExecutionCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_execution(self) -> "TimerExecutionCreate":
+        if (self.focus_area_id is None) == (self.special_activity_id is None):
+            raise ValueError("exactly one activity ID must be provided")
         if self.ended_at < self.started_at:
             raise ValueError("ended_at must be on or after started_at")
         if self.work_date != self.started_at.date():
@@ -33,7 +36,8 @@ class TimerExecutionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     id: int
-    focus_area_id: int
+    focus_area_id: int | None
+    special_activity_id: int | None
     work_date: date
     started_at: datetime
     ended_at: datetime

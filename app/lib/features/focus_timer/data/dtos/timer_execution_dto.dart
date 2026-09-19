@@ -2,7 +2,8 @@ import '../../domain/models/timer_execution_draft.dart';
 
 class TimerExecutionCreateDto {
   const TimerExecutionCreateDto({
-    required this.focusAreaId,
+    this.focusAreaId,
+    this.specialActivityId,
     required this.workDate,
     required this.startedAt,
     required this.startedAtUtcOffset,
@@ -15,6 +16,7 @@ class TimerExecutionCreateDto {
   factory TimerExecutionCreateDto.fromDomain(TimerExecutionDraft execution) =>
       TimerExecutionCreateDto(
         focusAreaId: execution.focusAreaId,
+        specialActivityId: execution.specialActivityId,
         workDate: execution.workDate,
         startedAt: execution.startedAt,
         startedAtUtcOffset: execution.startedAtUtcOffset,
@@ -24,7 +26,8 @@ class TimerExecutionCreateDto {
         restSeconds: execution.restTime.inSeconds,
       );
 
-  final int focusAreaId;
+  final int? focusAreaId;
+  final int? specialActivityId;
   final DateTime workDate;
   final DateTime startedAt;
   final Duration startedAtUtcOffset;
@@ -34,7 +37,8 @@ class TimerExecutionCreateDto {
   final int restSeconds;
 
   Map<String, Object> toJson() => {
-    'focus_area_id': focusAreaId,
+    'focus_area_id': ?focusAreaId,
+    'special_activity_id': ?specialActivityId,
     'work_date': _date(workDate),
     'started_at': _timestamp(startedAt, startedAtUtcOffset),
     'ended_at': _timestamp(endedAt, endedAtUtcOffset),

@@ -42,6 +42,8 @@ class TimerExecutionApiClient {
     switch (response.statusCode) {
       case 404:
         throw NotFoundException(message);
+      case 409:
+        throw ConflictException(message);
       case 422:
         throw ValidationException(message);
       default:

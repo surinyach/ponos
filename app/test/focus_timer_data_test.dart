@@ -79,4 +79,33 @@ void main() {
       ),
     );
   });
+
+  test('posts Special Activity execution without a Focus Area', () async {
+    late http.Request captured;
+    final repository = RemoteTimerExecutionRepository(
+      TimerExecutionApiClient(
+        MockClient((request) async {
+          captured = request;
+          return http.Response('{"id":2}', 201);
+        }),
+        ApiConfig('http://server.test'),
+      ),
+    );
+    await repository.save(
+      TimerExecutionDraft(
+        specialActivityId: 4,
+        workDate: DateTime(2026, 9, 8),
+        startedAt: DateTime.utc(2026, 9, 8, 8),
+        startedAtUtcOffset: Duration.zero,
+        endedAt: DateTime.utc(2026, 9, 8, 8, 2),
+        endedAtUtcOffset: Duration.zero,
+        focusedTime: const Duration(minutes: 1),
+        restTime: const Duration(minutes: 1),
+      ),
+    );
+    final body = jsonDecode(captured.body) as Map<String, dynamic>;
+    expect(body['special_activity_id'], 4);
+    expect(body.containsKey('focus_area_id'), isFalse);
+    expect(body['work_date'], '2026-09-08');
+  });
 }

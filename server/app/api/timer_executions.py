@@ -33,3 +33,13 @@ async def create_timer_execution(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Focus Area {error.args[0]} was not found",
         ) from error
+    except service.SpecialActivityNotFoundError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Special Activity {error.args[0]} was not found",
+        ) from error
+    except service.ArchivedSpecialActivityError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Special Activity {error.args[0]} is archived",
+        ) from error

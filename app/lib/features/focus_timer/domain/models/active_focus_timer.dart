@@ -8,7 +8,8 @@ enum FocusTimerActivity { running, paused }
 /// after resume/background recovery. It is null exactly while paused.
 class ActiveFocusTimer {
   ActiveFocusTimer({
-    required this.focusAreaId,
+    this.focusAreaId,
+    this.specialActivityId,
     required this.workDate,
     required this.startedAt,
     required this.startedAtUtcOffset,
@@ -21,7 +22,9 @@ class ActiveFocusTimer {
     required this.focusTransitionNotified,
     this.restStartDelayRemaining = Duration.zero,
     this.runningSince,
-  }) : assert(focusAreaId > 0),
+  }) : assert((focusAreaId == null) != (specialActivityId == null)),
+       assert(focusAreaId == null || focusAreaId > 0),
+       assert(specialActivityId == null || specialActivityId > 0),
        assert(focusDuration.inMicroseconds > 0),
        assert(restDuration.inMicroseconds > 0),
        assert(!accumulatedFocusTime.isNegative),
@@ -40,7 +43,8 @@ class ActiveFocusTimer {
              : runningSince == null,
        );
 
-  final int focusAreaId;
+  final int? focusAreaId;
+  final int? specialActivityId;
 
   /// Local calendar date captured once when the execution starts.
   final DateTime workDate;
@@ -82,6 +86,7 @@ class ActiveFocusTimer {
     bool? focusTransitionNotified,
   }) => ActiveFocusTimer(
     focusAreaId: focusAreaId,
+    specialActivityId: specialActivityId,
     workDate: workDate,
     startedAt: startedAt,
     startedAtUtcOffset: startedAtUtcOffset,
