@@ -1,14 +1,22 @@
 from datetime import datetime, timedelta, timezone
-from sqlalchemy import select
+from sqlalchemy import delete, exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.models.focus_area import FocusArea, FocusAreaTarget
+from app.models.manual_work_entry import ManualWorkEntry
+from app.models.timer_execution import TimerExecution
 from app.schemas.focus_area import FocusAreaCreate, FocusAreaPrioritiesUpdate, FocusAreaUpdate, WeekdayTargetCreate
 
 class FocusAreaNotFoundError(Exception):
     pass
 
 class TargetVersionConflictError(Exception):
+    pass
+
+class FocusAreaNotArchivedError(Exception):
+    pass
+
+class HistoricalWorkConfirmationRequiredError(Exception):
     pass
 
 def _query_with_targets():
@@ -95,6 +103,39 @@ async def set_archived(session: AsyncSession, focus_area_id: int, *, archived: b
         focus_area.archived_at = datetime.now(timezone.utc) if archived else None
         await session.commit()
         return await _get_with_targets(session, focus_area_id)
+    except Exception:
+        await session.rollback()
+        raise
+
+async def focus_area_has_historical_work(session: AsyncSession, focus_area_id: int) -> bool:
+    focus_area = await _get_locked(session, focus_area_id)
+    if focus_area.archived_at is None:
+        raise FocusAreaNotArchivedError
+    return bool(await session.scalar(
+        select(
+            exists().where(ManualWorkEntry.focus_area_id == focus_area_id)
+            | exists().where(TimerExecution.focus_area_id == focus_area_id)
+        )
+    ))
+
+async def _delete_focus_area_records(session: AsyncSession, focus_area_id: int) -> None:
+    await session.execute(delete(ManualWorkEntry).where(ManualWorkEntry.focus_area_id == focus_area_id))
+    await session.execute(delete(TimerExecution).where(TimerExecution.focus_area_id == focus_area_id))
+    await session.execute(delete(FocusAreaTarget).where(FocusAreaTarget.focus_area_id == focus_area_id))
+    await session.execute(delete(FocusArea).where(FocusArea.id == focus_area_id))
+
+async def delete_focus_area(
+    session: AsyncSession,
+    focus_area_id: int,
+    *,
+    confirm_historical_work: bool,
+) -> None:
+    try:
+        has_history = await focus_area_has_historical_work(session, focus_area_id)
+        if has_history and not confirm_historical_work:
+            raise HistoricalWorkConfirmationRequiredError
+        await _delete_focus_area_records(session, focus_area_id)
+        await session.commit()
     except Exception:
         await session.rollback()
         raise

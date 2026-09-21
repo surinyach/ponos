@@ -607,6 +607,13 @@ class FakeSpecialActivities implements SpecialActivityRepository {
 
 class FakeFocusAreas implements FocusAreaRepository {
   @override
+  Future<bool> hasHistoricalWork(int id) => throw UnimplementedError();
+  @override
+  Future<void> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) => throw UnimplementedError();
+  @override
   Future<List<FocusArea>> getActive() async => [
     FocusArea(
       id: 7,

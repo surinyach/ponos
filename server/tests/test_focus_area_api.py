@@ -266,3 +266,73 @@ async def test_batch_priority_update_rolls_back_when_one_record_is_missing(clien
     assert response.status_code == 404
     fetched = (await client.get(f"/api/v1/focus-areas/{area['id']}")).json()
     assert fetched["priority"] == 1
+
+
+@pytest.mark.asyncio
+async def test_permanent_delete_requires_archived_focus_area(client):
+    area = await create_area(client)
+    preview = await client.get(
+        f"/api/v1/focus-areas/{area['id']}/deletion-preview"
+    )
+    deleted = await client.delete(f"/api/v1/focus-areas/{area['id']}")
+
+    assert preview.status_code == 409
+    assert deleted.status_code == 409
+    assert (await client.get(f"/api/v1/focus-areas/{area['id']}")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_archived_area_without_work_is_deleted_with_one_confirmation(client):
+    area = await create_area(client)
+    await client.post(f"/api/v1/focus-areas/{area['id']}/archive")
+
+    preview = await client.get(
+        f"/api/v1/focus-areas/{area['id']}/deletion-preview"
+    )
+    deleted = await client.delete(f"/api/v1/focus-areas/{area['id']}")
+
+    assert preview.json() == {"has_historical_work": False}
+    assert deleted.status_code == 204
+    assert (await client.get(f"/api/v1/focus-areas/{area['id']}")).status_code == 404
+    async with engine.connect() as connection:
+        assert await connection.scalar(text(
+            "SELECT count(*) FROM focus_area_targets WHERE focus_area_id = :id"
+        ), {"id": area["id"]}) == 0
+
+
+@pytest.mark.asyncio
+async def test_historical_work_requires_second_confirmation_and_is_deleted(client):
+    area = await create_area(client)
+    async with engine.begin() as connection:
+        await connection.execute(text(
+            "INSERT INTO manual_work_entries "
+            "(focus_area_id, work_date, focused_seconds, rest_seconds) "
+            "VALUES (:id, '2026-09-07', 600, 0)"
+        ), {"id": area["id"]})
+        await connection.execute(text(
+            "INSERT INTO timer_executions "
+            "(focus_area_id, work_date, started_at, ended_at, focused_seconds, rest_seconds) "
+            "VALUES (:id, '2026-09-07', :started, :ended, 1200, 300)"
+        ), {
+            "id": area["id"],
+            "started": datetime(2026, 9, 7, 8, tzinfo=timezone.utc),
+            "ended": datetime(2026, 9, 7, 8, 25, tzinfo=timezone.utc),
+        })
+    await client.post(f"/api/v1/focus-areas/{area['id']}/archive")
+
+    preview = await client.get(f"/api/v1/focus-areas/{area['id']}/deletion-preview")
+    refused = await client.delete(f"/api/v1/focus-areas/{area['id']}")
+    deleted = await client.delete(
+        f"/api/v1/focus-areas/{area['id']}?confirm_historical_work=true"
+    )
+
+    assert preview.json() == {"has_historical_work": True}
+    assert refused.status_code == 409
+    assert deleted.status_code == 204
+    async with engine.connect() as connection:
+        counts = [await connection.scalar(text(
+            f"SELECT count(*) FROM {table} WHERE focus_area_id = :id"
+        ), {"id": area["id"]}) for table in (
+            "focus_area_targets", "manual_work_entries", "timer_executions"
+        )]
+    assert counts == [0, 0, 0]

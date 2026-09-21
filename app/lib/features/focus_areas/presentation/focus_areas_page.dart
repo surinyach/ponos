@@ -6,6 +6,7 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../core/errors/app_exception.dart';
 import '../domain/models/focus_area.dart';
 import '../domain/models/focus_area_input.dart';
+import '../../focus_timer/presentation/state/focus_timer_controller.dart';
 import 'state/focus_areas_controller.dart';
 import 'state/focus_areas_state.dart';
 
@@ -507,6 +508,9 @@ class _ArchivedAreas extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final archived = ref.watch(archivedFocusAreasProvider);
     final active = ref.watch(focusAreasProvider);
+    final activeTimerAreaId = ref.watch(
+      focusTimerProvider.select((state) => state.activeTimer?.focusAreaId),
+    );
     final busy = active.status == FocusAreasStatus.saving;
     return archived.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -545,26 +549,45 @@ class _ArchivedAreas extends ConsumerWidget {
                   child: ListTile(
                     title: Text(area.name),
                     subtitle: const Text('Archived'),
-                    trailing: TextButton(
-                      onPressed: busy
-                          ? null
-                          : () async {
-                              final success = await ref
-                                  .read(focusAreasProvider.notifier)
-                                  .restore(area.id);
-                              if (!success && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      _errorMessage(
-                                        ref.read(focusAreasProvider).error,
+                    trailing: Wrap(
+                      spacing: AppSpacing.xs,
+                      children: [
+                        TextButton(
+                          onPressed: busy
+                              ? null
+                              : () async {
+                                  final success = await ref
+                                      .read(focusAreasProvider.notifier)
+                                      .restore(area.id);
+                                  if (!success && context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          _errorMessage(
+                                            ref.read(focusAreasProvider).error,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
-                      child: const Text('Restore'),
+                                    );
+                                  }
+                                },
+                          child: const Text('Restore'),
+                        ),
+                        IconButton(
+                          tooltip: activeTimerAreaId == area.id
+                              ? 'Cannot delete while this area has an active timer'
+                              : 'Permanently delete ${area.name}',
+                          onPressed: busy
+                              ? null
+                              : () => _deleteArchivedArea(
+                                  context,
+                                  ref,
+                                  area,
+                                  blockedByTimer: activeTimerAreaId == area.id,
+                                ),
+                          icon: const Icon(Icons.delete_forever_outlined),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -573,6 +596,90 @@ class _ArchivedAreas extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _deleteArchivedArea(
+    BuildContext context,
+    WidgetRef ref,
+    FocusArea area, {
+    required bool blockedByTimer,
+  }) async {
+    if (blockedByTimer) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This Focus Area cannot be deleted while its timer is active or paused.',
+          ),
+        ),
+      );
+      return;
+    }
+    final firstConfirmation = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Permanently delete ${area.name}?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete permanently'),
+          ),
+        ],
+      ),
+    );
+    if (firstConfirmation != true || !context.mounted) return;
+
+    final controller = ref.read(focusAreasProvider.notifier);
+    try {
+      final hasHistory = await controller.hasHistoricalWork(area.id);
+      if (!context.mounted) return;
+      var confirmedHistory = false;
+      if (hasHistory) {
+        confirmedHistory =
+            await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Delete historical work too?'),
+                content: const Text(
+                  'This Focus Area has recorded work. Its target history, manual entries, and timer executions will also be permanently deleted.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Keep Focus Area'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Delete all permanently'),
+                  ),
+                ],
+              ),
+            ) ==
+            true;
+        if (!confirmedHistory) return;
+      }
+      final success = await controller.permanentlyDelete(
+        area.id,
+        confirmHistoricalWork: confirmedHistory,
+      );
+      if (!success && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage(ref.read(focusAreasProvider).error)),
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(_errorMessage(error))));
+      }
+    }
   }
 }
 

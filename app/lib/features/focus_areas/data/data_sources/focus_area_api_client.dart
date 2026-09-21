@@ -47,6 +47,26 @@ class FocusAreaApiClient {
       _one('POST', '/api/v1/focus-areas/$id/archive');
   Future<FocusAreaDto> restore(int id) =>
       _one('POST', '/api/v1/focus-areas/$id/restore');
+  Future<bool> hasHistoricalWork(int id) async {
+    final value = _object(
+      await _request('GET', '/api/v1/focus-areas/$id/deletion-preview'),
+    );
+    final result = value['has_historical_work'];
+    if (result is! bool) {
+      throw const InvalidResponseException(
+        'Expected has_historical_work to be a boolean',
+      );
+    }
+    return result;
+  }
+
+  Future<void> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) => _request(
+    'DELETE',
+    '/api/v1/focus-areas/$id?confirm_historical_work=$confirmHistoricalWork',
+  );
   Future<List<FocusAreaDto>> updatePriorities(Map<String, Object?> body) =>
       _list('/api/v1/focus-areas/priorities', method: 'PATCH', body: body);
 

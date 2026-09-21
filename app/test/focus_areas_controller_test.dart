@@ -301,6 +301,14 @@ class FakeRepository implements FocusAreaRepository {
   List<FocusAreaPriorityInput>? priorities;
 
   @override
+  Future<bool> hasHistoricalWork(int id) => throw UnimplementedError();
+  @override
+  Future<void> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) => throw UnimplementedError();
+
+  @override
   Future<List<FocusArea>> getActive() => load();
   @override
   Future<TodayOverview> getTodayOverview(DateTime localDate) =>

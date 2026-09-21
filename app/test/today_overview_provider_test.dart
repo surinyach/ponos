@@ -93,6 +93,14 @@ class OverviewRepository implements FocusAreaRepository {
   DateTime? requestedDate;
 
   @override
+  Future<bool> hasHistoricalWork(int id) => throw UnimplementedError();
+  @override
+  Future<void> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) => throw UnimplementedError();
+
+  @override
   Future<TodayOverview> getTodayOverview(DateTime localDate) {
     requestedDate = localDate;
     return load();
