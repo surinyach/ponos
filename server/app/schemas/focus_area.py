@@ -121,6 +121,10 @@ class FocusAreaResponse(ContractModel):
     targets: list[WeekdayTargetResponse]
 
 
+class FocusAreaDeletionPreview(ContractModel):
+    has_historical_work: bool
+
+
 class FocusAreaPriorityUpdate(ContractModel):
     id: int = Field(gt=0)
     priority: int

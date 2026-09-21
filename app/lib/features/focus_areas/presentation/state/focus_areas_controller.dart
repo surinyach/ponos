@@ -58,6 +58,31 @@ class FocusAreasController extends Notifier<FocusAreasState> {
     return [area];
   });
 
+  Future<bool> hasHistoricalWork(int id) => _repository.hasHistoricalWork(id);
+
+  Future<bool> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) => _enqueue(() async {
+    state = FocusAreasState(
+      status: FocusAreasStatus.saving,
+      areas: state.areas,
+    );
+    try {
+      await _repository.permanentlyDelete(
+        id,
+        confirmHistoricalWork: confirmHistoricalWork,
+      );
+      if (!ref.mounted) return false;
+      ref.invalidate(archivedFocusAreasProvider);
+      _loaded(state.areas);
+      return true;
+    } catch (error) {
+      if (ref.mounted) _failed(error);
+      return false;
+    }
+  });
+
   /// Accepts explicit priorities, including duplicates; ties use IDs.
   Future<bool> reorder(List<FocusAreaPriorityInput> priorities) {
     final snapshot = List<FocusAreaPriorityInput>.unmodifiable(priorities);

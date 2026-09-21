@@ -26,15 +26,17 @@ def test_openapi_exposes_only_the_requested_operations() -> None:
     assert set(paths["/api/v1/focus-areas"]) == {"get", "post"}
     assert set(paths["/api/v1/focus-areas/archived"]) == {"get"}
     assert set(paths["/api/v1/focus-areas/priorities"]) == {"patch"}
-    assert set(paths["/api/v1/focus-areas/{focus_area_id}"]) == {"get", "patch"}
+    assert set(paths["/api/v1/focus-areas/{focus_area_id}"]) == {
+        "delete",
+        "get",
+        "patch",
+    }
     assert set(paths["/api/v1/focus-areas/{focus_area_id}/archive"]) == {"post"}
     assert set(paths["/api/v1/focus-areas/{focus_area_id}/restore"]) == {"post"}
+    assert set(
+        paths["/api/v1/focus-areas/{focus_area_id}/deletion-preview"]
+    ) == {"get"}
     assert set(paths["/api/v1/overview/today"]) == {"get"}
-    assert all(
-        "delete" not in operations
-        for path, operations in paths.items()
-        if path.startswith("/api/v1/focus-areas")
-    )
 
 
 def test_create_requires_initial_targets_and_allows_optional_end_date() -> None:

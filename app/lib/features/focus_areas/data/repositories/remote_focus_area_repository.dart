@@ -36,6 +36,16 @@ class RemoteFocusAreaRepository implements FocusAreaRepository {
   Future<FocusArea> restore(int id) async =>
       (await _apiClient.restore(id)).toDomain();
   @override
+  Future<bool> hasHistoricalWork(int id) => _apiClient.hasHistoricalWork(id);
+  @override
+  Future<void> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) => _apiClient.permanentlyDelete(
+    id,
+    confirmHistoricalWork: confirmHistoricalWork,
+  );
+  @override
   Future<List<FocusArea>> updatePriorities(
     List<FocusAreaPriorityInput> priorities,
   ) async {

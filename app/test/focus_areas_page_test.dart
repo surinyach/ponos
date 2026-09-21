@@ -12,6 +12,9 @@ import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.d
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
 import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_repository.dart';
 import 'package:ponos_app/features/focus_areas/presentation/focus_areas_page.dart';
+import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_controller.dart';
+import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_state.dart';
+import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 
 void main() {
   testWidgets(
@@ -41,6 +44,71 @@ void main() {
       expect(find.text('First'), findsOneWidget);
     },
   );
+  testWidgets(
+    'permanently deletes archived area without work after one confirmation',
+    (tester) async {
+      final repository = FakeRepository(() async => [area(1, 'First', 1, 60)])
+        ..archivedIds.add(1);
+      await pumpPage(tester, repository);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Archived'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Permanently delete First'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete permanently'));
+      await tester.pumpAndSettle();
+
+      expect(repository.deletedId, 1);
+      expect(repository.deletionConfirmation, isFalse);
+      expect(find.text('No archived Focus Areas'), findsOneWidget);
+    },
+  );
+
+  testWidgets('requires a second warning before deleting historical work', (
+    tester,
+  ) async {
+    final repository = FakeRepository(() async => [area(1, 'First', 1, 60)])
+      ..archivedIds.add(1)
+      ..historicalWork = true;
+    await pumpPage(tester, repository);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Archived'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Permanently delete First'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete permanently'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete historical work too?'), findsOneWidget);
+    expect(repository.deletedId, isNull);
+    await tester.tap(find.text('Delete all permanently'));
+    await tester.pumpAndSettle();
+    expect(repository.deletedId, 1);
+    expect(repository.deletionConfirmation, isTrue);
+  });
+
+  testWidgets('blocks deletion while the Focus Area timer is paused', (
+    tester,
+  ) async {
+    final repository = FakeRepository(() async => [area(1, 'First', 1, 60)])
+      ..archivedIds.add(1);
+    await pumpPage(tester, repository, activeTimerFocusAreaId: 1);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Archived'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byTooltip('Cannot delete while this area has an active timer'),
+    );
+    await tester.pump();
+
+    expect(
+      find.text(
+        'This Focus Area cannot be deleted while its timer is active or paused.',
+      ),
+      findsOneWidget,
+    );
+    expect(repository.deletedId, isNull);
+  });
   testWidgets('shows loading while the repository request is pending', (
     tester,
   ) async {
@@ -197,9 +265,15 @@ Future<void> pumpPage(
   FocusAreaRepository repository, {
   VoidCallback? onCreate,
   ValueChanged<FocusArea>? onSelected,
+  int? activeTimerFocusAreaId,
 }) => tester.pumpWidget(
   ProviderScope(
-    overrides: [focusAreaRepositoryProvider.overrideWithValue(repository)],
+    overrides: [
+      focusAreaRepositoryProvider.overrideWithValue(repository),
+      focusTimerProvider.overrideWith(
+        () => TestFocusTimerController(activeTimerFocusAreaId),
+      ),
+    ],
     child: MaterialApp(
       theme: AppTheme.light,
       home: Scaffold(
@@ -212,6 +286,32 @@ Future<void> pumpPage(
     ),
   ),
 );
+
+class TestFocusTimerController extends FocusTimerController {
+  TestFocusTimerController(this.focusAreaId);
+  final int? focusAreaId;
+
+  @override
+  FocusTimerState build() {
+    if (focusAreaId == null) return const FocusTimerState.inactive();
+    return FocusTimerState(
+      status: FocusTimerStatus.paused,
+      activeTimer: ActiveFocusTimer(
+        focusAreaId: focusAreaId,
+        workDate: DateTime(2026, 9, 21),
+        startedAt: DateTime.utc(2026, 9, 21, 8),
+        startedAtUtcOffset: const Duration(hours: 2),
+        focusDuration: const Duration(minutes: 25),
+        restDuration: const Duration(minutes: 5),
+        phase: FocusTimerPhase.focus,
+        activity: FocusTimerActivity.paused,
+        accumulatedFocusTime: const Duration(minutes: 2),
+        accumulatedRestTime: Duration.zero,
+        focusTransitionNotified: false,
+      ),
+    );
+  }
+}
 
 FocusArea area(int id, String name, int priority, int? targetMinutes) {
   final timestamp = DateTime.utc(2026, 9, 1);
@@ -240,6 +340,22 @@ class FakeRepository implements FocusAreaRepository {
   final Future<List<FocusArea>> Function() load;
   List<FocusAreaPriorityInput>? priorities;
   final archivedIds = <int>{};
+  bool historicalWork = false;
+  int? deletedId;
+  bool? deletionConfirmation;
+
+  @override
+  Future<bool> hasHistoricalWork(int id) async => historicalWork;
+
+  @override
+  Future<void> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) async {
+    deletedId = id;
+    deletionConfirmation = confirmHistoricalWork;
+    archivedIds.remove(id);
+  }
 
   @override
   Future<List<FocusArea>> getActive() => load();

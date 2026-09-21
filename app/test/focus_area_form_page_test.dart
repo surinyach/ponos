@@ -250,6 +250,15 @@ class FormRepository implements FocusAreaRepository {
   Object? createError;
 
   @override
+  Future<bool> hasHistoricalWork(int id) => throw UnimplementedError();
+
+  @override
+  Future<void> permanentlyDelete(
+    int id, {
+    required bool confirmHistoricalWork,
+  }) => throw UnimplementedError();
+
+  @override
   Future<List<FocusArea>> getActive() async => [];
 
   @override

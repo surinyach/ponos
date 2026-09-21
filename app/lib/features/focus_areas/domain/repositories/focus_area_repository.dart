@@ -11,6 +11,8 @@ abstract interface class FocusAreaRepository {
   Future<FocusArea> update(int id, FocusAreaUpdateInput input);
   Future<FocusArea> archive(int id);
   Future<FocusArea> restore(int id);
+  Future<bool> hasHistoricalWork(int id);
+  Future<void> permanentlyDelete(int id, {required bool confirmHistoricalWork});
   Future<List<FocusArea>> updatePriorities(
     List<FocusAreaPriorityInput> priorities,
   );
