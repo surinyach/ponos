@@ -48,4 +48,3 @@ class SpecialActivityResponse(ContractModel):
     id: int
     name: str
     description: str | None
-    is_archived: bool

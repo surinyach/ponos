@@ -76,7 +76,7 @@ def entry_payload(**changes) -> dict:
 
 
 @pytest.mark.asyncio
-async def test_special_activity_crud_archive_and_restore(client):
+async def test_special_activity_crud_and_delete(client):
     created = await create_special_activity(client)
     activity_id = created["id"]
     assert "work_date" not in created
@@ -87,28 +87,18 @@ async def test_special_activity_crud_archive_and_restore(client):
         f"/api/v1/special-activities/{activity_id}",
         json={"name": "Production release"},
     )
-    archived = await client.post(
-        f"/api/v1/special-activities/{activity_id}/archive"
-    )
+    deleted = await client.delete(f"/api/v1/special-activities/{activity_id}")
 
     assert active.json() == [created]
     assert fetched.json() == created
     assert updated.json()["name"] == "Production release"
-    assert archived.json()["is_archived"] is True
+    assert deleted.status_code == 204
     assert (await client.get("/api/v1/special-activities")).json() == []
-    assert len(
-        (await client.get("/api/v1/special-activities/archived")).json()
-    ) == 1
-
-    restored = await client.post(
-        f"/api/v1/special-activities/{activity_id}/restore"
-    )
-    assert restored.json()["is_archived"] is False
-    assert len((await client.get("/api/v1/special-activities")).json()) == 1
+    assert (await client.get(f"/api/v1/special-activities/{activity_id}")).status_code == 404
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("operation", ["get", "patch", "archive", "restore"])
+@pytest.mark.parametrize("operation", ["get", "patch", "delete"])
 async def test_missing_special_activity_returns_404(client, operation):
     if operation == "get":
         response = await client.get("/api/v1/special-activities/999")
@@ -117,9 +107,7 @@ async def test_missing_special_activity_returns_404(client, operation):
             "/api/v1/special-activities/999", json={"name": "Missing"}
         )
     else:
-        response = await client.post(
-            f"/api/v1/special-activities/999/{operation}"
-        )
+        response = await client.delete("/api/v1/special-activities/999")
     assert response.status_code == 404
 
 
@@ -190,7 +178,7 @@ async def test_rejects_missing_references(client):
 
 
 @pytest.mark.asyncio
-async def test_archived_activity_rejects_new_entries_but_preserves_existing(client):
+async def test_special_activity_with_manual_work_cannot_be_deleted(client):
     activity = await create_special_activity(client)
     activity_id = activity["id"]
     existing = await client.post(
@@ -201,36 +189,59 @@ async def test_archived_activity_rejects_new_entries_but_preserves_existing(clie
         ),
     )
     assert existing.status_code == 201
-    await client.post(f"/api/v1/special-activities/{activity_id}/archive")
-
-    rejected = await client.post(
-        "/api/v1/manual-work-entries",
-        json=entry_payload(
-            focus_area_id=None,
-            special_activity_id=activity_id,
-        ),
-    )
+    rejected = await client.delete(f"/api/v1/special-activities/{activity_id}")
     updated = await client.patch(
         f"/api/v1/manual-work-entries/{existing.json()['id']}",
         json={"focused_seconds": 2000},
     )
 
     assert rejected.status_code == 409
+    assert "recorded work" in rejected.json()["detail"]
     assert updated.status_code == 200
     assert updated.json()["focused_seconds"] == 2000
+    assert (await client.get(f"/api/v1/special-activities/{activity_id}")).status_code == 200
+    await client.delete(f"/api/v1/manual-work-entries/{existing.json()['id']}")
+    assert (await client.delete(f"/api/v1/special-activities/{activity_id}")).status_code == 204
 
-    restored = await client.post(
-        f"/api/v1/special-activities/{activity_id}/restore"
+
+@pytest.mark.asyncio
+async def test_duplicate_special_activity_names_are_rejected_case_insensitively(client):
+    first = await create_special_activity(client)
+    duplicate = await client.post(
+        "/api/v1/special-activities", json={"name": "  release DAY  "}
     )
-    accepted = await client.post(
-        "/api/v1/manual-work-entries",
-        json=entry_payload(
-            focus_area_id=None,
-            special_activity_id=activity_id,
-        ),
+    assert duplicate.status_code == 409
+    assert "already exists" in duplicate.json()["detail"]
+    other = await client.post(
+        "/api/v1/special-activities", json={"name": "Other"}
     )
-    assert restored.status_code == 200
-    assert accepted.status_code == 201
+    renamed = await client.patch(
+        f"/api/v1/special-activities/{other.json()['id']}",
+        json={"name": first["name"].upper()},
+    )
+    assert renamed.status_code == 409
+    assert len((await client.get("/api/v1/special-activities")).json()) == 2
+
+
+@pytest.mark.asyncio
+async def test_special_activity_with_timer_work_cannot_be_deleted(client):
+    activity = await create_special_activity(client)
+    activity_id = activity["id"]
+    timer = await client.post(
+        "/api/v1/timer-executions",
+        json={
+            "special_activity_id": activity_id,
+            "work_date": "2026-09-09",
+            "started_at": "2026-09-09T08:00:00+02:00",
+            "ended_at": "2026-09-09T08:02:00+02:00",
+            "focused_seconds": 60,
+            "rest_seconds": 60,
+        },
+    )
+    assert timer.status_code == 201
+    deleted = await client.delete(f"/api/v1/special-activities/{activity_id}")
+    assert deleted.status_code == 409
+    assert (await client.get(f"/api/v1/special-activities/{activity_id}")).status_code == 200
 
 
 @pytest.mark.asyncio

@@ -1,5 +1,6 @@
 import 'focus_area.dart';
 import 'work_totals.dart';
+import '../../../work_entries/domain/models/special_activity.dart';
 
 class FocusAreaTodayProgress {
   const FocusAreaTodayProgress({
@@ -15,6 +16,18 @@ class FocusAreaTodayProgress {
   final bool completed;
 }
 
+class SpecialActivityTodayProgress {
+  const SpecialActivityTodayProgress({
+    required this.specialActivity,
+    required this.focusedTime,
+    required this.restTime,
+  });
+
+  final SpecialActivity specialActivity;
+  final Duration focusedTime;
+  final Duration restTime;
+}
+
 class TodayOverview {
   const TodayOverview({
     required this.date,
@@ -25,6 +38,7 @@ class TodayOverview {
     required this.completedFocusAreas,
     required this.targetedFocusAreas,
     required this.areas,
+    this.specialActivities = const [],
     required this.week,
     required this.overall,
   });
@@ -37,6 +51,7 @@ class TodayOverview {
   final int completedFocusAreas;
   final int targetedFocusAreas;
   final List<FocusAreaTodayProgress> areas;
+  final List<SpecialActivityTodayProgress> specialActivities;
   final WeeklyWorkTotals week;
   final OverallWorkTotals overall;
 }

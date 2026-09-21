@@ -13,14 +13,14 @@ async def focus_area_exists(session: AsyncSession, focus_area_id: int) -> bool:
     return result is not None
 
 
-async def special_activity_state(
+async def special_activity_exists(
     session: AsyncSession, special_activity_id: int
-) -> bool | None:
+) -> bool:
     return await session.scalar(
-        select(SpecialActivity.is_archived).where(
+        select(SpecialActivity.id).where(
             SpecialActivity.id == special_activity_id
         )
-    )
+    ) is not None
 
 
 async def add(

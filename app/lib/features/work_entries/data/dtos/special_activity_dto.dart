@@ -5,7 +5,6 @@ class SpecialActivityDto {
   const SpecialActivityDto({
     required this.id,
     required this.name,
-    required this.isArchived,
     this.description,
   });
 
@@ -14,20 +13,14 @@ class SpecialActivityDto {
         id: requiredValue<int>(json, 'id'),
         name: requiredValue<String>(json, 'name'),
         description: nullableValue<String>(json, 'description'),
-        isArchived: requiredValue<bool>(json, 'is_archived'),
       );
 
   final int id;
   final String name;
   final String? description;
-  final bool isArchived;
 
-  SpecialActivity toDomain() => SpecialActivity(
-    id: id,
-    name: name,
-    description: description,
-    isArchived: isArchived,
-  );
+  SpecialActivity toDomain() =>
+      SpecialActivity(id: id, name: name, description: description);
 
   static Map<String, Object?> createToJson(SpecialActivityCreateInput input) =>
       {'name': input.name, 'description': input.description};

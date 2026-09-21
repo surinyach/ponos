@@ -16,6 +16,7 @@ import 'package:ponos_app/features/home/presentation/widgets/work_statistics.dar
 import 'package:ponos_app/features/home/presentation/widgets/streak_consistency.dart';
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 import 'package:ponos_app/features/focus_timer/domain/repositories/focus_timer_gateways.dart';
+import 'package:ponos_app/features/work_entries/domain/models/special_activity.dart';
 
 void main() {
   testWidgets('shows wide navigation in a wide viewport', (tester) async {
@@ -24,6 +25,22 @@ void main() {
     expect(find.text('Ponos'), findsOneWidget);
     expect(find.text('Overview'), findsWidgets);
     expect(find.byType(NavigationRail), findsOneWidget);
+  });
+
+  testWidgets('manages both types under Work Areas', (tester) async {
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Work Areas').last);
+    await tester.pump();
+    expect(find.text('Focus Areas'), findsOneWidget);
+    expect(find.text('Special Activities'), findsOneWidget);
+    expect(find.byKey(const Key('work-area-type')), findsOneWidget);
+    await tester.tap(find.text('Special Activities'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('new-special-activity')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('new-special-activity')));
+    await tester.pumpAndSettle();
+    expect(find.text('New Special Activity'), findsOneWidget);
   });
 
   testWidgets('opens the Focus Timer from the navigation bar', (tester) async {
@@ -137,7 +154,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Focus areas'), findsOneWidget);
+    expect(find.text('Focus Areas & Special Activities'), findsOneWidget);
     expect(find.text('1h today · 1h/day target'), findsOneWidget);
     expect(find.text('1h today · 2h/day target'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle), findsOneWidget);
@@ -151,6 +168,35 @@ void main() {
     expect(
       labels.indexOf('First priority'),
       lessThan(labels.indexOf('Second priority')),
+    );
+  });
+
+  testWidgets('shows Special Activity focus and rest beside Focus Areas', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: FocusAreas(
+            areas: const [],
+            workedTodayByAreaId: const {},
+            specialActivities: const [
+              SpecialActivityTodayProgress(
+                specialActivity: SpecialActivity(id: 4, name: 'Release day'),
+                focusedTime: Duration(minutes: 25),
+                restTime: Duration(minutes: 5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(find.text('Focus Areas & Special Activities'), findsOneWidget);
+    expect(find.text('Release day'), findsOneWidget);
+    expect(
+      find.text('Special Activity · Focus 25m · Rest 5m today'),
+      findsOneWidget,
     );
   });
 

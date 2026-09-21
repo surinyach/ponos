@@ -5,13 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.focus_area import FocusArea, FocusAreaTarget
+from app.models.special_activity import SpecialActivity
 from app.schemas.today_overview import (
     FocusAreaTodayProgress,
+    SpecialActivityTodayProgress,
     TodayOverviewResponse,
 )
 from app.schemas.work_totals import OverallTotalsResponse, WeekTotalsResponse
 from app.services.work_totals import (
     focused_by_area,
+    time_by_special_activity,
     lifetime_totals,
     totals_between,
 )
@@ -33,6 +36,16 @@ async def get_today_overview(
     )
 
     focused_by_area_id = await focused_by_area(db, work_date)
+    special_time = await time_by_special_activity(db, work_date)
+    special_activities = list(
+        (
+            await db.scalars(
+                select(SpecialActivity)
+                .where(SpecialActivity.id.in_(special_time))
+                .order_by(SpecialActivity.id)
+            )
+        ).all()
+    )
     actual_focused, actual_rest = await totals_between(db, work_date, work_date)
 
     progress = []
@@ -66,6 +79,14 @@ async def get_today_overview(
         completed_focus_areas=sum(item.completed for item in targeted),
         targeted_focus_areas=len(targeted),
         areas=progress,
+        special_activities=[
+            SpecialActivityTodayProgress(
+                special_activity=activity,
+                focused_seconds=special_time[activity.id][0],
+                rest_seconds=special_time[activity.id][1],
+            )
+            for activity in special_activities
+        ],
         week=WeekTotalsResponse(
             week_start=week_start,
             week_end=week_end,

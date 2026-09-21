@@ -12,9 +12,6 @@ class RemoteSpecialActivityRepository implements SpecialActivityRepository {
   Future<List<SpecialActivity>> getActive() async =>
       _domain(await _apiClient.getActiveSpecialActivities());
   @override
-  Future<List<SpecialActivity>> getArchived() async =>
-      _domain(await _apiClient.getArchivedSpecialActivities());
-  @override
   Future<SpecialActivity> getById(int id) async =>
       (await _apiClient.getSpecialActivity(id)).toDomain();
   @override
@@ -31,11 +28,7 @@ class RemoteSpecialActivityRepository implements SpecialActivityRepository {
     SpecialActivityDto.updateToJson(input),
   )).toDomain();
   @override
-  Future<SpecialActivity> archive(int id) async =>
-      (await _apiClient.archiveSpecialActivity(id)).toDomain();
-  @override
-  Future<SpecialActivity> restore(int id) async =>
-      (await _apiClient.restoreSpecialActivity(id)).toDomain();
+  Future<void> delete(int id) => _apiClient.deleteSpecialActivity(id);
 
   List<SpecialActivity> _domain(List<SpecialActivityDto> values) => values
       .map((value) => value.toDomain())

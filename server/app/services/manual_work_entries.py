@@ -20,10 +20,6 @@ class SpecialActivityNotFoundError(Exception):
     pass
 
 
-class ArchivedSpecialActivityError(Exception):
-    pass
-
-
 class InvalidManualWorkEntryError(Exception):
     pass
 
@@ -65,8 +61,6 @@ async def _validate_subject(
     )
     if activity is None:
         raise SpecialActivityNotFoundError(special_activity_id)
-    if activity.is_archived:
-        raise ArchivedSpecialActivityError(special_activity_id)
 
 
 def _validate_durations(focused_seconds: int, rest_seconds: int) -> None:

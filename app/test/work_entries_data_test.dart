@@ -23,7 +23,6 @@ void main() {
       final activities = await repository.getActive();
 
       expect(activities.single.name, 'Release day');
-      expect(activities.single.isArchived, isFalse);
     });
 
     test('serializes create and partial update inputs', () async {
@@ -51,27 +50,42 @@ void main() {
       expect(requests.last.method, 'PATCH');
     });
 
-    test('uses archived, get, archive, and restore endpoints', () async {
+    test('uses get and delete endpoints', () async {
       final seen = <String>[];
       final repository = _specialRepository((request) async {
         seen.add('${request.method} ${request.url.path}');
-        if (request.url.path.endsWith('/archived')) {
-          return http.Response(jsonEncode([_activityResponse()]), 200);
-        }
+        if (request.method == 'DELETE') return http.Response('', 204);
         return http.Response(jsonEncode(_activityResponse()), 200);
       });
 
-      await repository.getArchived();
       await repository.getById(4);
-      await repository.archive(4);
-      await repository.restore(4);
+      await repository.delete(4);
 
       expect(seen, [
-        'GET /ponos/api/v1/special-activities/archived',
         'GET /ponos/api/v1/special-activities/4',
-        'POST /ponos/api/v1/special-activities/4/archive',
-        'POST /ponos/api/v1/special-activities/4/restore',
+        'DELETE /ponos/api/v1/special-activities/4',
       ]);
+    });
+
+    test('maps duplicate name and referenced-work conflicts', () async {
+      final repository = _specialRepository(
+        (_) async => http.Response(
+          '{"detail":"A Special Activity with this name already exists"}',
+          409,
+        ),
+      );
+      expect(
+        () => repository.create(
+          const SpecialActivityCreateInput(name: 'Duplicate'),
+        ),
+        throwsA(
+          isA<ConflictException>().having(
+            (error) => error.message,
+            'message',
+            contains('already exists'),
+          ),
+        ),
+      );
     });
   });
 
@@ -211,7 +225,6 @@ Map<String, Object?> _activityResponse() => {
   'id': 4,
   'name': 'Release day',
   'description': 'Deploy',
-  'is_archived': false,
 };
 
 Map<String, Object?> _entryResponse() => {

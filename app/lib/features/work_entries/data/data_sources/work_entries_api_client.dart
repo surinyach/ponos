@@ -21,8 +21,6 @@ class WorkEntriesApiClient {
 
   Future<List<SpecialActivityDto>> getActiveSpecialActivities() =>
       _specialActivityList('/api/v1/special-activities');
-  Future<List<SpecialActivityDto>> getArchivedSpecialActivities() =>
-      _specialActivityList('/api/v1/special-activities/archived');
   Future<SpecialActivityDto> getSpecialActivity(int id) =>
       _specialActivity('GET', '/api/v1/special-activities/$id');
   Future<SpecialActivityDto> createSpecialActivity(
@@ -32,10 +30,9 @@ class WorkEntriesApiClient {
     int id,
     Map<String, Object?> body,
   ) => _specialActivity('PATCH', '/api/v1/special-activities/$id', body: body);
-  Future<SpecialActivityDto> archiveSpecialActivity(int id) =>
-      _specialActivity('POST', '/api/v1/special-activities/$id/archive');
-  Future<SpecialActivityDto> restoreSpecialActivity(int id) =>
-      _specialActivity('POST', '/api/v1/special-activities/$id/restore');
+  Future<void> deleteSpecialActivity(int id) async {
+    await _request('DELETE', '/api/v1/special-activities/$id');
+  }
 
   Future<List<ManualWorkEntryDto>> getManualWorkEntries() async {
     final value = await _request('GET', '/api/v1/manual-work-entries');

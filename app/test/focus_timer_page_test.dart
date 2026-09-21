@@ -188,12 +188,7 @@ class LoadedSpecialActivitiesController extends SpecialActivitiesController {
   @override
   SpecialActivitiesState build() => SpecialActivitiesState(
     status: SpecialActivitiesStatus.loaded,
-    active: [
-      const SpecialActivity(id: 4, name: 'Release day', isArchived: false),
-    ],
-    archived: [
-      const SpecialActivity(id: 5, name: 'Archived', isArchived: true),
-    ],
+    active: [const SpecialActivity(id: 4, name: 'Release day')],
   );
 }
 

@@ -81,7 +81,6 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
                   areaName: timer.activeTimer?.specialActivityId != null
                       ? _specialName(
                           activitiesState.active,
-                          activitiesState.archived,
                           timer.activeTimer!.specialActivityId!,
                         )
                       : _areaName(
@@ -269,12 +268,8 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
           .firstOrNull ??
       'Focus Area #$id';
 
-  String _specialName(
-    List<SpecialActivity> active,
-    List<SpecialActivity> archived,
-    int id,
-  ) =>
-      [...active, ...archived]
+  String _specialName(List<SpecialActivity> active, int id) =>
+      active
           .where((activity) => activity.id == id)
           .map((activity) => activity.name)
           .firstOrNull ??

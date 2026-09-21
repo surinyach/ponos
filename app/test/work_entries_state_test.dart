@@ -39,14 +39,12 @@ void main() {
     });
     tearDown(() => container.dispose());
 
-    test('loads active and archived lists, then refreshes to empty', () async {
+    test('loads activities, then refreshes to empty', () async {
       expect(current().status, SpecialActivitiesStatus.loading);
       await settle();
       expect(current().status, SpecialActivitiesStatus.loaded);
       expect(current().active.single.id, 1);
-      expect(current().archived.single.id, 2);
       repository.active = () async => [];
-      repository.archived = () async => [];
       expect(await controller.refresh(), isTrue);
       expect(current().status, SpecialActivitiesStatus.empty);
       expect(() => current().active.clear(), throwsUnsupportedError);
@@ -71,8 +69,8 @@ void main() {
       expect(current().error, isNull);
     });
 
-    for (final action in ['create', 'update', 'archive', 'restore']) {
-      test('$action saves and moves items to the proper list', () async {
+    for (final action in ['create', 'update']) {
+      test('$action saves to the list', () async {
         await settle();
         final pending = Completer<SpecialActivity>();
         repository.mutate = () => pending.future;
@@ -84,20 +82,14 @@ void main() {
             1,
             const SpecialActivityUpdateInput(name: 'Updated'),
           ),
-          'archive' => controller.archive(1),
-          _ => controller.restore(2),
+          _ => throw StateError('Unexpected action'),
         };
         await settle();
         expect(current().status, SpecialActivitiesStatus.saving);
         expect(repository.lastAction, action);
         pending.complete(
           special(
-            action == 'create'
-                ? 3
-                : action == 'restore'
-                ? 2
-                : 1,
-            archived: action == 'archive',
+            action == 'create' ? 3 : 1,
             name: action == 'update' ? 'Updated' : 'Activity',
           ),
         );
@@ -105,13 +97,7 @@ void main() {
         expect(current().status, SpecialActivitiesStatus.loaded);
         expect(current().error, isNull);
         expect(transitions, contains(SpecialActivitiesStatus.saving));
-        if (action == 'archive') {
-          expect(current().active, isEmpty);
-          expect(current().archived.map((a) => a.id), [1, 2]);
-        } else if (action == 'restore') {
-          expect(current().active.map((a) => a.id), [1, 2]);
-          expect(current().archived, isEmpty);
-        } else if (action == 'update') {
+        if (action == 'update') {
           expect(current().active.single.name, 'Updated');
         } else {
           expect(current().active.map((a) => a.id), [1, 3]);
@@ -130,23 +116,32 @@ void main() {
             1,
             const SpecialActivityUpdateInput(name: 'Updated'),
           ),
-          'archive' => controller.archive(1),
-          _ => controller.restore(2),
+          _ => throw StateError('Unexpected action'),
         };
         expect(await result, isFalse);
         expect(current().status, SpecialActivitiesStatus.error);
         expect(current().error, same(error));
         expect(current().active.single.id, 1);
-        expect(current().archived.single.id, 2);
       });
     }
 
-    test('failed refresh retains both lists', () async {
+    test('deletion removes an activity and conflict retains it', () async {
       await settle();
-      repository.archived = () async => throw const ServerException('down');
+      expect(await controller.delete(1), isTrue);
+      expect(current().status, SpecialActivitiesStatus.empty);
+      repository.active = () async => [special(1)];
+      await controller.refresh();
+      repository.failDelete = true;
+      expect(await controller.delete(1), isFalse);
+      expect(current().active.single.id, 1);
+      expect(current().error, isA<ConflictException>());
+    });
+
+    test('failed refresh retains the list', () async {
+      await settle();
+      repository.active = () async => throw const ServerException('down');
       expect(await controller.refresh(), isFalse);
       expect(current().active.single.id, 1);
-      expect(current().archived.single.id, 2);
     });
   });
 
@@ -286,11 +281,8 @@ void main() {
   });
 }
 
-SpecialActivity special(
-  int id, {
-  bool archived = false,
-  String name = 'Activity',
-}) => SpecialActivity(id: id, name: name, isArchived: archived);
+SpecialActivity special(int id, {String name = 'Activity'}) =>
+    SpecialActivity(id: id, name: name);
 
 ManualWorkEntry entry(int id) => ManualWorkEntry(
   id: id,
@@ -302,16 +294,12 @@ ManualWorkEntry entry(int id) => ManualWorkEntry(
 
 class FakeSpecialRepository implements SpecialActivityRepository {
   Future<List<SpecialActivity>> Function() active = () async => [special(1)];
-  Future<List<SpecialActivity>> Function() archived = () async => [
-    special(2, archived: true),
-  ];
+  bool failDelete = false;
   Future<SpecialActivity> Function() mutate = () async => special(3);
   String? lastAction;
 
   @override
   Future<List<SpecialActivity>> getActive() => active();
-  @override
-  Future<List<SpecialActivity>> getArchived() => archived();
   @override
   Future<SpecialActivity> getById(int id) => throw UnimplementedError();
   @override
@@ -327,15 +315,9 @@ class FakeSpecialRepository implements SpecialActivityRepository {
   }
 
   @override
-  Future<SpecialActivity> archive(int id) {
-    lastAction = 'archive';
-    return mutate();
-  }
-
-  @override
-  Future<SpecialActivity> restore(int id) {
-    lastAction = 'restore';
-    return mutate();
+  Future<void> delete(int id) async {
+    lastAction = 'delete';
+    if (failDelete) throw const ConflictException('Activity has recorded work');
   }
 }
 

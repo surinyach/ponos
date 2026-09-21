@@ -88,11 +88,8 @@ class _LogWorkFormPageState extends ConsumerState<LogWorkFormPage> {
           'special:${activity.id}': activity.name,
     };
     if (_subject != null && !subjects.containsKey(_subject)) {
-      final archived = activities.archived.where(
-        (activity) => 'special:${activity.id}' == _subject,
-      );
-      subjects[_subject!] = archived.isNotEmpty
-          ? '${archived.first.name} (archived)'
+      subjects[_subject!] = widget.entry?.specialActivityId != null
+          ? 'Special Activity #${widget.entry!.specialActivityId}'
           : 'Archived Focus Area #${widget.entry?.focusAreaId ?? '?'}';
     }
 

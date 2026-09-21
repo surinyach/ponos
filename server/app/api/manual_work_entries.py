@@ -32,9 +32,6 @@ def _raise_service_error(error: Exception) -> NoReturn:
     elif isinstance(error, service.SpecialActivityNotFoundError):
         detail = f"Special Activity {record_id} was not found"
         code = status.HTTP_404_NOT_FOUND
-    elif isinstance(error, service.ArchivedSpecialActivityError):
-        detail = f"Special Activity {record_id} is archived"
-        code = status.HTTP_409_CONFLICT
     else:
         detail = str(record_id)
         code = status.HTTP_422_UNPROCESSABLE_CONTENT
@@ -60,7 +57,6 @@ async def create_manual_work_entry(
     except (
         service.FocusAreaNotFoundError,
         service.SpecialActivityNotFoundError,
-        service.ArchivedSpecialActivityError,
         service.InvalidManualWorkEntryError,
     ) as error:
         _raise_service_error(error)
@@ -83,7 +79,6 @@ async def update_manual_work_entry(
         service.ManualWorkEntryNotFoundError,
         service.FocusAreaNotFoundError,
         service.SpecialActivityNotFoundError,
-        service.ArchivedSpecialActivityError,
         service.InvalidManualWorkEntryError,
     ) as error:
         _raise_service_error(error)

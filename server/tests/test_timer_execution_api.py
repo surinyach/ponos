@@ -121,7 +121,8 @@ async def test_missing_focus_area_returns_404_without_storing(client):
 
 
 @pytest.mark.asyncio
-async def test_timer_execution_can_link_to_special_activity(client):
+@pytest.mark.parametrize("explicit_null_focus_area", [False, True])
+async def test_timer_execution_can_link_to_special_activity(client, explicit_null_focus_area):
     activity = await client.post(
         "/api/v1/special-activities",
         json={"name": "Release"},
@@ -129,6 +130,8 @@ async def test_timer_execution_can_link_to_special_activity(client):
     assert activity.status_code == 201
     payload = execution_payload(1)
     payload.pop("focus_area_id")
+    if explicit_null_focus_area:
+        payload["focus_area_id"] = None
     payload["special_activity_id"] = activity.json()["id"]
 
     response = await client.post("/api/v1/timer-executions", json=payload)
@@ -150,6 +153,28 @@ async def test_timer_execution_can_link_to_special_activity(client):
     assert overview.json()["actual_rest_seconds"] == 300
     assert overview.json()["week"]["focused_seconds"] == 1500
     assert overview.json()["overall"]["tracked_seconds"] == 1800
+    manual = await client.post(
+        "/api/v1/manual-work-entries",
+        json={
+            "special_activity_id": activity.json()["id"],
+            "work_date": "2026-09-08",
+            "focused_seconds": 60,
+            "rest_seconds": 30,
+        },
+    )
+    assert manual.status_code == 201
+    mixed = await client.get(
+        "/api/v1/overview/today",
+        params={
+            "date": "2026-09-08",
+            "day_start_utc": "2026-09-07T22:00:00Z",
+            "day_end_utc": "2026-09-08T22:00:00Z",
+        },
+    )
+    assert mixed.json()["actual_focused_seconds"] == 1560
+    assert mixed.json()["actual_rest_seconds"] == 330
+    assert mixed.json()["special_activities"][0]["focused_seconds"] == 1560
+    assert mixed.json()["special_activities"][0]["rest_seconds"] == 330
 
 
 @pytest.mark.asyncio
@@ -170,21 +195,13 @@ async def test_timer_execution_requires_exactly_one_owner(client, owner):
 
 
 @pytest.mark.asyncio
-async def test_missing_and_archived_special_activity_cannot_receive_timer_execution(client):
+async def test_missing_special_activity_cannot_receive_timer_execution(client):
     payload = execution_payload(1)
     payload.pop("focus_area_id")
     payload["special_activity_id"] = 999
     missing = await client.post("/api/v1/timer-executions", json=payload)
     assert missing.status_code == 404
 
-    activity = await client.post(
-        "/api/v1/special-activities", json={"name": "Release"}
-    )
-    activity_id = activity.json()["id"]
-    await client.post(f"/api/v1/special-activities/{activity_id}/archive")
-    payload["special_activity_id"] = activity_id
-    archived = await client.post("/api/v1/timer-executions", json=payload)
-    assert archived.status_code == 409
     assert await execution_count() == 0
 
 

@@ -5,7 +5,6 @@ import '../../../app/theme/app_spacing.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../focus_areas/presentation/state/focus_areas_controller.dart';
 import '../domain/models/manual_work_entry.dart';
-import 'create_special_activity_page.dart';
 import 'log_work_form_page.dart';
 import 'state/manual_work_entries_controller.dart';
 import 'state/manual_work_entries_state.dart';
@@ -21,7 +20,7 @@ class LogWorkPage extends ConsumerWidget {
     final activities = ref.watch(specialActivitiesProvider);
     final subjectNames = <String, String>{
       for (final area in areas) 'focus:${area.id}': area.name,
-      for (final activity in [...activities.active, ...activities.archived])
+      for (final activity in activities.active)
         'special:${activity.id}': activity.name,
     };
     final busy = state.status == ManualWorkEntriesStatus.saving;
@@ -49,16 +48,6 @@ class LogWorkPage extends ConsumerWidget {
                         onPressed: busy ? null : () => _openForm(context),
                         icon: const Icon(Icons.add),
                         label: const Text('Add entry'),
-                      ),
-                      OutlinedButton.icon(
-                        key: const Key('new-special-activity'),
-                        onPressed: () => Navigator.of(context).push<void>(
-                          MaterialPageRoute(
-                            builder: (_) => const CreateSpecialActivityPage(),
-                          ),
-                        ),
-                        icon: const Icon(Icons.star_outline),
-                        label: const Text('New Special Activity'),
                       ),
                     ],
                   ),

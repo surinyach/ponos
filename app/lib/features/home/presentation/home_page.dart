@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/focus_area_form_page.dart';
-import '../../focus_areas/presentation/focus_areas_page.dart';
+import '../../focus_areas/presentation/work_areas_page.dart';
 import '../../focus_timer/presentation/focus_timer_page.dart';
 import '../../work_entries/presentation/log_work_page.dart';
+import '../../work_entries/presentation/create_special_activity_page.dart';
 import 'state/today_overview_provider.dart';
 import 'widgets/today_summary.dart';
 import 'widgets/focus_areas.dart';
@@ -24,7 +25,7 @@ class _HomePageState extends State<HomePage> {
   static const _destinations = <_Destination>[
     _Destination('Overview', Icons.home_outlined, Icons.home),
     _Destination(
-      'Focus areas',
+      'Work Areas',
       Icons.track_changes_outlined,
       Icons.track_changes,
     ),
@@ -48,9 +49,10 @@ class _HomePageState extends State<HomePage> {
           0 => _OverviewContent(
             onManageFocusAreas: () => _selectDestination(1),
           ),
-          1 => FocusAreasPage(
-            onCreate: () => _openFocusAreaForm(),
-            onAreaSelected: (area) => _openFocusAreaForm(area),
+          1 => WorkAreasPage(
+            onCreateFocusArea: () => _openFocusAreaForm(),
+            onCreateSpecialActivity: _openSpecialActivityForm,
+            onFocusAreaSelected: (area) => _openFocusAreaForm(area),
           ),
           2 => const FocusTimerPage(),
           3 => const LogWorkPage(),
@@ -110,6 +112,12 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (_) => FocusAreaFormPage(area: area)),
     );
   }
+
+  Future<void> _openSpecialActivityForm() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const CreateSpecialActivityPage()),
+    );
+  }
 }
 
 class _OverviewContent extends ConsumerWidget {
@@ -149,7 +157,7 @@ class _OverviewContent extends ConsumerWidget {
                 totalRestTime: data.overall.restTime,
                 totalTrackedTime: data.overall.trackedTime,
               );
-              if (data.areas.isEmpty) {
+              if (data.areas.isEmpty && data.specialActivities.isEmpty) {
                 return Column(
                   children: [
                     _OverviewEmpty(onManageFocusAreas: onManageFocusAreas),
@@ -165,6 +173,7 @@ class _OverviewContent extends ConsumerWidget {
                 builder: (context, constraints) {
                   final focusAreas = FocusAreas(
                     targetDate: data.date,
+                    specialActivities: data.specialActivities,
                     areas: data.areas.map((item) => item.focusArea).toList(),
                     workedTodayByAreaId: {
                       for (final item in data.areas)

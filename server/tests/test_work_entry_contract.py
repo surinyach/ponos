@@ -20,16 +20,10 @@ def test_openapi_exposes_special_activity_operations() -> None:
     paths = app.openapi()["paths"]
 
     assert set(paths["/api/v1/special-activities"]) == {"get", "post"}
-    assert set(paths["/api/v1/special-activities/archived"]) == {"get"}
     assert set(
         paths["/api/v1/special-activities/{special_activity_id}"]
-    ) == {"get", "patch"}
-    assert set(
-        paths["/api/v1/special-activities/{special_activity_id}/archive"]
-    ) == {"post"}
-    assert set(
-        paths["/api/v1/special-activities/{special_activity_id}/restore"]
-    ) == {"post"}
+    ) == {"get", "patch", "delete"}
+    assert "/api/v1/special-activities/archived" not in paths
 
 
 def test_openapi_exposes_manual_work_entry_operations() -> None:
@@ -62,7 +56,6 @@ def test_special_activity_contract_has_no_recurring_work_fields() -> None:
         "id",
         "name",
         "description",
-        "is_archived",
     }
     assert not {
         "priority",

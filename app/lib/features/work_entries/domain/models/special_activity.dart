@@ -2,14 +2,12 @@ class SpecialActivity {
   const SpecialActivity({
     required this.id,
     required this.name,
-    required this.isArchived,
     this.description,
   });
 
   final int id;
   final String name;
   final String? description;
-  final bool isArchived;
 }
 
 class SpecialActivityCreateInput {

@@ -44,8 +44,22 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
 
   Future<bool> update(int id, SpecialActivityUpdateInput input) =>
       _save(() => _repository.update(id, input));
-  Future<bool> archive(int id) => _save(() => _repository.archive(id));
-  Future<bool> restore(int id) => _save(() => _repository.restore(id));
+  Future<bool> delete(int id) => _enqueue(() async {
+    if (!_hasLoaded && !await _load()) return false;
+    state = SpecialActivitiesState(
+      status: SpecialActivitiesStatus.saving,
+      active: state.active,
+    );
+    try {
+      await _repository.delete(id);
+      if (!ref.mounted) return false;
+      _loaded(state.active.where((activity) => activity.id != id));
+      return true;
+    } catch (error) {
+      if (ref.mounted) _failed(error);
+      return false;
+    }
+  });
 
   Future<bool> _enqueue(Future<bool> Function() operation) {
     final result = _tail.then((_) async {
@@ -60,14 +74,12 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
     state = SpecialActivitiesState(
       status: SpecialActivitiesStatus.loading,
       active: state.active,
-      archived: state.archived,
     );
     try {
       final active = await _repository.getActive();
-      final archived = await _repository.getArchived();
       if (!ref.mounted) return false;
       _hasLoaded = true;
-      _loaded(active, archived);
+      _loaded(active);
       return true;
     } catch (error) {
       if (ref.mounted) _failed(error);
@@ -81,17 +93,14 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
         state = SpecialActivitiesState(
           status: SpecialActivitiesStatus.saving,
           active: state.active,
-          archived: state.archived,
         );
         try {
           final changed = await operation();
           if (!ref.mounted) return false;
           final active = {for (final item in state.active) item.id: item};
-          final archived = {for (final item in state.archived) item.id: item};
           active.remove(changed.id);
-          archived.remove(changed.id);
-          (changed.isArchived ? archived : active)[changed.id] = changed;
-          _loaded(active.values, archived.values);
+          active[changed.id] = changed;
+          _loaded(active.values);
           return true;
         } catch (error) {
           if (ref.mounted) _failed(error);
@@ -99,18 +108,13 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
         }
       });
 
-  void _loaded(
-    Iterable<SpecialActivity> active,
-    Iterable<SpecialActivity> archived,
-  ) {
+  void _loaded(Iterable<SpecialActivity> active) {
     final activeList = active.toList()..sort(_byId);
-    final archivedList = archived.toList()..sort(_byId);
     state = SpecialActivitiesState(
-      status: activeList.isEmpty && archivedList.isEmpty
+      status: activeList.isEmpty
           ? SpecialActivitiesStatus.empty
           : SpecialActivitiesStatus.loaded,
       active: activeList,
-      archived: archivedList,
     );
   }
 
@@ -120,7 +124,6 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
     state = SpecialActivitiesState(
       status: SpecialActivitiesStatus.error,
       active: state.active,
-      archived: state.archived,
       error: error,
     );
   }

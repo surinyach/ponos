@@ -73,6 +73,17 @@ void main() {
                   'completed': false,
                 },
               ],
+              'special_activities': [
+                {
+                  'special_activity': {
+                    'id': 4,
+                    'name': 'Release day',
+                    'description': null,
+                  },
+                  'focused_seconds': 600,
+                  'rest_seconds': 120,
+                },
+              ],
             }),
             200,
           );
@@ -83,6 +94,18 @@ void main() {
         expect(overview.expectedFocusTime, const Duration(hours: 1));
         expect(overview.actualFocusedTime, const Duration(minutes: 30));
         expect(overview.actualRestTime, const Duration(minutes: 5));
+        expect(
+          overview.specialActivities.single.specialActivity.name,
+          'Release day',
+        );
+        expect(
+          overview.specialActivities.single.focusedTime,
+          const Duration(minutes: 10),
+        );
+        expect(
+          overview.specialActivities.single.restTime,
+          const Duration(minutes: 2),
+        );
         expect(overview.week.focusedTime, const Duration(minutes: 90));
         expect(overview.overall.daysWorked, 3);
         expect(overview.areas.single.focusArea.name, 'Work placement');

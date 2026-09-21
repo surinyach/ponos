@@ -1,6 +1,5 @@
 from sqlalchemy import (
     BigInteger,
-    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -79,9 +78,10 @@ def test_special_activity_columns_match_storage_contract() -> None:
     assert table.c.name.nullable is False
     assert table.c.description.nullable is True
     assert "work_date" not in table.c
-    assert isinstance(table.c.is_archived.type, Boolean)
-    assert table.c.is_archived.nullable is False
-    assert str(table.c.is_archived.server_default.arg) == "false"
+    assert "is_archived" not in table.c
+    assert "uq_special_activities_name_ci" in {
+        index.name for index in table.indexes
+    }
 
 
 def test_manual_work_entry_columns_and_constraints_match_contract() -> None:

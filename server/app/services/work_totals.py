@@ -12,12 +12,14 @@ def _work_rows():
         select(
             TimerExecution.work_date.label("work_date"),
             TimerExecution.focus_area_id.label("focus_area_id"),
+            TimerExecution.special_activity_id.label("special_activity_id"),
             TimerExecution.focused_seconds.label("focused_seconds"),
             TimerExecution.rest_seconds.label("rest_seconds"),
         ),
         select(
             ManualWorkEntry.work_date,
             ManualWorkEntry.focus_area_id,
+            ManualWorkEntry.special_activity_id,
             ManualWorkEntry.focused_seconds,
             ManualWorkEntry.rest_seconds,
         ),
@@ -57,6 +59,28 @@ async def focused_by_area(
         .group_by(rows.c.focus_area_id)
     )
     return {int(area_id): int(seconds) for area_id, seconds in result.all()}
+
+
+async def time_by_special_activity(
+    db: AsyncSession, work_date: date
+) -> dict[int, tuple[int, int]]:
+    rows = _work_rows()
+    result = await db.execute(
+        select(
+            rows.c.special_activity_id,
+            func.coalesce(func.sum(rows.c.focused_seconds), 0),
+            func.coalesce(func.sum(rows.c.rest_seconds), 0),
+        )
+        .where(
+            rows.c.work_date == work_date,
+            rows.c.special_activity_id.is_not(None),
+        )
+        .group_by(rows.c.special_activity_id)
+    )
+    return {
+        int(activity_id): (int(focused), int(rest))
+        for activity_id, focused, rest in result.all()
+    }
 
 
 async def lifetime_totals(db: AsyncSession) -> tuple[int, int, int]:

@@ -15,6 +15,11 @@ import 'package:ponos_app/features/work_entries/domain/models/special_activity.d
 import 'package:ponos_app/features/work_entries/domain/repositories/manual_work_entry_repository.dart';
 import 'package:ponos_app/features/work_entries/domain/repositories/special_activity_repository.dart';
 import 'package:ponos_app/features/work_entries/presentation/log_work_page.dart';
+import 'package:ponos_app/features/work_entries/presentation/create_special_activity_page.dart';
+import 'package:ponos_app/features/work_entries/presentation/special_activities_page.dart';
+import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
+import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_controller.dart';
+import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_state.dart';
 
 void main() {
   late FakeManualEntries entries;
@@ -24,6 +29,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(390, 800),
   }) async {
+    await tester.pumpWidget(const SizedBox.shrink());
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -34,6 +40,44 @@ void main() {
           focusAreaRepositoryProvider.overrideWithValue(FakeFocusAreas()),
         ],
         child: const MaterialApp(home: Scaffold(body: LogWorkPage())),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pumpSpecialActivities(
+    WidgetTester tester, {
+    Size size = const Size(390, 800),
+    int? activeSpecialActivityId,
+    FocusTimerStatus activeTimerStatus = FocusTimerStatus.paused,
+  }) async {
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          specialActivityRepositoryProvider.overrideWithValue(activities),
+          focusTimerProvider.overrideWith(
+            () => StaticFocusTimerController(
+              activeSpecialActivityId,
+              activeTimerStatus,
+            ),
+          ),
+        ],
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: SpecialActivitiesPage(
+                onCreate: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) => const CreateSpecialActivityPage(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -208,7 +252,7 @@ void main() {
   testWidgets('creates a Special Activity without logging time', (
     tester,
   ) async {
-    await pumpPage(tester);
+    await pumpSpecialActivities(tester);
     await tester.tap(find.byKey(const Key('new-special-activity')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('work-date')), findsNothing);
@@ -234,6 +278,7 @@ void main() {
     expect(activities.created!.description, 'Talk prep');
     expect(entries.created, isNull);
 
+    await pumpPage(tester);
     await tester.tap(find.byKey(const Key('new-work-entry')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Existing special'));
@@ -252,7 +297,7 @@ void main() {
     tester,
   ) async {
     entries.failSave = true;
-    await pumpPage(tester);
+    await pumpSpecialActivities(tester);
     await tester.tap(find.byKey(const Key('new-special-activity')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -262,6 +307,7 @@ void main() {
     await tester.tap(find.byKey(const Key('save-special-activity')));
     await tester.pumpAndSettle();
     expect(activities.createCalls, 1);
+    await pumpPage(tester);
     await tester.tap(find.byKey(const Key('new-work-entry')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Existing special'));
@@ -288,7 +334,7 @@ void main() {
     tester,
   ) async {
     activities.failCreate = true;
-    await pumpPage(tester);
+    await pumpSpecialActivities(tester);
     await tester.tap(find.byKey(const Key('new-special-activity')));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -304,15 +350,154 @@ void main() {
     expect(entries.created, isNull);
   });
 
+  testWidgets('shows a clear duplicate Special Activity name error', (
+    tester,
+  ) async {
+    activities.createError = const ConflictException(
+      'A Special Activity with this name already exists',
+    );
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.byKey(const Key('new-special-activity')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('special-activity-name')),
+      'Release day',
+    );
+    await tester.tap(find.byKey(const Key('save-special-activity')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('A Special Activity with this name already exists'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('special-activity-name')), findsOneWidget);
+  });
+
+  testWidgets('deletes an unused Special Activity only after confirmation', (
+    tester,
+  ) async {
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.byKey(const Key('new-special-activity')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('special-activity-name')),
+      'Conference',
+    );
+    await tester.tap(find.byKey(const Key('save-special-activity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete-special-activity-5')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(activities.deletedId, isNull);
+    await tester.tap(find.byKey(const Key('delete-special-activity-5')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-delete-special-activity')));
+    await tester.pumpAndSettle();
+    expect(activities.deletedId, 5);
+    expect(find.text('Conference'), findsNothing);
+  });
+
+  testWidgets('shows referenced-work conflict without removing activity', (
+    tester,
+  ) async {
+    activities.failDelete = true;
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.byKey(const Key('delete-special-activity-4')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-delete-special-activity')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Special Activity has recorded work and cannot be deleted'),
+      findsOneWidget,
+    );
+    expect(find.text('Release day'), findsOneWidget);
+  });
+
   testWidgets('Special Activity creation remains usable on a narrow phone', (
     tester,
   ) async {
-    await pumpPage(tester, size: const Size(320, 700));
+    await pumpSpecialActivities(tester, size: const Size(320, 700));
     await tester.tap(find.byKey(const Key('new-special-activity')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('special-activity-name')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('blocks deletion while a Special Activity timer is active', (
+    tester,
+  ) async {
+    await pumpSpecialActivities(tester, activeSpecialActivityId: 4);
+    await tester.tap(find.byKey(const Key('delete-special-activity-4')));
+    await tester.pump();
+    expect(
+      find.text(
+        'This Special Activity is linked to the active timer. Stop or reset it before deleting.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('confirm-delete-special-activity')),
+      findsNothing,
+    );
+    expect(activities.deletedId, isNull);
+  });
+
+  testWidgets('blocks deletion while a Special Activity timer is running', (
+    tester,
+  ) async {
+    await pumpSpecialActivities(
+      tester,
+      activeSpecialActivityId: 4,
+      activeTimerStatus: FocusTimerStatus.running,
+    );
+    await tester.tap(find.byKey(const Key('delete-special-activity-4')));
+    await tester.pump();
+    expect(find.textContaining('linked to the active timer'), findsOneWidget);
+    expect(activities.deletedId, isNull);
+  });
+
+  testWidgets('Log Work exposes logging only, not area management', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    expect(find.byKey(const Key('new-work-entry')), findsOneWidget);
+    expect(find.byKey(const Key('new-special-activity')), findsNothing);
+    expect(find.byKey(const Key('manage-special-activities')), findsNothing);
+  });
+}
+
+class StaticFocusTimerController extends FocusTimerController {
+  StaticFocusTimerController(this.specialActivityId, this.timerStatus);
+  final int? specialActivityId;
+  final FocusTimerStatus timerStatus;
+
+  @override
+  FocusTimerState build() {
+    if (specialActivityId == null) return const FocusTimerState.inactive();
+    final timer = ActiveFocusTimer(
+      specialActivityId: specialActivityId,
+      workDate: DateTime(2026, 9, 21),
+      startedAt: DateTime.utc(2026, 9, 21, 8),
+      startedAtUtcOffset: const Duration(hours: 2),
+      focusDuration: const Duration(minutes: 25),
+      restDuration: const Duration(minutes: 5),
+      phase: FocusTimerPhase.focus,
+      activity: timerStatus == FocusTimerStatus.running
+          ? FocusTimerActivity.running
+          : FocusTimerActivity.paused,
+      accumulatedFocusTime: const Duration(minutes: 2),
+      accumulatedRestTime: Duration.zero,
+      focusTransitionNotified: false,
+      runningSince: timerStatus == FocusTimerStatus.running
+          ? DateTime.utc(2026, 9, 21, 8)
+          : null,
+    );
+    return FocusTimerState(
+      status: timerStatus,
+      activeTimer: timer,
+      elapsedFocusTime: const Duration(minutes: 2),
+    );
+  }
 }
 
 ManualWorkEntry sampleEntry() => ManualWorkEntry(
@@ -379,14 +564,15 @@ class FakeSpecialActivities implements SpecialActivityRepository {
   SpecialActivityCreateInput? created;
   int createCalls = 0;
   bool failCreate = false;
+  Object? createError;
+  bool failDelete = false;
+  int? deletedId;
   final List<SpecialActivity> values = [];
   @override
   Future<List<SpecialActivity>> getActive() async => [
-    SpecialActivity(id: 4, name: 'Release day', isArchived: false),
+    SpecialActivity(id: 4, name: 'Release day'),
     ...values,
   ];
-  @override
-  Future<List<SpecialActivity>> getArchived() async => [];
   @override
   Future<SpecialActivity> getById(int id) => throw UnimplementedError();
   @override
@@ -394,11 +580,11 @@ class FakeSpecialActivities implements SpecialActivityRepository {
     createCalls++;
     created = input;
     if (failCreate) throw const ValidationException('Activity failed');
+    if (createError != null) throw createError!;
     final activity = SpecialActivity(
       id: 5,
       name: input.name,
       description: input.description,
-      isArchived: false,
     );
     values.add(activity);
     return activity;
@@ -408,9 +594,15 @@ class FakeSpecialActivities implements SpecialActivityRepository {
   Future<SpecialActivity> update(int id, SpecialActivityUpdateInput input) =>
       throw UnimplementedError();
   @override
-  Future<SpecialActivity> archive(int id) => throw UnimplementedError();
-  @override
-  Future<SpecialActivity> restore(int id) => throw UnimplementedError();
+  Future<void> delete(int id) async {
+    if (failDelete) {
+      throw const ConflictException(
+        'Special Activity has recorded work and cannot be deleted',
+      );
+    }
+    deletedId = id;
+    values.removeWhere((activity) => activity.id == id);
+  }
 }
 
 class FakeFocusAreas implements FocusAreaRepository {

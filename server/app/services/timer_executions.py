@@ -13,10 +13,6 @@ class SpecialActivityNotFoundError(Exception):
     pass
 
 
-class ArchivedSpecialActivityError(Exception):
-    pass
-
-
 async def create_timer_execution(
     session: AsyncSession,
     payload: TimerExecutionCreate,
@@ -26,13 +22,11 @@ async def create_timer_execution(
             if not await repository.focus_area_exists(session, payload.focus_area_id):
                 raise FocusAreaNotFoundError(payload.focus_area_id)
         else:
-            archived = await repository.special_activity_state(
+            exists = await repository.special_activity_exists(
                 session, payload.special_activity_id
             )
-            if archived is None:
+            if not exists:
                 raise SpecialActivityNotFoundError(payload.special_activity_id)
-            if archived:
-                raise ArchivedSpecialActivityError(payload.special_activity_id)
 
         execution = TimerExecution(
             focus_area_id=payload.focus_area_id,

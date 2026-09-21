@@ -28,12 +28,18 @@ def _not_found(special_activity_id: int) -> HTTPException:
     )
 
 
+def _duplicate_name() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="A Special Activity with this name already exists",
+    )
+
+
 @router.get("", response_model=list[SpecialActivityResponse])
 async def list_active_special_activities(
     session: DatabaseSession,
 ) -> list:
-    """List active activities only; archived activities are excluded."""
-    return await service.list_special_activities(session, archived=False)
+    return await service.list_special_activities(session)
 
 
 @router.post(
@@ -45,14 +51,10 @@ async def create_special_activity(
     payload: SpecialActivityCreate,
     session: DatabaseSession,
 ):
-    return await service.create_special_activity(session, payload)
-
-
-@router.get("/archived", response_model=list[SpecialActivityResponse])
-async def list_archived_special_activities(
-    session: DatabaseSession,
-) -> list:
-    return await service.list_special_activities(session, archived=True)
+    try:
+        return await service.create_special_activity(session, payload)
+    except service.DuplicateSpecialActivityNameError:
+        raise _duplicate_name() from None
 
 
 @router.get("/{special_activity_id}", response_model=SpecialActivityResponse)
@@ -78,35 +80,24 @@ async def update_special_activity(
         )
     except service.SpecialActivityNotFoundError:
         raise _not_found(special_activity_id) from None
+    except service.DuplicateSpecialActivityNameError:
+        raise _duplicate_name() from None
 
 
-@router.post(
-    "/{special_activity_id}/archive",
-    response_model=SpecialActivityResponse,
+@router.delete(
+    "/{special_activity_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
 )
-async def archive_special_activity(
+async def delete_special_activity(
     special_activity_id: SpecialActivityId,
     session: DatabaseSession,
-):
+) -> None:
     try:
-        return await service.set_archived(
-            session, special_activity_id, archived=True
-        )
+        await service.delete_special_activity(session, special_activity_id)
     except service.SpecialActivityNotFoundError:
         raise _not_found(special_activity_id) from None
-
-
-@router.post(
-    "/{special_activity_id}/restore",
-    response_model=SpecialActivityResponse,
-)
-async def restore_special_activity(
-    special_activity_id: SpecialActivityId,
-    session: DatabaseSession,
-):
-    try:
-        return await service.set_archived(
-            session, special_activity_id, archived=False
-        )
-    except service.SpecialActivityNotFoundError:
-        raise _not_found(special_activity_id) from None
+    except service.SpecialActivityHasWorkError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Special Activity has recorded work and cannot be deleted",
+        ) from None

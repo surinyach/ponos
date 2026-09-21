@@ -180,7 +180,6 @@ async def test_manual_and_timer_time_combine_without_special_completion(client):
             {"activity": special_id},
         )
 
-    await client.post(f"/api/v1/special-activities/{special_id}/archive")
     today = await client.get(
         "/api/v1/overview/today",
         params={
@@ -199,6 +198,9 @@ async def test_manual_and_timer_time_combine_without_special_completion(client):
     assert body["targeted_focus_areas"] == 2
     assert [item["focused_seconds"] for item in body["areas"]] == [3600, 0]
     assert [item["completed"] for item in body["areas"]] == [True, False]
+    assert body["special_activities"][0]["special_activity"]["name"] == "Release"
+    assert body["special_activities"][0]["focused_seconds"] == 7200
+    assert body["special_activities"][0]["rest_seconds"] == 900
     assert body["week"]["focused_seconds"] == 11100
     assert body["week"]["rest_seconds"] == 1860
     assert body["overall"]["days_worked"] == 2

@@ -20,5 +20,5 @@ async def test_database_was_upgraded_to_alembic_head() -> None:
             ).get_current_revision()
         )
 
-    assert expected_head == "0006"
+    assert expected_head == "0007"
     assert current_revision == expected_head

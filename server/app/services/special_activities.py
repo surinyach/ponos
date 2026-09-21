@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.models.special_activity import SpecialActivity
 from app.repositories import special_activities as repository
@@ -7,6 +8,21 @@ from app.schemas.special_activity import SpecialActivityCreate, SpecialActivityU
 
 class SpecialActivityNotFoundError(Exception):
     pass
+
+
+class DuplicateSpecialActivityNameError(Exception):
+    pass
+
+
+class SpecialActivityHasWorkError(Exception):
+    pass
+
+
+def _duplicate_name(error: IntegrityError) -> bool:
+    return (
+        getattr(getattr(error.orig, "diag", None), "constraint_name", None)
+        == "uq_special_activities_name_ci"
+    )
 
 
 async def _get_required_activity(
@@ -37,6 +53,11 @@ async def create_special_activity(
         await repository.add(session, activity)
         await session.commit()
         return activity
+    except IntegrityError as error:
+        await session.rollback()
+        if _duplicate_name(error):
+            raise DuplicateSpecialActivityNameError(payload.name) from error
+        raise
     except Exception:
         await session.rollback()
         raise
@@ -44,10 +65,8 @@ async def create_special_activity(
 
 async def list_special_activities(
     session: AsyncSession,
-    *,
-    archived: bool,
 ) -> list[SpecialActivity]:
-    return await repository.list_by_archive_state(session, archived=archived)
+    return await repository.list_all(session)
 
 
 async def get_special_activity(
@@ -75,26 +94,30 @@ async def update_special_activity(
             setattr(activity, field_name, getattr(payload, field_name))
         await session.commit()
         return activity
+    except IntegrityError as error:
+        await session.rollback()
+        if _duplicate_name(error):
+            raise DuplicateSpecialActivityNameError(payload.name) from error
+        raise
     except Exception:
         await session.rollback()
         raise
 
 
-async def set_archived(
+async def delete_special_activity(
     session: AsyncSession,
     special_activity_id: int,
-    *,
-    archived: bool,
-) -> SpecialActivity:
+) -> None:
     try:
-        activity = await _get_required_activity(
+        await _get_required_activity(
             session,
             special_activity_id,
             for_update=True,
         )
-        activity.is_archived = archived
+        if await repository.has_work(session, special_activity_id):
+            raise SpecialActivityHasWorkError(special_activity_id)
+        await repository.remove(session, special_activity_id)
         await session.commit()
-        return activity
     except Exception:
         await session.rollback()
         raise
