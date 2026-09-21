@@ -26,7 +26,9 @@ flutter run -d chrome
 See [app/README.md](app/README.md) for the client structure and design language.
 
 Fixed cross-platform business requirements are documented under `docs/`,
-including the [Focus Timer domain rules](docs/focus-timer-domain-rules.md).
+including the [Focus Timer domain rules](docs/focus-timer-domain-rules.md) and
+the [Manual Work Entries and Special Activities domain
+rules](docs/manual-work-and-special-activities-domain-rules.md).
 
 ## Server
 

@@ -9,9 +9,11 @@ implementation details.
 - One execution contains exactly one focus phase followed by exactly one rest
   phase.
 - Focus and rest durations are configured before starting each execution.
-- Each execution is linked to exactly one Focus Area.
-- The linked Focus Area remains fixed during an active execution, but a
-  different Focus Area may be selected for the next execution.
+- Each execution is linked to exactly one work subject: either a Focus Area or
+  a Special Activity.
+- The linked work subject remains fixed during an active execution, but a
+  different Focus Area or Special Activity may be selected for the next
+  execution.
 - Neither phase can be skipped.
 
 The valid natural sequence is:
@@ -51,7 +53,7 @@ completed and persisted
 - Timer accuracy must be based on elapsed real time and must not depend on UI
   ticks continuing while the application is backgrounded.
 - An active or paused execution must survive application closure and be
-  recoverable with its Focus Area, configured durations, current phase,
+  recoverable with its work subject, configured durations, current phase,
   pause/running state, and elapsed progress intact.
 - Recovery must not duplicate completion, persistence, alarm, or notification
   effects that were already handled.

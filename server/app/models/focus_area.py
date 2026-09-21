@@ -21,6 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.manual_work_entry import ManualWorkEntry
     from app.models.timer_execution import TimerExecution
 
 
@@ -52,6 +53,9 @@ class FocusArea(Base):
         back_populates="focus_area",
     )
     timer_executions: Mapped[list["TimerExecution"]] = relationship(
+        back_populates="focus_area",
+    )
+    manual_work_entries: Mapped[list["ManualWorkEntry"]] = relationship(
         back_populates="focus_area",
     )
 

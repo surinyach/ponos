@@ -7,6 +7,9 @@ import '../../../core/errors/app_exception.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/state/focus_areas_controller.dart';
 import '../../focus_areas/presentation/state/focus_areas_state.dart';
+import '../../work_entries/domain/models/special_activity.dart';
+import '../../work_entries/presentation/state/special_activities_controller.dart';
+import '../../work_entries/presentation/state/special_activities_state.dart';
 import '../domain/models/active_focus_timer.dart';
 import 'state/focus_timer_controller.dart';
 import 'state/focus_timer_state.dart';
@@ -21,7 +24,7 @@ class FocusTimerPage extends ConsumerStatefulWidget {
 class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
   final _focusMinutes = TextEditingController(text: '25');
   final _restMinutes = TextEditingController(text: '5');
-  int? _selectedAreaId;
+  String? _selectedSubject;
   String? _configurationError;
 
   @override
@@ -35,6 +38,7 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
   Widget build(BuildContext context) {
     final timer = ref.watch(focusTimerProvider);
     final areasState = ref.watch(focusAreasProvider);
+    final activitiesState = ref.watch(specialActivitiesProvider);
 
     return Align(
       alignment: Alignment.topCenter,
@@ -57,7 +61,10 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
               const SizedBox(height: AppSpacing.lg),
               switch (timer.status) {
                 FocusTimerStatus.restoring => const _LoadingState(),
-                FocusTimerStatus.inactive => _buildSetup(areasState),
+                FocusTimerStatus.inactive => _buildSetup(
+                  areasState,
+                  activitiesState,
+                ),
                 FocusTimerStatus.error when timer.activeTimer == null =>
                   _MessageCard(
                     icon: Icons.error_outline_rounded,
@@ -71,10 +78,15 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
                   ),
                 _ => _ActiveTimerPanel(
                   state: timer,
-                  areaName: _areaName(
-                    areasState.areas,
-                    timer.activeTimer?.focusAreaId,
-                  ),
+                  areaName: timer.activeTimer?.specialActivityId != null
+                      ? _specialName(
+                          activitiesState.active,
+                          timer.activeTimer!.specialActivityId!,
+                        )
+                      : _areaName(
+                          areasState.areas,
+                          timer.activeTimer?.focusAreaId,
+                        ),
                   onPause: ref.read(focusTimerProvider.notifier).pause,
                   onResume: ref.read(focusTimerProvider.notifier).resume,
                   onReset: _showResetOptions,
@@ -87,28 +99,38 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
     );
   }
 
-  Widget _buildSetup(FocusAreasState areasState) {
-    if (areasState.status == FocusAreasStatus.loading) {
+  Widget _buildSetup(
+    FocusAreasState areasState,
+    SpecialActivitiesState activitiesState,
+  ) {
+    if (areasState.status == FocusAreasStatus.loading ||
+        activitiesState.status == SpecialActivitiesStatus.loading) {
       return const _LoadingState();
     }
     if (areasState.areas.isEmpty &&
-        areasState.status == FocusAreasStatus.error) {
+        activitiesState.active.isEmpty &&
+        (areasState.status == FocusAreasStatus.error ||
+            activitiesState.status == SpecialActivitiesStatus.error)) {
       return _MessageCard(
         icon: Icons.cloud_off_outlined,
-        title: 'Unable to load Focus Areas',
-        message: _errorMessage(areasState.error),
+        title: 'Unable to load activities',
+        message: _errorMessage(areasState.error ?? activitiesState.error),
         action: OutlinedButton.icon(
-          onPressed: () => ref.read(focusAreasProvider.notifier).refresh(),
+          onPressed: () {
+            ref.read(focusAreasProvider.notifier).refresh();
+            ref.read(specialActivitiesProvider.notifier).refresh();
+          },
           icon: const Icon(Icons.refresh),
           label: const Text('Try again'),
         ),
       );
     }
-    if (areasState.areas.isEmpty) {
+    if (areasState.areas.isEmpty && activitiesState.active.isEmpty) {
       return const _MessageCard(
         icon: Icons.track_changes_outlined,
-        title: 'No active Focus Areas',
-        message: 'Create a Focus Area before starting an execution.',
+        title: 'No active activities',
+        message:
+            'Create a Focus Area or Special Activity before starting an execution.',
       );
     }
 
@@ -117,18 +139,22 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
         final wide = constraints.maxWidth >= 760;
         final configuration = _ConfigurationCard(
           areas: areasState.areas,
-          selectedAreaId: _validSelection(areasState.areas),
+          activities: activitiesState.active,
+          selectedSubject: _validSelection(
+            areasState.areas,
+            activitiesState.active,
+          ),
           focusMinutes: _focusMinutes,
           restMinutes: _restMinutes,
           error: _configurationError,
-          onAreaChanged: (value) => setState(() => _selectedAreaId = value),
+          onSubjectChanged: (value) => setState(() => _selectedSubject = value),
           onStart: _start,
         );
         final guide = const _MessageCard(
           icon: Icons.hourglass_top_rounded,
           title: 'Prepare your cycle',
           message:
-              'Choose one priority and set the focus and rest durations. '
+              'Choose one activity and set the focus and rest durations. '
               'Neither phase can be skipped once the execution starts.',
         );
         if (wide) {
@@ -155,18 +181,26 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
     );
   }
 
-  int _validSelection(List<FocusArea> areas) {
-    if (areas.any((area) => area.id == _selectedAreaId)) {
-      return _selectedAreaId!;
+  String _validSelection(
+    List<FocusArea> areas,
+    List<SpecialActivity> activities,
+  ) {
+    final choices = [
+      for (final area in areas) 'focus:${area.id}',
+      for (final activity in activities) 'special:${activity.id}',
+    ];
+    if (choices.contains(_selectedSubject)) {
+      return _selectedSubject!;
     }
-    return areas.first.id;
+    return choices.first;
   }
 
   Future<void> _start() async {
     final focus = int.tryParse(_focusMinutes.text.trim());
     final rest = int.tryParse(_restMinutes.text.trim());
     final areas = ref.read(focusAreasProvider).areas;
-    if (areas.isEmpty ||
+    final activities = ref.read(specialActivitiesProvider).active;
+    if ((areas.isEmpty && activities.isEmpty) ||
         focus == null ||
         rest == null ||
         focus <= 0 ||
@@ -178,10 +212,14 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
       return;
     }
     setState(() => _configurationError = null);
+    final subject = _validSelection(areas, activities).split(':');
     final started = await ref
         .read(focusTimerProvider.notifier)
         .start(
-          focusAreaId: _validSelection(areas),
+          focusAreaId: subject[0] == 'focus' ? int.parse(subject[1]) : null,
+          specialActivityId: subject[0] == 'special'
+              ? int.parse(subject[1])
+              : null,
           focusDuration: Duration(minutes: focus),
           restDuration: Duration(minutes: rest),
         );
@@ -229,6 +267,13 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
           .map((area) => area.name)
           .firstOrNull ??
       'Focus Area #$id';
+
+  String _specialName(List<SpecialActivity> active, int id) =>
+      active
+          .where((activity) => activity.id == id)
+          .map((activity) => activity.name)
+          .firstOrNull ??
+      'Special Activity #$id';
 }
 
 enum _ResetChoice { savePartial, discard }
@@ -236,19 +281,21 @@ enum _ResetChoice { savePartial, discard }
 class _ConfigurationCard extends StatelessWidget {
   const _ConfigurationCard({
     required this.areas,
-    required this.selectedAreaId,
+    required this.activities,
+    required this.selectedSubject,
     required this.focusMinutes,
     required this.restMinutes,
-    required this.onAreaChanged,
+    required this.onSubjectChanged,
     required this.onStart,
     this.error,
   });
 
   final List<FocusArea> areas;
-  final int selectedAreaId;
+  final List<SpecialActivity> activities;
+  final String selectedSubject;
   final TextEditingController focusMinutes;
   final TextEditingController restMinutes;
-  final ValueChanged<int?> onAreaChanged;
+  final ValueChanged<String?> onSubjectChanged;
   final VoidCallback onStart;
   final String? error;
 
@@ -261,17 +308,23 @@ class _ConfigurationCard extends StatelessWidget {
         children: [
           Text('New execution', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppSpacing.lg),
-          DropdownButtonFormField<int>(
+          DropdownButtonFormField<String>(
             key: const Key('timer-focus-area'),
-            initialValue: selectedAreaId,
-            decoration: const InputDecoration(labelText: 'Focus Area'),
-            items: areas
-                .map(
-                  (area) =>
-                      DropdownMenuItem(value: area.id, child: Text(area.name)),
-                )
-                .toList(growable: false),
-            onChanged: onAreaChanged,
+            initialValue: selectedSubject,
+            decoration: const InputDecoration(labelText: 'Activity'),
+            items: [
+              for (final area in areas)
+                DropdownMenuItem(
+                  value: 'focus:${area.id}',
+                  child: Text(area.name),
+                ),
+              for (final activity in activities)
+                DropdownMenuItem(
+                  value: 'special:${activity.id}',
+                  child: Text(activity.name),
+                ),
+            ],
+            onChanged: onSubjectChanged,
           ),
           const SizedBox(height: AppSpacing.md),
           Row(

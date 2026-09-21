@@ -11,6 +11,9 @@ import 'package:ponos_app/features/focus_timer/domain/repositories/focus_timer_g
 import 'package:ponos_app/features/focus_timer/domain/repositories/timer_execution_repository.dart';
 import 'package:ponos_app/features/focus_timer/presentation/focus_timer_page.dart';
 import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_controller.dart';
+import 'package:ponos_app/features/work_entries/domain/models/special_activity.dart';
+import 'package:ponos_app/features/work_entries/presentation/state/special_activities_controller.dart';
+import 'package:ponos_app/features/work_entries/presentation/state/special_activities_state.dart';
 
 void main() {
   late FakeClock clock;
@@ -25,6 +28,9 @@ void main() {
     container = ProviderContainer(
       overrides: [
         focusAreasProvider.overrideWith(LoadedFocusAreasController.new),
+        specialActivitiesProvider.overrideWith(
+          LoadedSpecialActivitiesController.new,
+        ),
         focusTimerClockProvider.overrideWithValue(clock.call),
         activeFocusTimerStoreProvider.overrideWithValue(store),
         timerExecutionRepositoryProvider.overrideWithValue(recorder),
@@ -126,6 +132,64 @@ void main() {
     expect(find.byKey(const Key('focus-timer-wide')), findsOneWidget);
     expect(find.byKey(const Key('focus-timer-compact')), findsNothing);
   });
+
+  testWidgets('selects an active Special Activity and persists its execution', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(500, 800));
+    await tester.tap(find.byKey(const Key('timer-focus-area')));
+    await tester.pumpAndSettle();
+    expect(find.text('Archived'), findsNothing);
+    await tester.tap(find.text('Release day').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('timer-start')));
+    await tester.pump();
+    expect(
+      container.read(focusTimerProvider).activeTimer?.specialActivityId,
+      4,
+    );
+    expect(container.read(focusTimerProvider).activeTimer?.focusAreaId, isNull);
+    await tester.tap(find.byKey(const Key('timer-pause')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('timer-reset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save partial'));
+    await tester.pumpAndSettle();
+    expect(recorder.executions.single.specialActivityId, 4);
+    expect(recorder.executions.single.focusAreaId, isNull);
+  });
+
+  testWidgets('completes Special Activity focus and rest time naturally', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    await tester.tap(find.byKey(const Key('timer-focus-area')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Release day').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '1');
+    await tester.enterText(find.byKey(const Key('timer-rest-minutes')), '1');
+    await tester.tap(find.byKey(const Key('timer-start')));
+    await tester.pump();
+    clock.advance(const Duration(minutes: 1, seconds: 5));
+    await container.read(focusTimerProvider.notifier).synchronize();
+    clock.advance(const Duration(minutes: 1));
+    await container.read(focusTimerProvider.notifier).synchronize();
+    await tester.pump();
+
+    expect(recorder.executions.single.specialActivityId, 4);
+    expect(recorder.executions.single.focusedTime, const Duration(minutes: 1));
+    expect(recorder.executions.single.restTime, const Duration(minutes: 1));
+    expect(find.text('New execution'), findsOneWidget);
+  });
+}
+
+class LoadedSpecialActivitiesController extends SpecialActivitiesController {
+  @override
+  SpecialActivitiesState build() => SpecialActivitiesState(
+    status: SpecialActivitiesStatus.loaded,
+    active: [const SpecialActivity(id: 4, name: 'Release day')],
+  );
 }
 
 class LoadedFocusAreasController extends FocusAreasController {

@@ -36,12 +36,15 @@ class FocusTimerController extends Notifier<FocusTimerState> {
   }
 
   Future<bool> start({
-    required int focusAreaId,
+    int? focusAreaId,
+    int? specialActivityId,
     required Duration focusDuration,
     required Duration restDuration,
   }) async {
     if (state.status != FocusTimerStatus.inactive ||
-        focusAreaId <= 0 ||
+        (focusAreaId == null) == (specialActivityId == null) ||
+        (focusAreaId != null && focusAreaId <= 0) ||
+        (specialActivityId != null && specialActivityId <= 0) ||
         focusDuration <= Duration.zero ||
         restDuration <= Duration.zero) {
       return false;
@@ -51,6 +54,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
     final now = localNow.toUtc();
     final timer = ActiveFocusTimer(
       focusAreaId: focusAreaId,
+      specialActivityId: specialActivityId,
       workDate: DateTime(localNow.year, localNow.month, localNow.day),
       startedAt: now,
       startedAtUtcOffset: localNow.timeZoneOffset,
@@ -321,6 +325,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
   TimerExecutionDraft _draft(ActiveFocusTimer timer, DateTime endedAt) =>
       TimerExecutionDraft(
         focusAreaId: timer.focusAreaId,
+        specialActivityId: timer.specialActivityId,
         workDate: timer.workDate,
         startedAt: timer.startedAt,
         startedAtUtcOffset: timer.startedAtUtcOffset,

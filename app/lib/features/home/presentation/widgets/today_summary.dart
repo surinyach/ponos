@@ -9,6 +9,10 @@ class TodaySummary extends StatelessWidget {
     required this.expectedDuration,
     required this.completedFocusAreas,
     required this.totalFocusAreas,
+    this.restDuration,
+    this.trackedDuration,
+    this.weekFocusedDuration,
+    this.weekRestDuration,
     super.key,
   });
 
@@ -16,6 +20,10 @@ class TodaySummary extends StatelessWidget {
   final Duration expectedDuration;
   final int completedFocusAreas;
   final int totalFocusAreas;
+  final Duration? restDuration;
+  final Duration? trackedDuration;
+  final Duration? weekFocusedDuration;
+  final Duration? weekRestDuration;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +70,40 @@ class TodaySummary extends StatelessWidget {
                 ),
               ],
             ),
+            if (restDuration != null && trackedDuration != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                children: [
+                  Expanded(
+                    child: _SummaryMetric(
+                      icon: Icons.self_improvement_outlined,
+                      value: _formatDuration(restDuration!),
+                      label: 'Rest today',
+                      iconColor: colors.secondary,
+                    ),
+                  ),
+                  Container(width: 1, height: 40, color: colors.outlineVariant),
+                  Expanded(
+                    child: _SummaryMetric(
+                      icon: Icons.access_time_outlined,
+                      value: _formatDuration(trackedDuration!),
+                      label: 'Tracked today',
+                      iconColor: colors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (weekFocusedDuration != null && weekRestDuration != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'This week · ${_formatDuration(weekFocusedDuration!)} focused · '
+                '${_formatDuration(weekRestDuration!)} rest',
+                style: textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             _AreasProgress(
               completed: completedFocusAreas,
@@ -153,7 +195,7 @@ class _SummaryMetric extends StatelessWidget {
       label: '$label: $value',
       excludeSemantics: true,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(AppSpacing.xs),

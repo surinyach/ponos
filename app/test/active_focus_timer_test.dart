@@ -3,6 +3,27 @@ import 'package:ponos_app/features/focus_timer/data/active_focus_timer_codec.dar
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 
 void main() {
+  test('restores a Special Activity timer without inventing a Focus Area', () {
+    final original = ActiveFocusTimer(
+      specialActivityId: 4,
+      workDate: DateTime(2026, 9, 8),
+      startedAt: DateTime.utc(2026, 9, 8, 8),
+      startedAtUtcOffset: Duration.zero,
+      focusDuration: const Duration(minutes: 25),
+      restDuration: const Duration(minutes: 5),
+      phase: FocusTimerPhase.focus,
+      activity: FocusTimerActivity.paused,
+      accumulatedFocusTime: const Duration(minutes: 3),
+      accumulatedRestTime: Duration.zero,
+      focusTransitionNotified: false,
+    );
+    final restored = const ActiveFocusTimerCodec().decode(
+      const ActiveFocusTimerCodec().encode(original),
+    );
+    expect(restored.specialActivityId, 4);
+    expect(restored.focusAreaId, isNull);
+    expect(restored.accumulatedFocusTime, const Duration(minutes: 3));
+  });
   test('captures the complete recoverable running state', () {
     final startedAt = DateTime.utc(2026, 9, 8, 21, 50);
     final resumedAt = DateTime.utc(2026, 9, 8, 22, 5);
@@ -102,10 +123,7 @@ void main() {
     expect(restored.activity, original.activity);
     expect(restored.accumulatedFocusTime, original.accumulatedFocusTime);
     expect(restored.accumulatedRestTime, original.accumulatedRestTime);
-    expect(
-      restored.restStartDelayRemaining,
-      original.restStartDelayRemaining,
-    );
+    expect(restored.restStartDelayRemaining, original.restStartDelayRemaining);
     expect(restored.runningSince, original.runningSince);
     expect(restored.focusTransitionNotified, original.focusTransitionNotified);
   });

@@ -8,6 +8,7 @@ class ActiveFocusTimerCodec {
   String encode(ActiveFocusTimer timer) => jsonEncode({
     'version': 1,
     'focusAreaId': timer.focusAreaId,
+    'specialActivityId': timer.specialActivityId,
     'workDate': _date(timer.workDate),
     'startedAt': timer.startedAt.toUtc().toIso8601String(),
     'startedAtUtcOffsetMinutes': timer.startedAtUtcOffset.inMinutes,
@@ -30,7 +31,8 @@ class ActiveFocusTimerCodec {
         .map(int.parse)
         .toList();
     return ActiveFocusTimer(
-      focusAreaId: json['focusAreaId'] as int,
+      focusAreaId: json['focusAreaId'] as int?,
+      specialActivityId: json['specialActivityId'] as int?,
       workDate: DateTime(workDateParts[0], workDateParts[1], workDateParts[2]),
       startedAt: DateTime.parse(json['startedAt'] as String),
       startedAtUtcOffset: Duration(

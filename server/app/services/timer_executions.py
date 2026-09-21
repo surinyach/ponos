@@ -9,19 +9,28 @@ class FocusAreaNotFoundError(Exception):
     pass
 
 
+class SpecialActivityNotFoundError(Exception):
+    pass
+
+
 async def create_timer_execution(
     session: AsyncSession,
     payload: TimerExecutionCreate,
 ) -> TimerExecution:
     try:
-        if not await repository.focus_area_exists(
-            session,
-            payload.focus_area_id,
-        ):
-            raise FocusAreaNotFoundError(payload.focus_area_id)
+        if payload.focus_area_id is not None:
+            if not await repository.focus_area_exists(session, payload.focus_area_id):
+                raise FocusAreaNotFoundError(payload.focus_area_id)
+        else:
+            exists = await repository.special_activity_exists(
+                session, payload.special_activity_id
+            )
+            if not exists:
+                raise SpecialActivityNotFoundError(payload.special_activity_id)
 
         execution = TimerExecution(
             focus_area_id=payload.focus_area_id,
+            special_activity_id=payload.special_activity_id,
             work_date=payload.work_date,
             started_at=payload.started_at,
             ended_at=payload.ended_at,

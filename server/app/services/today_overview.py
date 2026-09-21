@@ -1,14 +1,22 @@
-from datetime import date
+from datetime import date, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.focus_area import FocusArea, FocusAreaTarget
-from app.models.timer_execution import TimerExecution
+from app.models.special_activity import SpecialActivity
 from app.schemas.today_overview import (
     FocusAreaTodayProgress,
+    SpecialActivityTodayProgress,
     TodayOverviewResponse,
+)
+from app.schemas.work_totals import OverallTotalsResponse, WeekTotalsResponse
+from app.services.work_totals import (
+    focused_by_area,
+    time_by_special_activity,
+    lifetime_totals,
+    totals_between,
 )
 
 
@@ -27,28 +35,24 @@ async def get_today_overview(
         ).all()
     )
 
-    focused_by_area = dict(
+    focused_by_area_id = await focused_by_area(db, work_date)
+    special_time = await time_by_special_activity(db, work_date)
+    special_activities = list(
         (
-            await db.execute(
-                select(
-                    TimerExecution.focus_area_id,
-                    func.coalesce(func.sum(TimerExecution.focused_seconds), 0),
-                )
-                .join(FocusArea)
-                .where(
-                    FocusArea.archived_at.is_(None),
-                    TimerExecution.work_date == work_date,
-                )
-                .group_by(TimerExecution.focus_area_id)
+            await db.scalars(
+                select(SpecialActivity)
+                .where(SpecialActivity.id.in_(special_time))
+                .order_by(SpecialActivity.id)
             )
         ).all()
     )
+    actual_focused, actual_rest = await totals_between(db, work_date, work_date)
 
     progress = []
     for area in areas:
         target = _target_for(area, work_date)
         target_seconds = None if target is None else target.target_minutes * 60
-        focused_seconds = int(focused_by_area.get(area.id, 0))
+        focused_seconds = focused_by_area_id.get(area.id, 0)
         progress.append(
             FocusAreaTodayProgress(
                 focus_area=area,
@@ -62,13 +66,40 @@ async def get_today_overview(
         )
 
     targeted = [item for item in progress if item.target_seconds is not None]
+    week_start = work_date - timedelta(days=work_date.weekday())
+    week_end = week_start + timedelta(days=6)
+    week_focused, week_rest = await totals_between(db, week_start, week_end)
+    days, overall_focused, overall_rest = await lifetime_totals(db)
     return TodayOverviewResponse(
         date=work_date,
         expected_focus_seconds=sum(item.target_seconds or 0 for item in targeted),
-        actual_focused_seconds=sum(item.focused_seconds for item in progress),
+        actual_focused_seconds=actual_focused,
+        actual_rest_seconds=actual_rest,
+        actual_tracked_seconds=actual_focused + actual_rest,
         completed_focus_areas=sum(item.completed for item in targeted),
         targeted_focus_areas=len(targeted),
         areas=progress,
+        special_activities=[
+            SpecialActivityTodayProgress(
+                special_activity=activity,
+                focused_seconds=special_time[activity.id][0],
+                rest_seconds=special_time[activity.id][1],
+            )
+            for activity in special_activities
+        ],
+        week=WeekTotalsResponse(
+            week_start=week_start,
+            week_end=week_end,
+            focused_seconds=week_focused,
+            rest_seconds=week_rest,
+            tracked_seconds=week_focused + week_rest,
+        ),
+        overall=OverallTotalsResponse(
+            days_worked=days,
+            focused_seconds=overall_focused,
+            rest_seconds=overall_rest,
+            tracked_seconds=overall_focused + overall_rest,
+        ),
     )
 
 

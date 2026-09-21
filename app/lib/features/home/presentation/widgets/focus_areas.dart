@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../../app/theme/app_radius.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../focus_areas/domain/models/focus_area.dart';
+import '../../../focus_areas/domain/models/today_overview.dart';
 
 class FocusAreas extends StatelessWidget {
   const FocusAreas({
     required this.areas,
     required this.workedTodayByAreaId,
+    this.specialActivities = const [],
     this.dailyTargetByAreaId,
     this.completedByAreaId,
     this.targetDate,
@@ -17,6 +19,7 @@ class FocusAreas extends StatelessWidget {
 
   final List<FocusArea> areas;
   final Map<int, Duration> workedTodayByAreaId;
+  final List<SpecialActivityTodayProgress> specialActivities;
   final Map<int, Duration?>? dailyTargetByAreaId;
   final Map<int, bool>? completedByAreaId;
   final DateTime? targetDate;
@@ -46,9 +49,12 @@ class FocusAreas extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Focus areas', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Focus Areas & Special Activities',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: AppSpacing.xs),
-            if (sortedAreas.isEmpty)
+            if (sortedAreas.isEmpty && specialActivities.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: Text(
@@ -84,11 +90,44 @@ class FocusAreas extends StatelessWidget {
                   ],
                 );
               }),
+            for (final activity in specialActivities) ...[
+              if (sortedAreas.isNotEmpty || activity != specialActivities.first)
+                Divider(color: colors.outlineVariant),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      activity.specialActivity.name,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      'Special Activity · Focus ${_formatWorkTime(activity.focusedTime)} · Rest ${_formatWorkTime(activity.restTime)} today',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
+}
+
+String _formatWorkTime(Duration duration) {
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  if (hours == 0) return '${minutes}m';
+  if (minutes == 0) return '${hours}h';
+  return '${hours}h ${minutes}m';
 }
 
 class _FocusAreaRow extends StatelessWidget {

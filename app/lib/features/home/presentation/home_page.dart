@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/focus_area_form_page.dart';
-import '../../focus_areas/presentation/focus_areas_page.dart';
+import '../../focus_areas/presentation/work_areas_page.dart';
 import '../../focus_timer/presentation/focus_timer_page.dart';
+import '../../work_entries/presentation/log_work_page.dart';
+import '../../work_entries/presentation/create_special_activity_page.dart';
 import 'state/today_overview_provider.dart';
 import 'widgets/today_summary.dart';
 import 'widgets/focus_areas.dart';
@@ -23,11 +25,12 @@ class _HomePageState extends State<HomePage> {
   static const _destinations = <_Destination>[
     _Destination('Overview', Icons.home_outlined, Icons.home),
     _Destination(
-      'Focus areas',
+      'Work Areas',
       Icons.track_changes_outlined,
       Icons.track_changes,
     ),
     _Destination('Focus', Icons.timer_outlined, Icons.timer),
+    _Destination('Log work', Icons.edit_note_outlined, Icons.edit_note),
     _Destination(
       'Progress',
       Icons.calendar_month_outlined,
@@ -46,11 +49,13 @@ class _HomePageState extends State<HomePage> {
           0 => _OverviewContent(
             onManageFocusAreas: () => _selectDestination(1),
           ),
-          1 => FocusAreasPage(
-            onCreate: () => _openFocusAreaForm(),
-            onAreaSelected: (area) => _openFocusAreaForm(area),
+          1 => WorkAreasPage(
+            onCreateFocusArea: () => _openFocusAreaForm(),
+            onCreateSpecialActivity: _openSpecialActivityForm,
+            onFocusAreaSelected: (area) => _openFocusAreaForm(area),
           ),
           2 => const FocusTimerPage(),
+          3 => const LogWorkPage(),
           _ => _FeaturePlaceholder(destination: _destinations[_selectedIndex]),
         };
 
@@ -107,6 +112,12 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute(builder: (_) => FocusAreaFormPage(area: area)),
     );
   }
+
+  Future<void> _openSpecialActivityForm() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const CreateSpecialActivityPage()),
+    );
+  }
 }
 
 class _OverviewContent extends ConsumerWidget {
@@ -130,26 +141,39 @@ class _OverviewContent extends ConsumerWidget {
               onRetry: () => ref.invalidate(todayOverviewProvider),
             ),
             data: (data) {
-              if (data.areas.isEmpty) {
-                return _OverviewEmpty(onManageFocusAreas: onManageFocusAreas);
+              final summary = TodaySummary(
+                workedDuration: data.actualFocusedTime,
+                expectedDuration: data.expectedFocusTime,
+                restDuration: data.actualRestTime,
+                trackedDuration: data.actualTrackedTime,
+                weekFocusedDuration: data.week.focusedTime,
+                weekRestDuration: data.week.restTime,
+                completedFocusAreas: data.completedFocusAreas,
+                totalFocusAreas: data.targetedFocusAreas,
+              );
+              final statistics = WorkStatistics(
+                totalDaysWorked: data.overall.daysWorked,
+                totalFocusedTime: data.overall.focusedTime,
+                totalRestTime: data.overall.restTime,
+                totalTrackedTime: data.overall.trackedTime,
+              );
+              if (data.areas.isEmpty && data.specialActivities.isEmpty) {
+                return Column(
+                  children: [
+                    _OverviewEmpty(onManageFocusAreas: onManageFocusAreas),
+                    const SizedBox(height: AppSpacing.md),
+                    summary,
+                    const SizedBox(height: AppSpacing.md),
+                    statistics,
+                  ],
+                );
               }
 
               return LayoutBuilder(
                 builder: (context, constraints) {
-                  final summary = TodaySummary(
-                    workedDuration: data.actualFocusedTime,
-                    expectedDuration: data.expectedFocusTime,
-                    completedFocusAreas: data.completedFocusAreas,
-                    totalFocusAreas: data.targetedFocusAreas,
-                  );
-                  const statistics = WorkStatistics(
-                    totalDaysWorked: 128,
-                    totalFocusedTime: Duration(hours: 342, minutes: 30),
-                    totalRestTime: Duration(hours: 86, minutes: 15),
-                    totalTrackedTime: Duration(hours: 428, minutes: 45),
-                  );
                   final focusAreas = FocusAreas(
                     targetDate: data.date,
+                    specialActivities: data.specialActivities,
                     areas: data.areas.map((item) => item.focusArea).toList(),
                     workedTodayByAreaId: {
                       for (final item in data.areas)

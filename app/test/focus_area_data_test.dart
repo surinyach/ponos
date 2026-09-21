@@ -48,6 +48,21 @@ void main() {
               'date': '2026-09-07',
               'expected_focus_seconds': 3600,
               'actual_focused_seconds': 1800,
+              'actual_rest_seconds': 300,
+              'actual_tracked_seconds': 2100,
+              'week': {
+                'week_start': '2026-09-07',
+                'week_end': '2026-09-13',
+                'focused_seconds': 5400,
+                'rest_seconds': 600,
+                'tracked_seconds': 6000,
+              },
+              'overall': {
+                'days_worked': 3,
+                'focused_seconds': 9000,
+                'rest_seconds': 1200,
+                'tracked_seconds': 10200,
+              },
               'completed_focus_areas': 0,
               'targeted_focus_areas': 1,
               'areas': [
@@ -56,6 +71,17 @@ void main() {
                   'target_seconds': 3600,
                   'focused_seconds': 1800,
                   'completed': false,
+                },
+              ],
+              'special_activities': [
+                {
+                  'special_activity': {
+                    'id': 4,
+                    'name': 'Release day',
+                    'description': null,
+                  },
+                  'focused_seconds': 600,
+                  'rest_seconds': 120,
                 },
               ],
             }),
@@ -67,6 +93,21 @@ void main() {
 
         expect(overview.expectedFocusTime, const Duration(hours: 1));
         expect(overview.actualFocusedTime, const Duration(minutes: 30));
+        expect(overview.actualRestTime, const Duration(minutes: 5));
+        expect(
+          overview.specialActivities.single.specialActivity.name,
+          'Release day',
+        );
+        expect(
+          overview.specialActivities.single.focusedTime,
+          const Duration(minutes: 10),
+        );
+        expect(
+          overview.specialActivities.single.restTime,
+          const Duration(minutes: 2),
+        );
+        expect(overview.week.focusedTime, const Duration(minutes: 90));
+        expect(overview.overall.daysWorked, 3);
         expect(overview.areas.single.focusArea.name, 'Work placement');
         expect(overview.areas.single.completed, isFalse);
       },
@@ -161,6 +202,21 @@ void main() {
             'date': '2026-09-07',
             'expected_focus_seconds': 3600,
             'actual_focused_seconds': 1800,
+            'actual_rest_seconds': 300,
+            'actual_tracked_seconds': 2100,
+            'week': {
+              'week_start': '2026-09-07',
+              'week_end': '2026-09-13',
+              'focused_seconds': 5400,
+              'rest_seconds': 600,
+              'tracked_seconds': 6000,
+            },
+            'overall': {
+              'days_worked': 3,
+              'focused_seconds': 9000,
+              'rest_seconds': 1200,
+              'tracked_seconds': 10200,
+            },
             'completed_focus_areas': 0,
             'targeted_focus_areas': 1,
             'areas': [
@@ -180,6 +236,11 @@ void main() {
 
       expect(overview.expectedFocusTime, const Duration(hours: 1));
       expect(overview.actualFocusedTime, const Duration(minutes: 30));
+      expect(overview.actualTrackedTime, const Duration(minutes: 35));
+      expect(
+        overview.overall.trackedTime,
+        const Duration(hours: 2, minutes: 50),
+      );
       expect(overview.areas.single.focusArea.name, 'Work placement');
       expect(overview.areas.single.completed, isFalse);
     });

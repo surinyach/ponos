@@ -1,4 +1,11 @@
-from sqlalchemy import BigInteger, Date, DateTime, Integer, SmallInteger
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    Date,
+    DateTime,
+    Integer,
+    SmallInteger,
+)
 from sqlalchemy.dialects.postgresql import ExcludeConstraint
 
 import app.models  # noqa: F401
@@ -10,6 +17,8 @@ def test_focus_area_tables_are_registered() -> None:
         "focus_areas",
         "focus_area_targets",
         "timer_executions",
+        "special_activities",
+        "manual_work_entries",
     }.issubset(Base.metadata.tables)
 
 
@@ -44,6 +53,12 @@ def test_timer_executions_store_only_source_durations() -> None:
     assert isinstance(table.c.started_at.type, DateTime)
     assert isinstance(table.c.work_date.type, Date)
     assert table.c.work_date.nullable is False
+    assert table.c.focus_area_id.nullable is True
+    assert table.c.special_activity_id.nullable is True
+    assert any(
+        constraint.name == "ck_timer_executions_exactly_one_owner"
+        for constraint in table.constraints
+    )
     assert table.c.started_at.type.timezone is True
     assert table.c.ended_at.type.timezone is True
     assert {"focused_seconds", "rest_seconds"}.issubset(table.c.keys())
@@ -53,3 +68,44 @@ def test_timer_executions_store_only_source_durations() -> None:
     assert "ix_timer_executions_work_date" in {
         index.name for index in table.indexes
     }
+
+
+def test_special_activity_columns_match_storage_contract() -> None:
+    table = Base.metadata.tables["special_activities"]
+
+    assert isinstance(table.c.id.type, BigInteger)
+    assert table.c.name.type.length == 100
+    assert table.c.name.nullable is False
+    assert table.c.description.nullable is True
+    assert "work_date" not in table.c
+    assert "is_archived" not in table.c
+    assert "uq_special_activities_name_ci" in {
+        index.name for index in table.indexes
+    }
+
+
+def test_manual_work_entry_columns_and_constraints_match_contract() -> None:
+    table = Base.metadata.tables["manual_work_entries"]
+    constraint_names = {
+        constraint.name
+        for constraint in table.constraints
+        if isinstance(constraint, CheckConstraint)
+    }
+
+    assert isinstance(table.c.id.type, BigInteger)
+    assert table.c.focus_area_id.nullable is True
+    assert table.c.special_activity_id.nullable is True
+    assert table.c.work_date.nullable is False
+    assert table.c.focused_seconds.nullable is False
+    assert table.c.rest_seconds.nullable is False
+    assert {
+        "ck_manual_work_entries_exactly_one_subject",
+        "ck_manual_work_entries_focused_nonnegative",
+        "ck_manual_work_entries_rest_nonnegative",
+        "ck_manual_work_entries_duration_nonzero",
+    }.issubset(constraint_names)
+    assert {
+        "ix_manual_work_entries_focus_area_id",
+        "ix_manual_work_entries_special_activity_id",
+        "ix_manual_work_entries_work_date",
+    } == {index.name for index in table.indexes}
