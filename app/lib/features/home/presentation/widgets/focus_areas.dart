@@ -150,8 +150,11 @@ class _FocusAreaRow extends StatelessWidget {
 
   double get progress {
     if (dailyTarget == null) return 0;
-    if (dailyTarget!.inMinutes == 0) return 1;
-    return (workedToday.inMinutes / dailyTarget!.inMinutes).clamp(0, 1);
+    if (dailyTarget!.inMicroseconds == 0) return 1;
+    return (workedToday.inMicroseconds / dailyTarget!.inMicroseconds).clamp(
+      0,
+      1,
+    );
   }
 
   @override

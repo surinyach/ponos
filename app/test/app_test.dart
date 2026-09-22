@@ -200,6 +200,48 @@ void main() {
     );
   });
 
+  testWidgets('uses full elapsed precision for Work Area progress', (
+    tester,
+  ) async {
+    final day = DateTime(2026, 9, 7);
+    final area = FocusArea(
+      id: 9,
+      name: 'Short task',
+      priority: 1,
+      createdAt: day,
+      updatedAt: day,
+      targets: [
+        FocusAreaTarget(
+          id: 9,
+          focusAreaId: 9,
+          weekday: DateTime.monday,
+          targetMinutes: 2,
+          validFrom: day,
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: FocusAreas(
+            targetDate: day,
+            areas: [area],
+            workedTodayByAreaId: const {9: Duration(seconds: 90)},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('75%'), findsOneWidget);
+    expect(
+      tester
+          .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+          .value,
+      0.75,
+    );
+  });
+
   testWidgets('shows current streak and weekly consistency', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
