@@ -1,4 +1,5 @@
 from datetime import date
+from dataclasses import dataclass
 
 from sqlalchemy import func, select, union_all
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +27,41 @@ def _work_rows():
     ).subquery()
 
 
+@dataclass(frozen=True)
+class DailyWorkAggregation:
+    focused_seconds: int
+    rest_seconds: int
+    focused_by_area: dict[int, int]
+    time_by_special_activity: dict[int, tuple[int, int]]
+
+
+async def aggregate_day(db: AsyncSession, work_date: date) -> DailyWorkAggregation:
+    """Use the same timer/manual rows for today's totals and work-area progress."""
+    rows = _work_rows()
+    result = await db.execute(
+        select(
+            rows.c.focus_area_id,
+            rows.c.special_activity_id,
+            func.sum(rows.c.focused_seconds),
+            func.sum(rows.c.rest_seconds),
+        )
+        .where(rows.c.work_date == work_date)
+        .group_by(rows.c.focus_area_id, rows.c.special_activity_id)
+    )
+    focused = rest = 0
+    by_area: dict[int, int] = {}
+    by_special: dict[int, tuple[int, int]] = {}
+    for area_id, activity_id, row_focused, row_rest in result.all():
+        row_focused, row_rest = int(row_focused), int(row_rest)
+        focused += row_focused
+        rest += row_rest
+        if area_id is not None:
+            by_area[int(area_id)] = row_focused
+        else:
+            by_special[int(activity_id)] = (row_focused, row_rest)
+    return DailyWorkAggregation(focused, rest, by_area, by_special)
+
+
 async def totals_between(
     db: AsyncSession,
     start_date: date,
@@ -40,47 +76,6 @@ async def totals_between(
     )
     focused, rest = result.one()
     return int(focused), int(rest)
-
-
-async def focused_by_area(
-    db: AsyncSession,
-    work_date: date,
-) -> dict[int, int]:
-    rows = _work_rows()
-    result = await db.execute(
-        select(
-            rows.c.focus_area_id,
-            func.coalesce(func.sum(rows.c.focused_seconds), 0),
-        )
-        .where(
-            rows.c.work_date == work_date,
-            rows.c.focus_area_id.is_not(None),
-        )
-        .group_by(rows.c.focus_area_id)
-    )
-    return {int(area_id): int(seconds) for area_id, seconds in result.all()}
-
-
-async def time_by_special_activity(
-    db: AsyncSession, work_date: date
-) -> dict[int, tuple[int, int]]:
-    rows = _work_rows()
-    result = await db.execute(
-        select(
-            rows.c.special_activity_id,
-            func.coalesce(func.sum(rows.c.focused_seconds), 0),
-            func.coalesce(func.sum(rows.c.rest_seconds), 0),
-        )
-        .where(
-            rows.c.work_date == work_date,
-            rows.c.special_activity_id.is_not(None),
-        )
-        .group_by(rows.c.special_activity_id)
-    )
-    return {
-        int(activity_id): (int(focused), int(rest))
-        for activity_id, focused, rest in result.all()
-    }
 
 
 async def lifetime_totals(db: AsyncSession) -> tuple[int, int, int]:

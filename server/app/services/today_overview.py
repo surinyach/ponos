@@ -13,8 +13,7 @@ from app.schemas.today_overview import (
 )
 from app.schemas.work_totals import OverallTotalsResponse, WeekTotalsResponse
 from app.services.work_totals import (
-    focused_by_area,
-    time_by_special_activity,
+    aggregate_day,
     lifetime_totals,
     totals_between,
 )
@@ -35,8 +34,8 @@ async def get_today_overview(
         ).all()
     )
 
-    focused_by_area_id = await focused_by_area(db, work_date)
-    special_time = await time_by_special_activity(db, work_date)
+    daily = await aggregate_day(db, work_date)
+    special_time = daily.time_by_special_activity
     special_activities = list(
         (
             await db.scalars(
@@ -46,13 +45,13 @@ async def get_today_overview(
             )
         ).all()
     )
-    actual_focused, actual_rest = await totals_between(db, work_date, work_date)
+    actual_focused, actual_rest = daily.focused_seconds, daily.rest_seconds
 
     progress = []
     for area in areas:
         target = _target_for(area, work_date)
         target_seconds = None if target is None else target.target_minutes * 60
-        focused_seconds = focused_by_area_id.get(area.id, 0)
+        focused_seconds = daily.focused_by_area.get(area.id, 0)
         progress.append(
             FocusAreaTodayProgress(
                 focus_area=area,

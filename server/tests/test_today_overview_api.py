@@ -365,3 +365,66 @@ async def test_edit_delete_and_reassign_manual_entries_recalculate_every_total(c
     assert daily["actual_rest_seconds"] == 360
     assert week["tracked_seconds"] == overall["tracked_seconds"] == 1560
     assert overall["days_worked"] == 1
+
+
+@pytest.mark.asyncio
+async def test_completed_partial_and_manual_work_share_daily_area_progress(client):
+    primary = await create_area(client, "Primary", 1, minutes=30)
+    secondary = await create_area(client, "Secondary", 2, minutes=30)
+    special = await client.post(
+        "/api/v1/special-activities", json={"name": "Release"}
+    )
+    assert special.status_code == 201
+    special_id = special.json()["id"]
+
+    async def timer(*, area_id=None, activity_id=None, started, ended, focused, rest):
+        response = await client.post(
+            "/api/v1/timer-executions",
+            json={
+                **({"focus_area_id": area_id} if area_id else {"special_activity_id": activity_id}),
+                "work_date": "2026-09-07",
+                "started_at": started,
+                "ended_at": ended,
+                "focused_seconds": focused,
+                "rest_seconds": rest,
+            },
+        )
+        assert response.status_code == 201
+
+    # A completed cycle and a saved partial cycle are both persisted executions.
+    await timer(area_id=primary["id"], started="2026-09-07T08:00:00Z",
+                ended="2026-09-07T08:25:00Z", focused=1200, rest=300)
+    await timer(area_id=primary["id"], started="2026-09-07T09:00:00Z",
+                ended="2026-09-07T09:06:00Z", focused=300, rest=60)
+    await timer(activity_id=special_id, started="2026-09-07T10:00:00Z",
+                ended="2026-09-07T10:11:00Z", focused=600, rest=60)
+
+    for owner, focused, rest in (
+        ({"focus_area_id": primary["id"]}, 300, 0),
+        ({"focus_area_id": secondary["id"]}, 0, 120),
+        ({"special_activity_id": special_id}, 0, 240),
+    ):
+        response = await client.post(
+            "/api/v1/manual-work-entries",
+            json={**owner, "work_date": "2026-09-07",
+                  "focused_seconds": focused, "rest_seconds": rest},
+        )
+        assert response.status_code == 201
+
+    response = await client.get(
+        "/api/v1/overview/today",
+        params={"date": "2026-09-07", "day_start_utc": "2026-09-07T00:00:00Z",
+                "day_end_utc": "2026-09-08T00:00:00Z"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["actual_focused_seconds"], body["actual_rest_seconds"],
+            body["actual_tracked_seconds"]) == (2400, 780, 3180)
+    assert [(item["focused_seconds"], item["completed"]) for item in body["areas"]] == [
+        (1800, True), (0, False)
+    ]
+    assert (body["completed_focus_areas"], body["targeted_focus_areas"]) == (1, 2)
+    assert [(item["focused_seconds"], item["rest_seconds"])
+            for item in body["special_activities"]] == [(600, 300)]
+    assert body["week"]["tracked_seconds"] == 3180
+    assert body["overall"]["tracked_seconds"] == 3180
