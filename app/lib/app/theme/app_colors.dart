@@ -1,25 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// The Ponos palette: olive for steady work, bronze for achievement, and
-/// marble-inspired neutrals for a subtle connection to classical Greece.
+/// Approved Ponos Aegean Blue palette.
 abstract final class AppColors {
-  static const olive = Color(0xFF4D6254);
-  static const oliveDark = Color(0xFF24352C);
-  static const oliveLight = Color(0xFFCBD8CE);
+  static const primary = Color(0xFF315D8C);
+  static const primaryDark = Color(0xFF1E3550);
+  static const accent = Color(0xFFB78A55);
+  static const surfaceTinted = Color(0xFFEAF1F8);
+  static const background = Color(0xFFF5F8FC);
+  static const white = Color(0xFFFFFFFF);
+  static const textSecondary = Color(0xFF62758A);
+  static const border = Color(0xFFDCE5EE);
 
-  static const bronze = Color(0xFF9A7446);
-  static const bronzeLight = Color(0xFFE9DCCB);
-
-  static const marble = Color(0xFFF7F5F0);
-  static const limestone = Color(0xFFE8E4DC);
-  static const ink = Color(0xFF202521);
-  static const slate = Color(0xFF5C635E);
-
-  static const night = Color(0xFF111713);
-  static const nightSurface = Color(0xFF1A211C);
-  static const nightSurfaceHigh = Color(0xFF242D27);
-
+  // The design references do not specify feedback colors yet.
   static const success = Color(0xFF4F7059);
-  static const warning = Color(0xFF9A7446);
+  static const warning = accent;
   static const error = Color(0xFFBA1A1A);
 }

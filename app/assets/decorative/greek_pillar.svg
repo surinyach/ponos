@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="160" viewBox="0 0 140 160" role="img" aria-labelledby="title desc">
+<title id="title">Ponos — minimalist Greek pillar</title>
+<desc id="desc">Quiet Ionic-inspired classical column used as a decorative watermark on the daily summary card. Solid vector lines. No text embedded.</desc>
+<g id="pillar" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g id="capital">
+    <path id="top-slab" d="M39 20H101" stroke="#315D8C" stroke-width="7.5"/>
+    <path id="capital-line" d="M30 36H110" stroke="#315D8C" stroke-width="6"/>
+    <circle id="left-volute" cx="26" cy="37" r="10" stroke="#315D8C" stroke-width="3.6"/>
+    <circle id="right-volute" cx="114" cy="37" r="10" stroke="#315D8C" stroke-width="3.6"/>
+    <circle id="left-inner" cx="26" cy="37" r="3.4" stroke="#315D8C" stroke-width="2.5"/>
+    <circle id="right-inner" cx="114" cy="37" r="3.4" stroke="#315D8C" stroke-width="2.5"/>
+    <path id="capital-underside" d="M45 49H95" stroke="#B78A55" stroke-width="3"/>
+  </g>
+  <g id="shaft" stroke="#315D8C" stroke-width="6.5">
+    <path id="shaft-edge-left" d="M43 58V126"/>
+    <path id="flute-left" d="M57 58V126"/>
+    <path id="flute-center" d="M70 58V126"/>
+    <path id="flute-right" d="M83 58V126"/>
+    <path id="shaft-edge-right" d="M97 58V126"/>
+  </g>
+  <g id="base" stroke="#315D8C">
+    <path id="base-step" d="M39 136H101" stroke-width="6.4"/>
+    <path id="base-bottom" d="M32 149H108" stroke-width="8"/>
+  </g>
+</g>
+</svg>

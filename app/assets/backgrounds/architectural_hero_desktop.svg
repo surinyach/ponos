@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" fill="none">
+ <defs><linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F1F6FA"/><stop offset=".59" stop-color="#E8F0F7"/><stop offset="1" stop-color="#DCE9F4"/></linearGradient><radialGradient id="light"><stop stop-color="#FFFFFF" stop-opacity=".65"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs><rect width="1200" height="320" fill="url(#hero)"/><ellipse cx="120" cy="80" rx="816" ry="336" fill="url(#light)"/><g transform="translate(1080 170) scale(1.15)" opacity=".13" stroke-linecap="round" stroke-linejoin="round">
+   <path d="M-142 124V-12C-142-90-79-151 0-151S142-90 142-12V124" stroke="#315D8C" stroke-width="1.9"/>
+   <path d="M-125 124V-12C-125-80-69-134 0-134S125-80 125-12V124" stroke="#315D8C" stroke-width="1.1"/>
+   <path d="M-100 124V-7C-100-62-56-107 0-107S100-62 100-7V124" stroke="#315D8C" stroke-width="1.05"/>
+   <path d="M-166 124H166M-152 113H152" stroke="#B78A55" stroke-width="2.2"/>
+   <path d="M-142 124V49M-125 124V49M125 124V49M142 124V49" stroke="#315D8C" stroke-width="4"/>
+   <path d="M-151 48H-116M116 48H151M-153 124H-116M116 124H153" stroke="#315D8C" stroke-width="6"/>
+   <path d="M0-108v-16M-9-116H9" stroke="#B78A55" stroke-width="2.1"/>
+  </g><path d="M708 0V320" stroke="#315D8C" stroke-width="1" opacity=".045"/><path d="M1166 291 l4 4 -4 4 -4-4z" fill="#B78A55" opacity=".22"/></svg>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240" fill="none" role="img" aria-labelledby="art-title art-desc">
+<title id="art-title">No Focus Areas</title><desc id="art-desc">Empty work-area state with a classical tablet, focus-area rows, discreet plus medallion and a laurel sprig.</desc>
+
+<ellipse cx="160" cy="115" rx="103" ry="90" fill="#EAF1F8" opacity=".65"/>
+<path d="M74 183V103A86 86 0 0 1 246 103V183" stroke="#315D8C" stroke-width="1.5" opacity=".095"/>
+<path d="M53 204H267" stroke="#315D8C" stroke-width="1.35" opacity=".14"/>
+<path d="M66 210H254" stroke="#B78A55" stroke-width="1" opacity=".18"/>
+<ellipse cx="160" cy="207" rx="80" ry="6" fill="#C8D7E6" opacity=".34"/>
+<path d="M114 87L160 62L206 87" stroke="#B78A55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M122 86H198" stroke="#1E3550" stroke-width="3" stroke-linecap="round"/>
+<rect x="123" y="88" width="74" height="107" rx="7" fill="#FFFFFF" stroke="#315D8C" stroke-width="2.2"/>
+<rect x="132" y="98" width="56" height="89" rx="4" fill="#EAF1F8" opacity=".86"/>
+<path d="M154 124h28M154 147h28M154 170h19" stroke="#315D8C" stroke-opacity=".53" stroke-width="2" stroke-linecap="round"/>
+<circle cx="142" cy="123" r="3.5" fill="#FFFFFF" stroke="#315D8C" stroke-width="1.5"/><circle cx="142" cy="146" r="3.5" fill="#FFFFFF" stroke="#315D8C" stroke-width="1.5"/><circle cx="142" cy="169" r="3.5" fill="#FFFFFF" stroke="#315D8C" stroke-width="1.5"/>
+<circle cx="186" cy="103" r="15" fill="#FFFFFF" stroke="#B78A55" stroke-width="1.75"/>
+<path d="M186 97v12M180 103h12" stroke="#315D8C" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M109 194h102M117 199h86" stroke="#1E3550" stroke-width="2.4" stroke-linecap="round" opacity=".67"/>
+<path d="M103 184C84 171 76 155 84 137" stroke="#315D8C" stroke-width="2" stroke-linecap="round"/>
+<path d="M100 179c-6-5-11-6-15-5 1 7 7 10 15 5ZM91 166c-6-6-11-7-14-5 1 7 7 10 14 5ZM86 154c-5-7-10-9-14-8 0 8 6 12 14 8ZM86 143c1-7 5-12 9-13 3 7 0 12-9 13Z" fill="#315D8C" opacity=".65"/>
+<path d="M231 112l3 3-3 3-3-3Z" fill="#B78A55" opacity=".55"/><path d="M99 97l2 2-2 2-2-2Z" fill="#B78A55" opacity=".55"/>
+
+</svg>

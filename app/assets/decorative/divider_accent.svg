@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="44" viewBox="0 0 400 44" fill="none" role="img" aria-label="Ponos centered emblem divider">
+  <title>Ponos — Centered seal divider</title>
+  <path d="M0 22H173" stroke="#315D8C" stroke-opacity="0.32" stroke-width="1"/>
+  <path d="M227 22H400" stroke="#315D8C" stroke-opacity="0.32" stroke-width="1"/>
+  <circle cx="200" cy="22" r="19" fill="#EAF1F8" stroke="#B78A55" stroke-width="1.4"/>
+  <circle cx="200" cy="22" r="16" stroke="#315D8C" stroke-opacity="0.22" stroke-width="0.7"/>
+  <!-- The pillar is the structural silhouette; the hourglass is inset in pale blue. -->
+  <path d="M190.5 14H209.5L207.6 17.3H192.4Z" fill="#B78A55"/>
+  <path d="M193 17.8H207V29H193Z" fill="#315D8C"/>
+  <path d="M190 29.5H210L211 32H189Z" fill="#1E3550"/>
+  <path d="M196 19.4C196 23 204 23.2 204 25.3C204 27.2 196 27.4 196 29M204 19.4C204 23 196 23.2 196 25.3C196 27.2 204 27.4 204 29" stroke="#EAF1F8" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M196 19.1H204M196 29H204" stroke="#B78A55" stroke-width="0.7"/>
+</svg>

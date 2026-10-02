@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+<title id="title">Ponos Full Emblem — Laurel Pillar Hourglass</title>
+<desc id="desc">Classical Greek pillar with carved hourglass, framed by laurels in a circular Aegean blue and bronze medallion.</desc>
+
+  <g id="medallion">
+    <circle id="stone-field" cx="128" cy="128" r="111" fill="#EAF1F8"/>
+    <circle id="bronze-ring" cx="128" cy="128" r="101" fill="none" stroke="#B78A55" stroke-width="3.1"/>
+    <circle id="inner-blue-ring" cx="128" cy="128" r="92" fill="none" stroke="#315D8C" stroke-width="1.35" opacity=".45"/>
+    <path id="north-mark" d="M128 39 L133 45 L128 51 L123 45 Z" fill="#B78A55" />
+    <circle id="south-mark" cx="128" cy="211" r="3.3" fill="#B78A55"/>
+  </g>
+<g id="laurel-frame" fill="none" stroke="#315D8C" stroke-width="2.6" stroke-linecap="round" opacity=".94">
+      <path id="left-stem" d="M95 180 C75 165 61 143 72 109" />
+      <path id="right-stem" d="M161 180 C181 165 195 143 184 109" />
+    </g>
+<g id="laurel-leaves" fill="#315D8C" opacity=".94">
+  <ellipse id="leaf-left-1" cx="76" cy="120" rx="5" ry="10" transform="rotate(-24 76 120)"/>
+  <ellipse id="leaf-right-1" cx="180" cy="120" rx="5" ry="10" transform="rotate(24 180 120)"/>
+  <ellipse id="leaf-left-2" cx="74" cy="134" rx="5" ry="10" transform="rotate(-42 74 134)"/>
+  <ellipse id="leaf-right-2" cx="182" cy="134" rx="5" ry="10" transform="rotate(42 182 134)"/>
+  <ellipse id="leaf-left-3" cx="79" cy="149" rx="5" ry="10" transform="rotate(-54 79 149)"/>
+  <ellipse id="leaf-right-3" cx="177" cy="149" rx="5" ry="10" transform="rotate(54 177 149)"/>
+  <ellipse id="leaf-left-4" cx="88" cy="161" rx="5" ry="10" transform="rotate(-54 88 161)"/>
+  <ellipse id="leaf-right-4" cx="168" cy="161" rx="5" ry="10" transform="rotate(54 168 161)"/>
+  <ellipse id="leaf-left-5" cx="97" cy="172" rx="5" ry="10" transform="rotate(-48 97 172)"/>
+  <ellipse id="leaf-right-5" cx="159" cy="172" rx="5" ry="10" transform="rotate(48 159 172)"/>
+</g>
+
+  <g id="architectural-column">
+    <path id="upper-capital" d="M100 88 H156 L151 98 H105 Z" fill="#B78A55"/>
+    <path id="upper-capital-top" d="M98 85 H158" fill="none" stroke="#1E3550" stroke-width="4.8" stroke-linecap="round"/>
+    <rect id="column-body" x="106" y="101" width="44" height="66" rx="1.2" fill="#1E3550" />
+    <path id="left-flute" d="M111 106 V164" fill="none" stroke="#315D8C" stroke-width="2" opacity=".8" />
+    <path id="right-flute" d="M145 106 V164" fill="none" stroke="#315D8C" stroke-width="2" opacity=".8" />
+    <path id="lower-pediment" d="M101 169 H155 L161 179 H95 Z" fill="#315D8C" />
+    <path id="foundation-line" d="M93 183 H163" stroke="#B78A55" stroke-width="4.2" fill="none" stroke-linecap="round" />
+  </g>
+  <g id="hourglass-carved-into-column">
+    <path id="upper-hourglass-negative-space" d="M116 108 H140 C139 120 134 125 128 132 C122 125 117 120 116 108 Z" fill="#EAF1F8"/>
+    <path id="lower-hourglass-negative-space" d="M128 141 C135 149 139 154 140 163 H116 C117 154 121 149 128 141 Z" fill="#EAF1F8"/>
+    <path id="golden-sand-upper" d="M121 116 H135 L128 124 Z" fill="#B78A55"/>
+    <path id="golden-sand-lower" d="M121 158 C124 153 127 153 128 152 C129 153 132 153 135 158 Z" fill="#B78A55"/>
+    <circle id="golden-sand-grain" cx="128" cy="137" r="2.2" fill="#B78A55"/>
+  </g>
+  <g id="temple-light-rays" stroke="#B78A55" stroke-width="3.2" fill="none" stroke-linecap="round">
+    <path d="M128 60 V70"/>
+    <path d="M116 63 L112 71"/>
+    <path d="M140 63 L144 71"/>
+    <circle cx="128" cy="79" r="4" fill="#B78A55" stroke="none"/>
+  </g>
+</svg>
