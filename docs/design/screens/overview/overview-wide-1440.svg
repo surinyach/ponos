@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<defs><linearGradient id="hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EAF1F8"/><stop offset="1" stop-color="#F5F8FC"/></linearGradient></defs>
+<rect x="0" y="0" width="1440" height="900" rx="0" fill="#F5F8FC" />
+<rect x="0" y="0" width="204" height="900" rx="0" fill="#FFFFFF" />
+<line x1="204" y1="0" x2="204" y2="900" stroke="#DCE5EE" stroke-width="1" opacity="1"/>
+<circle cx="35" cy="36" r="17" fill="#EAF1F8" stroke="#B78A55" stroke-width="1.15" opacity="1"/>
+<circle cx="35" cy="36" r="13.5" fill="none" stroke="#315D8C" stroke-width="0.65" opacity="0.6"/>
+<path d="M29 28h12l-2 3h-8z" stroke="#B78A55" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" fill="#B78A55" opacity="1"/>
+<rect x="30.4" y="31.2" width="9.2" height="13" rx="0" fill="#315D8C" />
+<rect x="29" y="44.1" width="12" height="2" rx="0" fill="#1E3550" />
+<path d="M32.7 33q5 4 0 7q-5 3 0 7 M37.3 33q-5 4 0 7q5 3 0 7" stroke="#EAF1F8" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" fill="0.0" opacity="1"/>
+<text x="61" y="42" font-family="Inter, Arial, sans-serif" font-size="21" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">Ponos</text>
+<rect x="11" y="93" width="182" height="43" rx="12" fill="#EAF1F8" />
+<path d="M28 115l9-8 9 8v10h-6v-7h-6v7h-6z" stroke="#315D8C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="1"/>
+<text x="62" y="120" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#315D8C" text-anchor="start" opacity="1">Overview</text>
+<circle cx="37" cy="170" r="8" fill="none" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<circle cx="37" cy="170" r="3" fill="none" stroke="#62758A" stroke-width="1.7" opacity="1"/>
+<line x1="37" y1="158" x2="37" y2="163" stroke="#62758A" stroke-width="1.5" opacity="1"/>
+<text x="62" y="175" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Work Areas</text>
+<circle cx="37" cy="227" r="8" fill="none" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<line x1="37" y1="214" x2="37" y2="218" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<line x1="37" y1="227" x2="40" y2="224" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<line x1="33" y1="213" x2="41" y2="213" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<text x="62" y="230" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Focus</text>
+<line x1="29" y1="274" x2="43" y2="274" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<line x1="29" y1="279" x2="42" y2="279" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<line x1="29" y1="284" x2="38" y2="284" stroke="#62758A" stroke-width="1.8" opacity="1"/>
+<path d="M40 287l6-6 2 2 -6 6 -3 1z" stroke="#62758A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="1"/>
+<text x="62" y="285" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Log Work</text>
+<text x="250" y="85" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">Overview</text>
+<text x="250" y="112" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">A clearer view of today.</text>
+<text x="1365" y="83" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#62758A" text-anchor="end" opacity="1">WED · 30 SEP</text>
+<rect x="250" y="141" width="1120" height="196" rx="18" fill="url(#hero)" stroke="#DCE5EE" stroke-width="1" />
+<g id="hero-pillar-decoration" transform="translate(1193,153) scale(1.12)" opacity="0.185">
+<g id="pillar" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g id="capital">
+    <path id="top-slab" d="M39 20H101" stroke="#315D8C" stroke-width="7.5"/>
+    <path id="capital-line" d="M30 36H110" stroke="#315D8C" stroke-width="6"/>
+    <circle id="left-volute" cx="26" cy="37" r="10" stroke="#315D8C" stroke-width="3.6"/>
+    <circle id="right-volute" cx="114" cy="37" r="10" stroke="#315D8C" stroke-width="3.6"/>
+    <circle id="left-inner" cx="26" cy="37" r="3.4" stroke="#315D8C" stroke-width="2.5"/>
+    <circle id="right-inner" cx="114" cy="37" r="3.4" stroke="#315D8C" stroke-width="2.5"/>
+    <path id="capital-underside" d="M45 49H95" stroke="#B78A55" stroke-width="3"/>
+  </g>
+  <g id="shaft" stroke="#315D8C" stroke-width="6.5">
+    <path id="shaft-edge-left" d="M43 58V126"/>
+    <path id="flute-left" d="M57 58V126"/>
+    <path id="flute-center" d="M70 58V126"/>
+    <path id="flute-right" d="M83 58V126"/>
+    <path id="shaft-edge-right" d="M97 58V126"/>
+  </g>
+  <g id="base" stroke="#315D8C">
+    <path id="base-step" d="M39 136H101" stroke-width="6.4"/>
+    <path id="base-bottom" d="M32 149H108" stroke-width="8"/>
+  </g>
+</g>
+</g>
+<text x="272" y="175" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="#62758A" text-anchor="start" opacity="1">TODAY</text>
+<text x="272" y="215" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">1h 30m</text>
+<text x="272" y="237" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Focused today  ·  No target set</text>
+<rect x="272" y="278" width="144" height="42" rx="10" fill="#315D8C" />
+<text x="344.0" y="304" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#FFFFFF" text-anchor="middle" opacity="1">Start focus</text>
+<rect x="250" y="361" width="672" height="285" rx="16" fill="#FFFFFF" stroke="#DCE5EE" stroke-width="1" />
+<text x="268" y="390" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">Focus Areas</text>
+<text x="268" y="409" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Your ongoing commitments</text>
+<line x1="268" y1="423" x2="904" y2="423" stroke="#DCE5EE" stroke-width="1" opacity="1"/>
+<circle cx="284" cy="447" r="17" fill="#EAF1F8" opacity="1"/>
+<text x="284" y="452" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#315D8C" text-anchor="middle" opacity="1">1</text>
+<text x="312" y="444" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">Test</text>
+<text x="312" y="464" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">No target today</text>
+<line x1="268" y1="487" x2="904" y2="487" stroke="#DCE5EE" stroke-width="1" opacity="1"/>
+<text x="268" y="518" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">Special Activities</text>
+<text x="268" y="542" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">No activities logged today</text>
+<rect x="945" y="361" width="425" height="235" rx="16" fill="#FFFFFF" stroke="#DCE5EE" stroke-width="1" />
+<text x="963" y="390" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">Work statistics</text>
+<rect x="963.0" y="406" width="188.5" height="65" rx="10" fill="#F5F8FC" />
+<text x="975.0" y="429" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">1</text>
+<text x="975.0" y="449" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Days worked</text>
+<rect x="1163.5" y="406" width="188.5" height="65" rx="10" fill="#F5F8FC" />
+<text x="1175.5" y="429" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">1h 30m</text>
+<text x="1175.5" y="449" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Focused time</text>
+<rect x="963.0" y="486" width="188.5" height="65" rx="10" fill="#F5F8FC" />
+<text x="975.0" y="509" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">10m</text>
+<text x="975.0" y="529" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Rest time</text>
+<rect x="1163.5" y="486" width="188.5" height="65" rx="10" fill="#F5F8FC" />
+<text x="1175.5" y="509" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">1h 40m</text>
+<text x="1175.5" y="529" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Tracked time</text>
+<rect x="945" y="615" width="425" height="151" rx="16" fill="#EAF1F8" stroke="#DCE5EE" stroke-width="1" />
+<text x="967" y="651" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#1E3550" text-anchor="start" opacity="1">Quick access</text>
+<text x="967" y="675" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="#62758A" text-anchor="start" opacity="1">Record work without starting a timer.</text>
+<rect x="967" y="694" width="145" height="42" rx="10" fill="#FFFFFF" stroke="#DCE5EE" stroke-width="1" />
+<text x="1039.5" y="720" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#315D8C" text-anchor="middle" opacity="1">Log work</text>
+</svg>

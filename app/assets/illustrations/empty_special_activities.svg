@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240" fill="none" role="img" aria-labelledby="art-title art-desc">
+<title id="art-title">No Special Activities</title><desc id="art-desc">One-off ceremonial star medallion supported by a restrained classical plinth.</desc>
+
+<ellipse cx="160" cy="115" rx="103" ry="90" fill="#EAF1F8" opacity=".65"/>
+<path d="M74 183V103A86 86 0 0 1 246 103V183" stroke="#315D8C" stroke-width="1.5" opacity=".095"/>
+<path d="M53 204H267" stroke="#315D8C" stroke-width="1.35" opacity=".14"/>
+<path d="M66 210H254" stroke="#B78A55" stroke-width="1" opacity=".18"/>
+<ellipse cx="160" cy="207" rx="80" ry="6" fill="#C8D7E6" opacity=".34"/>
+<path d="M160 53v11M151 56l-4 9M169 56l4 9" stroke="#B78A55" stroke-width="2" stroke-linecap="round" opacity=".62"/>
+<circle cx="160" cy="110" r="44" fill="#EAF1F8" stroke="#B78A55" stroke-width="2.4"/>
+<circle cx="160" cy="110" r="35" fill="#FFFFFF" stroke="#315D8C" stroke-width="1.25" opacity=".95"/>
+<path d="M160 82l6.4 16.8L184 104l-17 7 1.1 18-8.1-9.1-8.1 9.1L153 111l-17-7 17.6-5.2Z" fill="#315D8C" opacity=".9"/>
+<circle cx="160" cy="107" r="5.7" fill="#B78A55"/><circle cx="160" cy="107" r="2.2" fill="#EAF1F8"/>
+<path d="M145 154h30l6 8h-42Z" fill="#B78A55"/>
+<path d="M148 164h24v25h-24Z" fill="#315D8C" opacity=".82"/>
+<path d="M153 167v19M160 167v19M167 167v19" stroke="#EAF1F8" stroke-width="1.9" stroke-linecap="round"/>
+<path d="M140 190h40l7 7h-54Z" fill="#1E3550"/><path d="M128 202h64" stroke="#B78A55" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M106 162c-7-9-10-18-6-29" stroke="#315D8C" stroke-width="1.7" stroke-linecap="round" opacity=".45"/>
+<path d="M108 157c-6-2-9-7-8-10 6 0 9 3 8 10ZM103 147c-6-3-8-8-7-11 6 1 9 5 7 11Z" fill="#315D8C" opacity=".55"/>
+<path d="M225 109l3 3-3 3-3-3Z" fill="#B78A55" opacity=".55"/><path d="M83 101l2 2-2 2-2-2Z" fill="#B78A55" opacity=".55"/>
+
+</svg>

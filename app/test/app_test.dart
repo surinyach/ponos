@@ -52,11 +52,11 @@ void main() {
     expect(find.text('Focus timer'), findsOneWidget);
   });
 
-  test('light and dark themes use the Ponos palette', () {
-    expect(AppTheme.light.colorScheme.primary, AppColors.olive);
-    expect(AppTheme.light.colorScheme.secondary, AppColors.bronze);
-    expect(AppTheme.dark.colorScheme.brightness, Brightness.dark);
-    expect(AppTheme.dark.useMaterial3, isTrue);
+  test('light theme uses the approved Ponos palette', () {
+    expect(AppTheme.light.colorScheme.primary, AppColors.primary);
+    expect(AppTheme.light.colorScheme.secondary, AppColors.accent);
+    expect(AppTheme.light.colorScheme.brightness, Brightness.light);
+    expect(AppTheme.light.useMaterial3, isTrue);
   });
 
   testWidgets('shows today summary mock values', (tester) async {

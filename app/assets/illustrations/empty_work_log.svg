@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240" fill="none" role="img" aria-labelledby="art-title art-desc">
+<title id="art-title">No work logged</title><desc id="art-desc">A minimalist open ledger scroll and quill framed by soft Aegean geometry.</desc>
+
+<ellipse cx="160" cy="115" rx="103" ry="90" fill="#EAF1F8" opacity=".65"/>
+
+<path d="M53 204H267" stroke="#315D8C" stroke-width="1.35" opacity=".14"/>
+<path d="M66 210H254" stroke="#B78A55" stroke-width="1" opacity=".18"/>
+<ellipse cx="160" cy="207" rx="80" ry="6" fill="#C8D7E6" opacity=".34"/>
+<path d="M86 165l14-84 107 5-11 88Z" fill="#EAF1F8" opacity=".68"/>
+<path d="M107 81Q116 86 116 94L112 180Q110 187 100 186Q91 184 92 177L97 93Q96 84 107 81Z" fill="#EAF1F8" stroke="#315D8C" stroke-width="2.4"/>
+<path d="M106 84H198Q208 84 206 96L201 174Q201 182 194 182H104" fill="#FFFFFF" stroke="#315D8C" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M118 101H180" stroke="#B78A55" stroke-width="3" stroke-linecap="round"/>
+<path d="M119 111h33M119 127h67M119 143h67M119 159h48" stroke="#315D8C" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>
+<path d="M107 86c-5 0-8 4-8 10l-6 81c-.3 5 3 9 8 9 4 0 7-4 7-9l5-84c0-4-2-7-6-7Z" fill="#EAF1F8" stroke="#315D8C" stroke-width="1.6"/>
+<path d="M118 173H179" stroke="#B78A55" stroke-width="1.4" stroke-opacity=".55"/>
+<path d="M211 174L238 112C228 116 221 121 218 130L209 157Z" fill="#315D8C" opacity=".86"/>
+<path d="M211 173L239 112L227 135L207 182" stroke="#1E3550" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M209 171l-5 16" stroke="#B78A55" stroke-width="2" stroke-linecap="round"/>
+<path d="M96 190H218" stroke="#1E3550" stroke-width="2.5" stroke-linecap="round" opacity=".52"/>
+<path d="M225 82l3 3-3 3-3-3Z" fill="#B78A55" opacity=".55"/><path d="M80 129l2 2-2 2-2-2Z" fill="#B78A55" opacity=".55"/>
+
+</svg>

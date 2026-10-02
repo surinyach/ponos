@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+<title id="title">Ponos Compact Emblem — Laurel Pillar Hourglass</title>
+<desc id="desc">Classical Greek pillar with carved hourglass, framed by laurels in a circular Aegean blue and bronze medallion.</desc>
+
+  <g id="compact-medallion">
+    <circle id="stone-field" cx="128" cy="128" r="111" fill="#EAF1F8"/>
+    <circle id="bronze-ring" cx="128" cy="128" r="101" fill="none" stroke="#B78A55" stroke-width="4.3"/>
+  </g>
+<g id="laurel-frame" fill="none" stroke="#315D8C" stroke-width="3.0" stroke-linecap="round" opacity=".94">
+      <path id="left-stem" d="M95 180 C75 165 61 143 72 109" />
+      <path id="right-stem" d="M161 180 C181 165 195 143 184 109" />
+    </g>
+<g id="laurel-leaves" fill="#315D8C" opacity=".94">
+  <ellipse id="leaf-left-1" cx="76" cy="120" rx="5" ry="10" transform="rotate(-24 76 120)"/>
+  <ellipse id="leaf-right-1" cx="180" cy="120" rx="5" ry="10" transform="rotate(24 180 120)"/>
+  <ellipse id="leaf-left-2" cx="79" cy="149" rx="5" ry="10" transform="rotate(-54 79 149)"/>
+  <ellipse id="leaf-right-2" cx="177" cy="149" rx="5" ry="10" transform="rotate(54 177 149)"/>
+  <ellipse id="leaf-left-3" cx="97" cy="172" rx="5" ry="10" transform="rotate(-48 97 172)"/>
+  <ellipse id="leaf-right-3" cx="159" cy="172" rx="5" ry="10" transform="rotate(48 159 172)"/>
+</g>
+
+  <g id="column-silhouette">
+    <path id="capital" d="M99 91 H157 L153 102 H103 Z" fill="#B78A55"/>
+    <path id="body" d="M105 104 H151 V169 H105 Z" fill="#1E3550"/>
+    <path id="base" d="M100 170 H156 L162 181 H94 Z" fill="#315D8C"/>
+  </g>
+  <g id="hourglass-negative-space">
+    <path id="upper-bulb" d="M115 111 H141 C140 122 134 126 128 133 C122 126 116 122 115 111Z" fill="#EAF1F8" />
+    <path id="lower-bulb" d="M128 141 C135 149 139 154 141 163 H115 C117 154 121 149 128 141 Z" fill="#EAF1F8"/>
+    <path id="sand-in-lower-bulb" d="M120 157 H136 L128 153 Z" fill="#B78A55"/>
+  </g>
+</svg>

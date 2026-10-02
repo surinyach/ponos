@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="240" viewBox="0 0 320 240" fill="none" role="img" aria-labelledby="art-title art-desc">
+<title id="art-title">No active Focus Session</title><desc id="art-desc">Classical hourglass in a pale architectural niche to invite a new focused session.</desc>
+
+<ellipse cx="160" cy="115" rx="103" ry="90" fill="#EAF1F8" opacity=".65"/>
+<path d="M74 183V103A86 86 0 0 1 246 103V183" stroke="#315D8C" stroke-width="1.5" opacity=".095"/>
+<path d="M53 204H267" stroke="#315D8C" stroke-width="1.35" opacity=".14"/>
+<path d="M66 210H254" stroke="#B78A55" stroke-width="1" opacity=".18"/>
+<ellipse cx="160" cy="207" rx="80" ry="6" fill="#C8D7E6" opacity=".34"/>
+<circle cx="160" cy="122" r="70" stroke="#315D8C" stroke-width="1" stroke-opacity=".20"/>
+<circle cx="160" cy="122" r="61" stroke="#B78A55" stroke-width="1" stroke-opacity=".20"/>
+<path d="M126 73H194" stroke="#1E3550" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M133 82H187" stroke="#B78A55" stroke-width="2.7" stroke-linecap="round"/>
+<path d="M136 87C136 108 156 111 160 120C164 111 184 108 184 87" stroke="#315D8C" stroke-width="3.2" fill="#FFFFFF" stroke-linecap="round"/>
+<path d="M137 157C137 139 152 135 160 123C168 135 183 139 183 157" stroke="#315D8C" stroke-width="3.2" fill="#FFFFFF" stroke-linecap="round"/>
+<path d="M143 95Q160 108 177 95Q169 108 160 115Q151 108 143 95Z" fill="#B78A55" opacity=".82"/>
+<path d="M143 150Q160 142 177 150L177 154H143Z" fill="#B78A55" opacity=".88"/>
+<circle cx="160" cy="124" r="2.4" fill="#B78A55"/><circle cx="160" cy="132" r="1.6" fill="#B78A55"/><circle cx="160" cy="139" r="1.3" fill="#B78A55"/>
+<path d="M132 81v79M188 81v79" stroke="#1E3550" stroke-width="2" stroke-linecap="round" opacity=".62"/>
+<path d="M127 163H193" stroke="#B78A55" stroke-width="2.8" stroke-linecap="round"/>
+<path d="M122 169H198" stroke="#1E3550" stroke-width="5.8" stroke-linecap="round"/>
+<path d="M120 176H200" stroke="#B78A55" stroke-width="2" stroke-linecap="round"/>
+<path d="M220 85l4 4-4 4-4-4Z" fill="#B78A55" opacity=".55"/><path d="M105 116l2 2-2 2-2-2Z" fill="#B78A55" opacity=".55"/>
+<path d="M203 149c7-7 11-16 9-25M117 149c-7-7-11-16-9-25" stroke="#315D8C" stroke-width="1.8" stroke-opacity=".35" stroke-linecap="round"/>
+
+</svg>

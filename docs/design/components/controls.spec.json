@@ -1,0 +1,88 @@
+{
+  "version": "3.0.0",
+  "supersedes": "button family in ponos_controls_v2; selector design retained unchanged",
+  "visual_rules": {
+    "selector_mode": "text-first inline tabs and content-width pill chip",
+    "decorative_greek_assets_in_controls": false,
+    "control_height_visible_dp": 38,
+    "mobile_tap_target_min_dp": 48,
+    "border_dp": 1,
+    "font": "Inter",
+    "label_font_dp": 13,
+    "active_color": "#315D8C",
+    "muted_color": "#62758A",
+    "single_filled_primary_action_per_scope": true,
+    "button_shape": "soft rectangle, not capsule or full pill",
+    "button_radius_dp": 10,
+    "selector_chip_radius_dp": 999
+  },
+  "selectors": {
+    "activity_kind_tabs": {
+      "type": "inline_underline_tabs",
+      "options": [
+        "Focus Areas",
+        "Special Activities"
+      ],
+      "selected": "brand weight 650, 2.4dp underline",
+      "unselected": "muted text",
+      "mode": "scrollable on tiny widths if needed"
+    },
+    "archive_status_tabs": {
+      "type": "inline_underline_tabs",
+      "options": [
+        "Active",
+        "Archived"
+      ]
+    },
+    "activity_picker": {
+      "type": "content_width_outline_chip",
+      "label": "persistent Activity label where used in form",
+      "collapsed": "selected value + chevron",
+      "expanded": "anchored list or bottom sheet on narrow screen"
+    },
+    "date": {
+      "type": "ghost_inline_trigger",
+      "opens": "date picker"
+    },
+    "duration": {
+      "type": "compact_pill_stepper",
+      "accessibility": "plus and minus each at least 48dp hit region and announce value",
+      "alternative": "numeric entry in dialog on phones"
+    }
+  },
+  "buttons": {
+    "primary": "filled Aegean rectangle with 10dp corners, no shadow; one per visible decision scope",
+    "secondary": "white, 1dp soft outline, 10dp corner radius; tinted hover; no shadow",
+    "ghost": "text-first unboxed default; soft 10dp tinted hover/focus area",
+    "destructive": "unboxed red label default; full danger confirmation inside modal only",
+    "icon": "unboxed default, soft 10dp rounded-square hover/focus region"
+  },
+  "interaction_states": [
+    "default",
+    "hover",
+    "pressed",
+    "focused",
+    "disabled"
+  ],
+  "accessibility": {
+    "min_touch_height_dp": 48,
+    "visible_focus": "2dp brand or bronze ring",
+    "selected_not_color_only": "underline + semibold",
+    "labels": "semantics for icon-only and duration +/-",
+    "text_scaling": "up to 200%, wrapping or scroll compact tabs when needed"
+  },
+  "existing_navigation": {
+    "destinations": [
+      "Overview",
+      "Work Areas",
+      "Focus",
+      "Log Work"
+    ],
+    "removed": [
+      "Progress"
+    ]
+  },
+  "implementation_scope": "Design only, preserve existing Ponos data flow and behavior until explicitly approved for Flutter handoff.",
+  "mock_data_policy": "Use only Test as sample activity name; do not use real or prior Ponos activity names.",
+  "ui_state_contract": "Selectors preserved from v2 except placeholder content; buttons use 10dp radius with at least 48dp interactive touch area."
+}
