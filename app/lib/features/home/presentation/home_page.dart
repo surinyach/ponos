@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/navigation/ponos_adaptive_shell.dart';
+import '../../../app/navigation/ponos_destination.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/focus_area_form_page.dart';
@@ -22,89 +24,37 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  static const _destinations = <_Destination>[
-    _Destination('Overview', Icons.home_outlined, Icons.home),
-    _Destination(
-      'Work Areas',
-      Icons.track_changes_outlined,
-      Icons.track_changes,
-    ),
-    _Destination('Focus', Icons.timer_outlined, Icons.timer),
-    _Destination('Log work', Icons.edit_note_outlined, Icons.edit_note),
-    _Destination(
-      'Progress',
-      Icons.calendar_month_outlined,
-      Icons.calendar_month,
-    ),
-  ];
-
-  int _selectedIndex = 0;
+  PonosDestination _selectedDestination = PonosDestination.overview;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final useNavigationRail = constraints.maxWidth >= 700;
-        final content = switch (_selectedIndex) {
-          0 => _OverviewContent(
-            onManageFocusAreas: () => _selectDestination(1),
-          ),
-          1 => WorkAreasPage(
-            onCreateFocusArea: () => _openFocusAreaForm(),
-            onCreateSpecialActivity: _openSpecialActivityForm,
-            onFocusAreaSelected: (area) => _openFocusAreaForm(area),
-          ),
-          2 => const FocusTimerPage(),
-          3 => const LogWorkPage(),
-          _ => _FeaturePlaceholder(destination: _destinations[_selectedIndex]),
-        };
-
-        return Scaffold(
-          appBar: AppBar(title: const Text('Ponos')),
-          body: useNavigationRail
-              ? Row(
-                  children: [
-                    NavigationRail(
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: _selectDestination,
-                      labelType: NavigationRailLabelType.all,
-                      destinations: _destinations
-                          .map(
-                            (item) => NavigationRailDestination(
-                              icon: Icon(item.icon),
-                              selectedIcon: Icon(item.selectedIcon),
-                              label: Text(item.label),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                    const VerticalDivider(width: 1),
-                    Expanded(child: content),
-                  ],
-                )
-              : content,
-          bottomNavigationBar: useNavigationRail
-              ? null
-              : NavigationBar(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: _selectDestination,
-                  destinations: _destinations
-                      .map(
-                        (item) => NavigationDestination(
-                          icon: Icon(item.icon),
-                          selectedIcon: Icon(item.selectedIcon),
-                          label: item.label,
-                        ),
-                      )
-                      .toList(),
-                ),
-        );
-      },
+    return PonosAdaptiveShell(
+      selectedDestination: _selectedDestination,
+      onDestinationSelected: _selectDestination,
+      destinationBuilder: _buildDestination,
+      appBar: AppBar(title: const Text('Ponos')),
     );
   }
 
-  void _selectDestination(int index) {
-    setState(() => _selectedIndex = index);
+  Widget _buildDestination(PonosDestination destination) {
+    return switch (destination) {
+      PonosDestination.overview => _OverviewContent(
+        onManageFocusAreas: () =>
+            _selectDestination(PonosDestination.workAreas),
+      ),
+      PonosDestination.workAreas => WorkAreasPage(
+        onCreateFocusArea: () => _openFocusAreaForm(),
+        onCreateSpecialActivity: _openSpecialActivityForm,
+        onFocusAreaSelected: (area) => _openFocusAreaForm(area),
+      ),
+      PonosDestination.focus => const FocusTimerPage(),
+      PonosDestination.logWork => const LogWorkPage(),
+    };
+  }
+
+  void _selectDestination(PonosDestination destination) {
+    if (destination == _selectedDestination) return;
+    setState(() => _selectedDestination = destination);
   }
 
   Future<void> _openFocusAreaForm([FocusArea? area]) async {
@@ -337,44 +287,4 @@ class _OverviewMessage extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _FeaturePlaceholder extends StatelessWidget {
-  const _FeaturePlaceholder({required this.destination});
-
-  final _Destination destination;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: AppSpacing.pagePadding,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(destination.selectedIcon, size: 48),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              destination.label,
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'This feature will be shaped in the next step.',
-              style: Theme.of(context).textTheme.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Destination {
-  const _Destination(this.label, this.icon, this.selectedIcon);
-
-  final String label;
-  final IconData icon;
-  final IconData selectedIcon;
 }

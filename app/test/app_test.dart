@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/app.dart';
+import 'package:ponos_app/app/navigation/ponos_destination.dart';
 import 'package:ponos_app/app/providers/focus_timer_providers.dart';
 import 'package:ponos_app/app/theme/app_colors.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
@@ -41,6 +42,36 @@ void main() {
     await tester.tap(find.byKey(const Key('new-special-activity')));
     await tester.pumpAndSettle();
     expect(find.text('New Special Activity'), findsOneWidget);
+
+    Navigator.of(tester.element(find.text('New Special Activity'))).pop();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('work-area-type')), findsOneWidget);
+    expect(
+      tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex,
+      PonosDestination.workAreas.index,
+    );
+  });
+
+  testWidgets('returns from Log Work form to the selected root destination', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Log Work').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('new-work-entry')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('save-work-entry')), findsOneWidget);
+
+    Navigator.of(
+      tester.element(find.byKey(const Key('save-work-entry'))),
+    ).pop();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('new-work-entry')), findsOneWidget);
+    expect(
+      tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex,
+      PonosDestination.logWork.index,
+    );
   });
 
   testWidgets('opens the Focus Timer from the navigation bar', (tester) async {
