@@ -22,6 +22,16 @@ void main() {
         completedFocusAreas: 0,
         targetedFocusAreas: 1,
         areas: const [],
+        streak: StreakSummary(
+          currentDailyStreak: 1,
+          currentWeeklyStreak: 0,
+          recentDays: [
+            DailyCompletion(
+              date: DateTime(2026, 9, 7),
+              state: DailyCompletionState.completed,
+            ),
+          ],
+        ),
         week: WeeklyWorkTotals(
           weekStart: DateTime(2026, 9, 7),
           weekEnd: DateTime(2026, 9, 13),

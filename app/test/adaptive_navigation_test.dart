@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/navigation/ponos_destination.dart';
 import 'package:ponos_app/app/theme/app_assets.dart';
+import 'package:ponos_app/app/theme/app_colors.dart';
+import 'package:ponos_app/app/theme/app_spacing.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
 
 import 'support/ponos_navigation_specimen.dart';
@@ -44,6 +46,16 @@ void main() {
     await _pumpAtWidth(tester, 1200);
     final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
     expect(rail.extended, isTrue);
+  });
+
+  testWidgets('desktop keeps lateral navigation below 600 px', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(500, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const _ShellHost(platform: TargetPlatform.windows));
+
+    expect(find.byType(NavigationBar), findsNothing);
+    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+    expect(rail.extended, isFalse);
   });
 
   testWidgets('uses the correct mode at every validation width', (
@@ -124,10 +136,10 @@ void main() {
     await _pumpAtWidth(tester, 390);
     final navigation = tester.widget<NavigationBar>(find.byType(NavigationBar));
     final overview = navigation.destinations.first as NavigationDestination;
-    final icon = overview.icon as Icon;
-    final selectedIcon = overview.selectedIcon! as Icon;
-    expect(icon.icon, PonosDestination.overview.icon);
-    expect(selectedIcon.icon, PonosDestination.overview.selectedIcon);
+    final icon = (overview.icon as dynamic).icon as IconData;
+    final selectedIcon = (overview.selectedIcon! as dynamic).icon as IconData;
+    expect(icon, PonosDestination.overview.icon);
+    expect(selectedIcon, PonosDestination.overview.selectedIcon);
 
     final theme = NavigationBarTheme.of(
       tester.element(find.byType(NavigationBar)),
@@ -162,12 +174,80 @@ void main() {
     tester,
   ) async {
     await _pumpAtWidth(tester, 768);
-    final theme = Theme.of(tester.element(find.byType(NavigationRail)));
-    expect(theme.focusColor.a, greaterThan(0));
-
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     expect(FocusManager.instance.primaryFocus, isNotNull);
+    final hasFocusBorder = tester
+        .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+        .any((widget) => (widget.decoration as BoxDecoration?)?.border != null);
+    expect(hasFocusBorder, isTrue);
+  });
+
+  testWidgets('navigation icon states share centered interaction geometry', (
+    tester,
+  ) async {
+    await _pumpAtWidth(tester, 768);
+    for (final selected in PonosDestination.values) {
+      await tester.tap(find.text(selected.label));
+      await tester.pump();
+
+      for (final destination in PonosDestination.values) {
+        final state = destination == selected ? 'selected' : 'default';
+        expect(
+          tester.getSize(
+            find.byKey(Key('navigation-${destination.name}-$state')),
+          ),
+          const Size.square(AppSpacing.minimumTouchTarget),
+        );
+      }
+    }
+  });
+
+  testWidgets('rail hover focus and press keep destination bounds stable', (
+    tester,
+  ) async {
+    await _pumpAtWidth(tester, 768);
+    final overview = find.byKey(const Key('navigation-overview-selected'));
+    final initialRect = tester.getRect(overview);
+    final mouse = TestPointer(1, ui.PointerDeviceKind.mouse);
+
+    await tester.sendEventToBinding(mouse.hover(initialRect.center));
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(tester.getRect(overview), initialRect);
+    final hoveredSurface = tester.widget<AnimatedContainer>(
+      find.descendant(of: overview, matching: find.byType(AnimatedContainer)),
+    );
+    expect(
+      (hoveredSurface.decoration! as BoxDecoration).color,
+      Color.alphaBlend(
+        AppColors.accent.withValues(alpha: 0.12),
+        AppColors.surfaceTinted,
+      ),
+    );
+
+    await tester.sendEventToBinding(mouse.down(initialRect.center));
+    await tester.pump();
+    expect(tester.getRect(overview), initialRect);
+    await tester.sendEventToBinding(mouse.up());
+    await tester.sendEventToBinding(mouse.hover(const Offset(500, 500)));
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(tester.getRect(overview), initialRect);
+    final exitedSurface = tester.widget<AnimatedContainer>(
+      find.descendant(of: overview, matching: find.byType(AnimatedContainer)),
+    );
+    expect(
+      (exitedSurface.decoration! as BoxDecoration).color,
+      AppColors.surfaceTinted,
+    );
+
+    await tester.sendEventToBinding(mouse.hover(initialRect.center));
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(tester.getRect(overview), initialRect);
+    expect(FocusManager.instance.primaryFocus, isNotNull);
+
+    await tester.sendEventToBinding(mouse.hover(const Offset(500, 500)));
+    await tester.pump();
   });
 
   testWidgets('keyboard traversal activates a destination', (tester) async {
@@ -232,6 +312,18 @@ void main() {
     } finally {
       semantics.dispose();
     }
+  });
+
+  testWidgets('expanded destinations start directly below branding', (
+    tester,
+  ) async {
+    await _pumpAtWidth(tester, 1440);
+    final brand = tester.getRect(
+      find.byKey(const Key('ponos-expanded-rail-brand')),
+    );
+    final overview = tester.getRect(find.text('Overview'));
+    expect(overview.top, greaterThanOrEqualTo(brand.bottom));
+    expect(overview.top - brand.bottom, lessThanOrEqualTo(AppSpacing.xl));
   });
 
   testWidgets('selects typed destinations and excludes Progress', (
@@ -421,9 +513,10 @@ Future<void> _pumpAtWidth(WidgetTester tester, double width) async {
 }
 
 class _ShellHost extends StatefulWidget {
-  const _ShellHost({this.builds});
+  const _ShellHost({this.builds, this.platform = TargetPlatform.android});
 
   final Map<PonosDestination, int>? builds;
+  final TargetPlatform platform;
 
   @override
   State<_ShellHost> createState() => _ShellHostState();
@@ -435,7 +528,7 @@ class _ShellHostState extends State<_ShellHost> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: AppTheme.light,
+      theme: AppTheme.light.copyWith(platform: widget.platform),
       home: PonosAdaptiveShell(
         selectedDestination: selected,
         onDestinationSelected: (destination) {

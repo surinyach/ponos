@@ -4,12 +4,12 @@ enum PonosDestination {
   overview(
     label: 'Overview',
     icon: Icons.home_outlined,
-    selectedIcon: Icons.home,
+    selectedIcon: Icons.home_outlined,
   ),
   workAreas(
     label: 'Work Areas',
-    icon: Icons.track_changes_outlined,
-    selectedIcon: Icons.track_changes,
+    icon: Icons.adjust,
+    selectedIcon: Icons.adjust,
   ),
   focus(label: 'Focus', icon: Icons.timer_outlined, selectedIcon: Icons.timer),
   logWork(

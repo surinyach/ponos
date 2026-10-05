@@ -14,6 +14,8 @@ class PonosButton extends StatelessWidget {
     this.variant = PonosButtonVariant.primary,
     this.icon,
     this.autofocus = false,
+    this.visualHeight,
+    this.borderColor,
   });
   const PonosButton.primary({
     super.key,
@@ -21,6 +23,8 @@ class PonosButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.autofocus = false,
+    this.visualHeight,
+    this.borderColor,
   }) : variant = PonosButtonVariant.primary;
   const PonosButton.secondary({
     super.key,
@@ -28,6 +32,8 @@ class PonosButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.autofocus = false,
+    this.visualHeight,
+    this.borderColor,
   }) : variant = PonosButtonVariant.secondary;
   const PonosButton.ghost({
     super.key,
@@ -35,6 +41,8 @@ class PonosButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.autofocus = false,
+    this.visualHeight,
+    this.borderColor,
   }) : variant = PonosButtonVariant.ghost;
   const PonosButton.danger({
     super.key,
@@ -42,6 +50,8 @@ class PonosButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.autofocus = false,
+    this.visualHeight,
+    this.borderColor,
   }) : variant = PonosButtonVariant.danger;
 
   final String label;
@@ -49,6 +59,8 @@ class PonosButton extends StatelessWidget {
   final PonosButtonVariant variant;
   final Widget? icon;
   final bool autofocus;
+  final double? visualHeight;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +74,12 @@ class PonosButton extends StatelessWidget {
               Text(label),
             ],
           );
-    final style = _style(context, variant);
+    final style = _style(
+      context,
+      variant,
+      visualHeight: visualHeight,
+      borderColor: borderColor,
+    );
     return switch (variant) {
       PonosButtonVariant.primary => FilledButton(
         onPressed: onPressed,
@@ -79,7 +96,12 @@ class PonosButton extends StatelessWidget {
     };
   }
 
-  static ButtonStyle _style(BuildContext context, PonosButtonVariant variant) {
+  static ButtonStyle _style(
+    BuildContext context,
+    PonosButtonVariant variant, {
+    double? visualHeight,
+    Color? borderColor,
+  }) {
     final colors = Theme.of(context).colorScheme;
     final secondary = variant == PonosButtonVariant.secondary;
     final foreground = variant == PonosButtonVariant.danger
@@ -88,8 +110,11 @@ class PonosButton extends StatelessWidget {
         ? colors.onPrimary
         : colors.primary;
     return ButtonStyle(
-      minimumSize: const WidgetStatePropertyAll(
-        Size(AppSpacing.minimumTouchTarget, AppSpacing.controlVisualHeight),
+      minimumSize: WidgetStatePropertyAll(
+        Size(
+          AppSpacing.minimumTouchTarget,
+          visualHeight ?? AppSpacing.controlVisualHeight,
+        ),
       ),
       tapTargetSize: MaterialTapTargetSize.padded,
       padding: const WidgetStatePropertyAll(
@@ -142,7 +167,7 @@ class PonosButton extends StatelessWidget {
           return const BorderSide(color: AppColors.accent, width: 2);
         }
         return secondary
-            ? const BorderSide(color: AppColors.border)
+            ? BorderSide(color: borderColor ?? AppColors.border)
             : BorderSide.none;
       }),
     );

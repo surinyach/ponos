@@ -1,0 +1,648 @@
+{
+  "version": "6.0",
+  "source_of_truth": {
+    "design": "svg/",
+    "visual_reference": "reference/",
+    "rule": "SVGs are authoritative design masters. Reference PNGs are immutable 1x rasterizations for visual comparison. Flutter goldens must never replace these references."
+  },
+  "canonical_viewports": {
+    "mobile_390x844": {
+      "viewport": [
+        390,
+        844
+      ],
+      "navigation": {
+        "mode": "bottom",
+        "header": [
+          0,
+          0,
+          390,
+          64
+        ],
+        "bottom_nav": [
+          0,
+          772,
+          390,
+          72
+        ]
+      },
+      "content_bounds": [
+        14,
+        76,
+        362,
+        684
+      ],
+      "cards": {
+        "streak": [
+          14,
+          76,
+          362,
+          164
+        ],
+        "today": [
+          14,
+          252,
+          362,
+          196
+        ],
+        "work_areas": [
+          14,
+          460,
+          362,
+          120
+        ],
+        "statistics": [
+          14,
+          592,
+          362,
+          168
+        ]
+      },
+      "actions": {
+        "start_focus": [
+          30,
+          394,
+          161,
+          42
+        ],
+        "log_work": [
+          199,
+          394,
+          161,
+          42
+        ]
+      },
+      "gaps": {
+        "between_cards": 12,
+        "card_radius": 16,
+        "button_radius": 10
+      },
+      "typography": {
+        "brand": [
+          18,
+          600
+        ],
+        "section_title": [
+          14,
+          600
+        ],
+        "today_title": [
+          15,
+          600
+        ],
+        "hero_metric": [
+          26,
+          600
+        ],
+        "metric": [
+          14,
+          600
+        ],
+        "label": [
+          9,
+          500
+        ],
+        "secondary": [
+          10,
+          400
+        ],
+        "button": [
+          12,
+          600
+        ],
+        "nav_label": [
+          10,
+          400
+        ]
+      },
+      "streak_recent_days": {
+        "count": 7,
+        "center_x": [
+          38,
+          66,
+          94,
+          122,
+          150,
+          178,
+          206
+        ],
+        "day_label_y": 178
+      },
+      "behavior": {
+        "normal_scale_scroll": false,
+        "accessibility_scroll_when_required": true
+      },
+      "assets": {
+        "greek_pillar_bounds": [
+          267.83,
+          288.15,
+          66.34,
+          97.82
+        ],
+        "greek_pillar_transform": {
+          "translate": [
+            258,
+            278
+          ],
+          "scale": [
+            0.6142857142857143,
+            0.7
+          ]
+        }
+      }
+    },
+    "compact_desktop_500x700": {
+      "viewport": [
+        500,
+        700
+      ],
+      "navigation": {
+        "mode": "collapsed_rail",
+        "rail_width": 72
+      },
+      "content_bounds": [
+        88,
+        18,
+        396,
+        610
+      ],
+      "cards": {
+        "streak": [
+          88,
+          18,
+          396,
+          150
+        ],
+        "today": [
+          88,
+          180,
+          396,
+          190
+        ],
+        "work_areas": [
+          88,
+          382,
+          396,
+          110
+        ],
+        "statistics": [
+          88,
+          504,
+          396,
+          124
+        ]
+      },
+      "actions": {
+        "start_focus": [
+          104,
+          316,
+          178,
+          42
+        ],
+        "log_work": [
+          290,
+          316,
+          178,
+          42
+        ]
+      },
+      "gaps": {
+        "between_cards": 12,
+        "card_radius": 16,
+        "button_radius": 10
+      },
+      "typography": {
+        "section_title": [
+          14,
+          600
+        ],
+        "today_title": [
+          15,
+          600
+        ],
+        "hero_metric": [
+          26,
+          600
+        ],
+        "metric": [
+          14,
+          600
+        ],
+        "label": [
+          9,
+          500
+        ],
+        "secondary": [
+          10,
+          400
+        ],
+        "button": [
+          12,
+          600
+        ]
+      },
+      "streak_recent_days": {
+        "count": 7,
+        "center_x": [
+          112,
+          140,
+          168,
+          196,
+          224,
+          252,
+          280
+        ],
+        "day_label_y": 120
+      },
+      "assets": {
+        "greek_pillar_bounds": [
+          375.83,
+          216.15,
+          66.34,
+          97.82
+        ],
+        "greek_pillar_transform": {
+          "translate": [
+            366,
+            206
+          ],
+          "scale": [
+            0.6142857142857143,
+            0.7
+          ]
+        }
+      }
+    },
+    "medium_768x1024": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "navigation": {
+        "mode": "collapsed_rail",
+        "rail_width": 76
+      },
+      "content_bounds": [
+        96,
+        24,
+        648,
+        594
+      ],
+      "cards": {
+        "streak": [
+          96,
+          24,
+          648,
+          154
+        ],
+        "today": [
+          96,
+          194,
+          302,
+          260
+        ],
+        "work_areas": [
+          414,
+          194,
+          330,
+          260
+        ],
+        "statistics": [
+          96,
+          470,
+          648,
+          148
+        ]
+      },
+      "actions": {
+        "start_focus": [
+          112,
+          400,
+          131,
+          42
+        ],
+        "log_work": [
+          251,
+          400,
+          131,
+          42
+        ]
+      },
+      "gaps": {
+        "horizontal": 16,
+        "vertical": 16,
+        "card_radius": 16,
+        "button_radius": 10
+      },
+      "typography": {
+        "section_title": [
+          14,
+          600
+        ],
+        "today_title": [
+          15,
+          600
+        ],
+        "hero_metric": [
+          26,
+          600
+        ],
+        "metric": [
+          18,
+          600
+        ],
+        "label": [
+          10,
+          500
+        ],
+        "secondary": [
+          10,
+          400
+        ],
+        "button": [
+          12,
+          600
+        ]
+      },
+      "streak_recent_days": {
+        "count": 7,
+        "center_x": [
+          120,
+          148,
+          176,
+          204,
+          232,
+          260,
+          288
+        ],
+        "day_label_y": 126
+      },
+      "assets": {
+        "greek_pillar_bounds": [
+          300.46,
+          228.7,
+          57.09,
+          83.85
+        ],
+        "greek_pillar_transform": {
+          "translate": [
+            292,
+            220
+          ],
+          "scale": [
+            0.5285714285714286,
+            0.6
+          ]
+        }
+      }
+    },
+    "desktop_1440x900": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "navigation": {
+        "mode": "expanded_sidebar",
+        "sidebar_width": 200,
+        "destinations_top_aligned": true
+      },
+      "content_bounds": [
+        240,
+        24,
+        1160,
+        598
+      ],
+      "cards": {
+        "streak": [
+          240,
+          24,
+          1160,
+          148
+        ],
+        "today": [
+          240,
+          192,
+          430,
+          260
+        ],
+        "work_areas": [
+          690,
+          192,
+          710,
+          260
+        ],
+        "statistics": [
+          240,
+          472,
+          1160,
+          150
+        ]
+      },
+      "actions": {
+        "start_focus": [
+          256,
+          398,
+          195,
+          42
+        ],
+        "log_work": [
+          459,
+          398,
+          195,
+          42
+        ]
+      },
+      "gaps": {
+        "content_horizontal_inset": 40,
+        "horizontal": 20,
+        "vertical": 20,
+        "streak_content_inset": 14,
+        "standard_card_padding": 16,
+        "today_action_gap": 8,
+        "today_action_bottom_inset": 12,
+        "streak_recent_day_pitch": 26,
+        "card_radius": 16,
+        "button_radius": 10
+      },
+      "typography": {
+        "brand": [
+          18,
+          600
+        ],
+        "streak_title": [
+          16,
+          600
+        ],
+        "section_title": [
+          14,
+          600
+        ],
+        "today_title": [
+          15,
+          600
+        ],
+        "hero_metric": [
+          26,
+          600
+        ],
+        "streak_metric": [
+          24,
+          600
+        ],
+        "metric": [
+          18,
+          600
+        ],
+        "label": [
+          10,
+          500
+        ],
+        "secondary": [
+          11,
+          400
+        ],
+        "button": [
+          12,
+          600
+        ],
+        "nav_label": [
+          13,
+          400
+        ]
+      },
+      "streak_recent_days": {
+        "count": 7,
+        "center_x": [
+          825,
+          851,
+          877,
+          903,
+          929,
+          955,
+          981
+        ],
+        "day_label_y": 103
+      },
+      "goals": {
+        "today_anchor": [
+          1190,
+          74
+        ],
+        "week_anchor": [
+          1262,
+          74
+        ],
+        "edit_goals_anchor": [
+          1374,
+          152
+        ]
+      },
+      "assets": {
+        "greek_pillar_bounds": [
+          561.83,
+          228.15,
+          66.34,
+          97.82
+        ],
+        "greek_pillar_transform": {
+          "translate": [
+            552,
+            218
+          ],
+          "scale": [
+            0.6142857142857143,
+            0.7
+          ]
+        }
+      }
+    }
+  },
+  "palette": {
+    "primary": "#315D8C",
+    "deep": "#1E3550",
+    "background": "#F5F8FC",
+    "surface": "#FFFFFF",
+    "pale": "#EAF1F8",
+    "bronze": "#B78A55",
+    "bronze_tint": "#F8F2EA",
+    "bronze_border": "#E7D8C8",
+    "muted": "#62758A",
+    "border": "#DCE5EE",
+    "rail": "#FBFCFE"
+  },
+  "typography": {
+    "family": "Inter",
+    "fallback": "Arial, sans-serif",
+    "weights": [
+      400,
+      500,
+      600,
+      700
+    ],
+    "rule": "At canonical viewports, use the exact size/weight pairs defined per viewport; do not substitute nearby Material text styles if metrics differ."
+  },
+  "component_rules": {
+    "streak": {
+      "order": 1,
+      "surface": "bronze_tint",
+      "contains": [
+        "daily streak",
+        "weekly streak",
+        "recent 7 days",
+        "today goal",
+        "weekly goal",
+        "Edit goals"
+      ],
+      "recent_days_count": 7,
+      "desktop_spacing": "fixed compact spacing; never full-width spaceBetween"
+    },
+    "today": {
+      "contains": [
+        "focused time",
+        "daily goal/progress",
+        "Greek pillar",
+        "Start Focus",
+        "Log Work"
+      ],
+      "pillar": "preserve aspect ratio; isolated; centered within its right-side visual region; maintain clear inset from card edges and action row; no overlap"
+    },
+    "work_areas": {
+      "overview": "compact summary",
+      "special_activity_empty_copy": "No special activity recorded today",
+      "sample_activity_name": "Test"
+    },
+    "statistics": {
+      "metrics": [
+        "Days",
+        "Focused",
+        "Rest",
+        "Tracked"
+      ],
+      "mobile": "2x2 compact grid"
+    }
+  },
+  "interaction_and_accessibility": {
+    "minimum_target": 48,
+    "mobile_normal_scroll": false,
+    "mobile_accessibility_scroll": "only when required by text scaling/layout",
+    "desktop_web_navigation": "lateral at every width",
+    "expanded_sidebar_from": 1200,
+    "nav_state_geometry": "default/hover/focus/pressed/selected must share identical centered 48x48 interaction bounds"
+  },
+  "forbidden": [
+    "Progress destination",
+    "mock streak data",
+    "separate Ready to focus card",
+    "separate Work Goals card",
+    "normal-scale mobile Overview scrolling",
+    "overflow/clipping workarounds",
+    "Tuki/Miau sample names"
+  ],
+  "comparison_workflow": [
+    "Render Flutter at the exact canonical viewport.",
+    "Compare against the immutable reference PNG for that viewport.",
+    "Use this spec for geometry and typography assertions.",
+    "Fix discrepancies before updating Flutter goldens.",
+    "Only after human approval may Flutter goldens be updated."
+  ]
+}

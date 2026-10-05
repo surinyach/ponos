@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 from pydantic import Field
 
@@ -20,6 +21,18 @@ class SpecialActivityTodayProgress(ContractModel):
     rest_seconds: int = Field(ge=0)
 
 
+class DailyCompletionResponse(ContractModel):
+    date: date
+    completed: bool
+    state: Literal["completed", "failed", "neutral", "in_progress"] = "failed"
+
+
+class StreakSummaryResponse(ContractModel):
+    current_daily_streak: int = Field(ge=0)
+    current_weekly_streak: int = Field(ge=0)
+    recent_days: list[DailyCompletionResponse]
+
+
 class TodayOverviewResponse(ContractModel):
     date: date
     expected_focus_seconds: int = Field(ge=0)
@@ -30,5 +43,6 @@ class TodayOverviewResponse(ContractModel):
     targeted_focus_areas: int = Field(ge=0)
     areas: list[FocusAreaTodayProgress]
     special_activities: list[SpecialActivityTodayProgress]
+    streak: StreakSummaryResponse
     week: WeekTotalsResponse
     overall: OverallTotalsResponse

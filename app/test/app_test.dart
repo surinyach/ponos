@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/app.dart';
 import 'package:ponos_app/app/navigation/ponos_destination.dart';
 import 'package:ponos_app/app/providers/focus_timer_providers.dart';
+import 'package:ponos_app/app/providers/work_goals_providers.dart';
 import 'package:ponos_app/app/theme/app_colors.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
@@ -11,6 +12,7 @@ import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.d
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/work_totals.dart';
 import 'package:ponos_app/features/home/presentation/state/today_overview_provider.dart';
+import 'package:ponos_app/features/home/presentation/overview_page.dart';
 import 'package:ponos_app/features/home/presentation/widgets/today_summary.dart';
 import 'package:ponos_app/features/home/presentation/widgets/focus_areas.dart';
 import 'package:ponos_app/features/home/presentation/widgets/work_statistics.dart';
@@ -18,9 +20,12 @@ import 'package:ponos_app/features/home/presentation/widgets/streak_consistency.
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 import 'package:ponos_app/features/focus_timer/domain/repositories/focus_timer_gateways.dart';
 import 'package:ponos_app/features/work_entries/domain/models/special_activity.dart';
+import 'package:ponos_app/features/work_goals/domain/models/work_goals.dart';
 
 void main() {
   testWidgets('shows wide navigation in a wide viewport', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(_testApp());
 
     expect(find.text('Ponos'), findsOneWidget);
@@ -31,7 +36,7 @@ void main() {
   testWidgets('manages both types under Work Areas', (tester) async {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Work Areas').last);
+    await tester.tap(find.byIcon(PonosDestination.workAreas.icon).first);
     await tester.pump();
     expect(find.text('Focus Areas'), findsOneWidget);
     expect(find.text('Special Activities'), findsOneWidget);
@@ -57,7 +62,7 @@ void main() {
   ) async {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Log Work').last);
+    await tester.tap(find.byIcon(PonosDestination.logWork.icon).first);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('new-work-entry')));
     await tester.pumpAndSettle();
@@ -77,7 +82,7 @@ void main() {
   testWidgets('opens the Focus Timer from the navigation bar', (tester) async {
     await tester.pumpWidget(_testApp());
 
-    await tester.tap(find.text('Focus'));
+    await tester.tap(find.byIcon(PonosDestination.focus.icon).first);
     await tester.pumpAndSettle();
 
     expect(find.text('Focus timer'), findsOneWidget);
@@ -327,19 +332,24 @@ void main() {
     expect(find.text('Tracked time'), findsOneWidget);
   });
 
-  testWidgets('desktop overview columns share the same height', (tester) async {
+  testWidgets('desktop overview uses the expanded composition', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
-    final summaryRect = tester.getRect(find.byType(TodaySummary));
-    final statisticsRect = tester.getRect(find.byType(WorkStatistics));
-    final areasRect = tester.getRect(find.byType(FocusAreas));
+    final summaryRect = tester.getRect(find.byKey(const Key('overview-today')));
+    final statisticsRect = tester.getRect(
+      find.byKey(const Key('overview-statistics')),
+    );
+    final areasRect = tester.getRect(
+      find.byKey(const Key('overview-work-areas')),
+    );
 
     expect(summaryRect.top, areasRect.top);
-    expect(statisticsRect.bottom, areasRect.bottom);
+    expect(statisticsRect.top, greaterThan(summaryRect.bottom));
+    expect(find.byKey(const Key('overview-expanded')), findsOneWidget);
   });
 
   testWidgets('overview shows aggregated daily, weekly, and lifetime data', (
@@ -348,19 +358,26 @@ void main() {
     await tester.pumpWidget(_testApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Rest today'), findsOneWidget);
-    expect(find.text('Tracked today'), findsOneWidget);
-    expect(find.text('This week · 30m focused · 5m rest'), findsOneWidget);
-    expect(find.text('Days worked'), findsOneWidget);
+    expect(find.text('30m'), findsWidgets);
+    expect(find.text('of 1h focused'), findsOneWidget);
+    expect(find.text('Days'), findsOneWidget);
+    expect(find.text('Focused'), findsOneWidget);
+    expect(find.text('Rest'), findsOneWidget);
+    expect(find.text('Tracked'), findsOneWidget);
     expect(find.text('128'), findsNothing);
+    expect(find.text('2 day streak'), findsOneWidget);
+    expect(find.text('1 week streak'), findsOneWidget);
+    expect(find.text('6 days'), findsNothing);
+    expect(find.byType(OverviewPage), findsOneWidget);
   });
 
   testWidgets('overview shows empty and error states', (tester) async {
     await tester.pumpWidget(_testApp(overview: _overview(areas: const [])));
     await tester.pumpAndSettle();
-    expect(find.text('No active focus areas'), findsOneWidget);
-    expect(find.byType(WorkStatistics), findsOneWidget);
-    expect(find.byType(TodaySummary), findsOneWidget);
+    expect(find.text('0 / 0 complete'), findsOneWidget);
+    expect(find.byKey(const Key('overview-statistics')), findsOneWidget);
+    expect(find.byKey(const Key('overview-today')), findsOneWidget);
+    expect(find.byKey(const Key('overview-streak')), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(
@@ -369,6 +386,7 @@ void main() {
           todayOverviewProvider.overrideWith(
             (ref) => Future<TodayOverview>.error(Exception('offline')),
           ),
+          workGoalsProvider.overrideWith((ref) async => _workGoals()),
         ],
         child: const PonosApp(),
       ),
@@ -376,6 +394,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Unable to load today’s overview'), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
+  });
+
+  testWidgets('uses daily semantics for an empty Special Activity section', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+    expect(find.text('No special activity recorded today'), findsOneWidget);
   });
 }
 
@@ -385,6 +411,7 @@ Widget _testApp({TodayOverview? overview}) => ProviderScope(
     todayOverviewProvider.overrideWith(
       (ref) async => overview ?? _overview(areas: [_progress()]),
     ),
+    workGoalsProvider.overrideWith((ref) async => _workGoals()),
   ],
   child: const PonosApp(),
 );
@@ -400,6 +427,16 @@ class _EmptyTimerStore implements ActiveFocusTimerStore {
   Future<void> clear() async {}
 }
 
+WorkGoals _workGoals() => WorkGoals(
+  date: DateTime(2026, 9, 7),
+  dailyGoals: [
+    for (var weekday = 1; weekday <= 7; weekday++)
+      DailyWorkGoal(weekday: weekday, targetMinutes: 60),
+  ],
+  weeklyGoalMinutes: 600,
+  weeklyGoalEffectiveFrom: DateTime(2026, 9, 7),
+);
+
 TodayOverview _overview({required List<FocusAreaTodayProgress> areas}) =>
     TodayOverview(
       date: DateTime(2026, 9, 7),
@@ -410,6 +447,20 @@ TodayOverview _overview({required List<FocusAreaTodayProgress> areas}) =>
       completedFocusAreas: 0,
       targetedFocusAreas: areas.isEmpty ? 0 : 1,
       areas: areas,
+      streak: StreakSummary(
+        currentDailyStreak: 2,
+        currentWeeklyStreak: 1,
+        recentDays: [
+          DailyCompletion(
+            date: DateTime(2026, 9, 6),
+            state: DailyCompletionState.completed,
+          ),
+          DailyCompletion(
+            date: DateTime(2026, 9, 7),
+            state: DailyCompletionState.inProgress,
+          ),
+        ],
+      ),
       week: WeeklyWorkTotals(
         weekStart: DateTime(2026, 9, 7),
         weekEnd: DateTime(2026, 9, 13),

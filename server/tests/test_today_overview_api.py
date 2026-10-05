@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 import pytest
@@ -14,7 +14,8 @@ async def clean_database():
     async with engine.begin() as connection:
         await connection.execute(
             text(
-                "TRUNCATE manual_work_entries, special_activities, "
+                "TRUNCATE daily_work_goals, weekly_work_goals, "
+                "manual_work_entries, special_activities, "
                 "timer_executions, focus_area_targets, focus_areas "
                 "RESTART IDENTITY CASCADE"
             )
@@ -50,8 +51,46 @@ async def create_area(client, name, priority, weekday=1, minutes=60):
     return response.json()
 
 
+async def create_activity(client, name="Special"):
+    response = await client.post(
+        "/api/v1/special-activities",
+        json={"name": name},
+    )
+    assert response.status_code == 201
+    return response.json()
+
+
+def overview_params(work_date):
+    return {
+        "date": work_date,
+        "day_start_utc": f"{work_date}T00:00:00Z",
+        "day_end_utc": (
+            datetime.fromisoformat(work_date).replace(tzinfo=timezone.utc)
+            + timedelta(days=1)
+        ).isoformat(),
+    }
+
+
+async def save_goals(client, effective_date, daily=None, weekly=0):
+    daily = daily or {}
+    response = await client.put(
+        "/api/v1/work-goals",
+        params={"date": effective_date},
+        json={
+            "daily_goals": [
+                {"weekday": weekday, "target_minutes": daily.get(weekday, 0)}
+                for weekday in range(1, 8)
+            ],
+            "weekly_goal_minutes": weekly,
+        },
+    )
+    assert response.status_code == 200
+    return response.json()
+
+
 @pytest.mark.asyncio
 async def test_today_overview_uses_local_day_and_valid_target_version(client):
+    await save_goals(client, "2026-09-07", daily={1: 60})
     area = await create_area(client, "Primary", 2)
     await client.patch(
         f"/api/v1/focus-areas/{area['id']}",
@@ -112,8 +151,207 @@ async def test_today_overview_uses_local_day_and_valid_target_version(client):
             "day_end_utc": "2026-09-14T22:00:00Z",
         },
     )
-    assert current.json()["expected_focus_seconds"] == 7200
+    assert current.json()["expected_focus_seconds"] == 3600
     assert current.json()["areas"][1]["target_seconds"] == 7200
+
+
+@pytest.mark.asyncio
+async def test_daily_streak_combines_manual_timer_and_optional_special_time(client):
+    await save_goals(client, "2026-09-07", daily={3: 120})
+    primary = await create_area(client, "Mandatory", 1, weekday=3)
+    await create_area(client, "Flexible", 2, weekday=3)
+    activity = await create_activity(client)
+
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                "INSERT INTO timer_executions "
+                "(focus_area_id, work_date, started_at, ended_at, "
+                "focused_seconds, rest_seconds) VALUES "
+                "(:area, '2026-09-09', '2026-09-09T08:00:00Z', "
+                "'2026-09-09T08:30:00Z', 1800, 0)"
+            ),
+            {"area": primary["id"]},
+        )
+        await connection.execute(
+            text(
+                "INSERT INTO manual_work_entries "
+                "(focus_area_id, work_date, focused_seconds, rest_seconds) "
+                "VALUES (:area, '2026-09-09', 1800, 0)"
+            ),
+            {"area": primary["id"]},
+        )
+        await connection.execute(
+            text(
+                "INSERT INTO manual_work_entries "
+                "(special_activity_id, work_date, focused_seconds, rest_seconds) "
+                "VALUES (:activity, '2026-09-09', 3600, 0)"
+            ),
+            {"activity": activity["id"]},
+        )
+
+    response = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-10"),
+    )
+    assert response.status_code == 200
+    streak = response.json()["streak"]
+    assert streak["current_daily_streak"] == 1
+    assert streak["recent_days"][-2] == {
+        "date": "2026-09-09",
+        "completed": True,
+        "state": "completed",
+    }
+    assert streak["recent_days"][-1]["state"] == "in_progress"
+
+
+@pytest.mark.asyncio
+async def test_priority_one_target_cannot_be_replaced_by_other_work(client):
+    await save_goals(client, "2026-09-07", daily={3: 120})
+    await create_area(client, "Mandatory", 1, weekday=3)
+    flexible = await create_area(client, "Flexible", 2, weekday=3)
+    activity = await create_activity(client)
+
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                "INSERT INTO manual_work_entries "
+                "(focus_area_id, work_date, focused_seconds, rest_seconds) "
+                "VALUES (:area, '2026-09-09', 3600, 0)"
+            ),
+            {"area": flexible["id"]},
+        )
+        await connection.execute(
+            text(
+                "INSERT INTO manual_work_entries "
+                "(special_activity_id, work_date, focused_seconds, rest_seconds) "
+                "VALUES (:activity, '2026-09-09', 3600, 0)"
+            ),
+            {"activity": activity["id"]},
+        )
+
+    response = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-10"),
+    )
+    assert response.status_code == 200
+    assert response.json()["streak"]["recent_days"][-2]["state"] == "failed"
+
+
+@pytest.mark.asyncio
+async def test_weekly_streak_uses_configured_weekly_goal(client):
+    await save_goals(client, "2026-08-31", weekly=60)
+    area = await create_area(client, "Weekly", 1, weekday=1)
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                "INSERT INTO manual_work_entries "
+                "(focus_area_id, work_date, focused_seconds, rest_seconds) "
+                "VALUES (:area, '2026-09-07', 3600, 0), "
+                "(:area, '2026-09-14', 1800, 0)"
+            ),
+            {"area": area["id"]},
+        )
+        await connection.execute(
+            text(
+                "INSERT INTO timer_executions "
+                "(focus_area_id, work_date, started_at, ended_at, "
+                "focused_seconds, rest_seconds) VALUES "
+                "(:area, '2026-09-14', '2026-09-14T08:00:00Z', "
+                "'2026-09-14T08:30:00Z', 1800, 0)"
+            ),
+            {"area": area["id"]},
+        )
+
+    response = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-16"),
+    )
+    assert response.status_code == 200
+    assert response.json()["streak"]["current_weekly_streak"] == 1
+
+
+@pytest.mark.asyncio
+async def test_zero_goal_day_is_neutral_and_today_is_in_progress(client):
+    await save_goals(client, "2026-09-07")
+    response = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-09"),
+    )
+    states = response.json()["streak"]["recent_days"]
+    assert states[-2]["state"] == "neutral"
+    assert states[-1]["state"] == "in_progress"
+    assert response.json()["streak"]["current_daily_streak"] == 0
+
+    later = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-23"),
+    )
+    assert later.json()["streak"]["current_weekly_streak"] == 0
+
+
+@pytest.mark.asyncio
+async def test_failed_completed_day_resets_and_manual_work_recovers_streak(client):
+    await save_goals(client, "2026-09-07", daily={1: 60, 2: 60, 3: 60})
+    area = await create_area(client, "Flexible", 2, weekday=1)
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                "INSERT INTO manual_work_entries "
+                "(focus_area_id, work_date, focused_seconds, rest_seconds) VALUES "
+                "(:area, '2026-09-07', 3600, 0), "
+                "(:area, '2026-09-08', 3600, 0)"
+            ),
+            {"area": area["id"]},
+        )
+    failed = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-11"),
+    )
+    assert failed.json()["streak"]["current_daily_streak"] == 0
+
+    created = await client.post(
+        "/api/v1/manual-work-entries",
+        json={
+            "focus_area_id": area["id"],
+            "work_date": "2026-09-09",
+            "focused_seconds": 3600,
+            "rest_seconds": 0,
+        },
+    )
+    assert created.status_code == 201
+    recovered = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-11"),
+    )
+    assert recovered.json()["streak"]["current_daily_streak"] == 3
+
+
+@pytest.mark.asyncio
+async def test_failed_week_resets_and_historical_manual_work_recovers_streak(client):
+    await save_goals(client, "2026-08-31", weekly=60)
+    area = await create_area(client, "Flexible", 2, weekday=1)
+    failed = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-16"),
+    )
+    assert failed.json()["streak"]["current_weekly_streak"] == 0
+
+    created = await client.post(
+        "/api/v1/manual-work-entries",
+        json={
+            "focus_area_id": area["id"],
+            "work_date": "2026-09-07",
+            "focused_seconds": 3600,
+            "rest_seconds": 0,
+        },
+    )
+    assert created.status_code == 201
+    recovered = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-16"),
+    )
+    assert recovered.json()["streak"]["current_weekly_streak"] == 1
 
 
 @pytest.mark.asyncio
@@ -142,6 +380,7 @@ async def test_today_overview_has_empty_and_invalid_offset_states(client):
 
 @pytest.mark.asyncio
 async def test_manual_and_timer_time_combine_without_special_completion(client):
+    await save_goals(client, "2026-09-07", daily={1: 120})
     primary = await create_area(client, "Primary", 1)
     secondary = await create_area(client, "Secondary", 2)
     special_response = await client.post(

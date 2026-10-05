@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/providers/work_entry_providers.dart';
 import 'package:ponos_app/core/errors/app_exception.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/work_totals.dart';
+import 'package:ponos_app/features/home/presentation/state/today_overview_provider.dart';
 import 'package:ponos_app/features/work_entries/domain/models/manual_work_entry.dart';
 import 'package:ponos_app/features/work_entries/domain/models/special_activity.dart';
 import 'package:ponos_app/features/work_entries/domain/repositories/manual_work_entry_repository.dart';
@@ -150,6 +153,8 @@ void main() {
     late ProviderContainer container;
     late ManualWorkEntriesController controller;
     late List<ManualWorkEntriesStatus> transitions;
+    late ProviderSubscription<AsyncValue<TodayOverview>> overviewSubscription;
+    late int overviewLoads;
 
     ManualWorkEntriesState current() =>
         container.read(manualWorkEntriesProvider);
@@ -157,9 +162,14 @@ void main() {
 
     setUp(() {
       repository = FakeManualRepository();
+      overviewLoads = 0;
       container = ProviderContainer(
         overrides: [
           manualWorkEntryRepositoryProvider.overrideWithValue(repository),
+          todayOverviewProvider.overrideWith((ref) async {
+            overviewLoads += 1;
+            return overview();
+          }),
         ],
       );
       transitions = [];
@@ -167,8 +177,16 @@ void main() {
         transitions.add(next.status);
       }, fireImmediately: true);
       controller = container.read(manualWorkEntriesProvider.notifier);
+      overviewSubscription = container.listen(
+        todayOverviewProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
     });
-    tearDown(() => container.dispose());
+    tearDown(() {
+      overviewSubscription.close();
+      container.dispose();
+    });
 
     test('loads, sorts, and refreshes to empty', () async {
       expect(current().status, ManualWorkEntriesStatus.loading);
@@ -235,6 +253,8 @@ void main() {
               : [1, 2],
         );
         expect(transitions, contains(ManualWorkEntriesStatus.saving));
+        await settle();
+        expect(overviewLoads, 2);
       });
 
       test('$action failure preserves entries', () async {
@@ -260,6 +280,7 @@ void main() {
         expect(current().status, ManualWorkEntriesStatus.error);
         expect(current().error, same(error));
         expect(current().entries.map((e) => e.id), [1, 2]);
+        expect(overviewLoads, 1);
       });
     }
 
@@ -290,6 +311,35 @@ ManualWorkEntry entry(int id) => ManualWorkEntry(
   workDate: DateTime(2026, 9, 19),
   focusedTime: const Duration(minutes: 1),
   restTime: Duration.zero,
+);
+
+TodayOverview overview() => TodayOverview(
+  date: DateTime(2026, 9, 19),
+  expectedFocusTime: Duration.zero,
+  actualFocusedTime: Duration.zero,
+  actualRestTime: Duration.zero,
+  actualTrackedTime: Duration.zero,
+  completedFocusAreas: 0,
+  targetedFocusAreas: 0,
+  areas: const [],
+  streak: const StreakSummary(
+    currentDailyStreak: 0,
+    currentWeeklyStreak: 0,
+    recentDays: [],
+  ),
+  week: WeeklyWorkTotals(
+    weekStart: DateTime(2026, 9, 14),
+    weekEnd: DateTime(2026, 9, 20),
+    focusedTime: Duration.zero,
+    restTime: Duration.zero,
+    trackedTime: Duration.zero,
+  ),
+  overall: const OverallWorkTotals(
+    daysWorked: 0,
+    focusedTime: Duration.zero,
+    restTime: Duration.zero,
+    trackedTime: Duration.zero,
+  ),
 );
 
 class FakeSpecialRepository implements SpecialActivityRepository {
