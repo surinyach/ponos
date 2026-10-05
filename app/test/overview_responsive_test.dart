@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/providers/work_goals_providers.dart';
-import 'package:ponos_app/app/theme/app_spacing.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.dart';
@@ -15,6 +14,7 @@ import 'package:ponos_app/features/focus_areas/domain/models/work_totals.dart';
 import 'package:ponos_app/features/home/presentation/state/today_overview_provider.dart';
 import 'package:ponos_app/features/home/presentation/home_page.dart';
 import 'package:ponos_app/features/home/presentation/overview_page.dart';
+import 'package:ponos_app/features/home/presentation/overview_responsive_layout.dart';
 import 'package:ponos_app/features/work_goals/domain/models/work_goals.dart';
 import 'package:ponos_app/features/work_goals/presentation/work_goals_page.dart';
 
@@ -80,59 +80,127 @@ void main() {
     expect(tops, orderedEquals([...tops]..sort()));
   });
 
-  for (final viewport in const [
-    Size(360, 700),
-    Size(390, 844),
-    Size(430, 932),
+  for (final testCase in const [
+    (
+      name: '320x568',
+      size: Size(320, 568),
+      viewPadding: EdgeInsets.zero,
+      availableHeight: 408.0,
+      scrolls: true,
+    ),
+    (
+      name: '360x640',
+      size: Size(360, 640),
+      viewPadding: EdgeInsets.zero,
+      availableHeight: 480.0,
+      scrolls: true,
+    ),
+    (
+      name: '360x700',
+      size: Size(360, 700),
+      viewPadding: EdgeInsets.zero,
+      availableHeight: 540.0,
+      scrolls: true,
+    ),
+    (
+      name: '390x844',
+      size: Size(390, 844),
+      viewPadding: EdgeInsets.zero,
+      availableHeight: 684.0,
+      scrolls: false,
+    ),
+    (
+      name: '411.43x914.29 with Android insets',
+      size: Size(411.428571, 914.285714),
+      viewPadding: EdgeInsets.only(top: 50.285714, bottom: 24),
+      availableHeight: 680.0,
+      scrolls: false,
+    ),
+    (
+      name: '412x915',
+      size: Size(412, 915),
+      viewPadding: EdgeInsets.zero,
+      availableHeight: 755.0,
+      scrolls: false,
+    ),
+    (
+      name: '430x932',
+      size: Size(430, 932),
+      viewPadding: EdgeInsets.zero,
+      availableHeight: 772.0,
+      scrolls: false,
+    ),
   ]) {
-    testWidgets(
-      'compact dashboard fits ${viewport.width.toInt()}x${viewport.height.toInt()} without scrolling',
-      (tester) async {
-        await _pumpOverview(tester, viewport);
-        expect(
-          tester.takeException(),
-          isNull,
-          reason: 'Compact Overview must not throw layout overflow errors.',
+    testWidgets('compact dashboard adapts at ${testCase.name}', (tester) async {
+      await _pumpOverview(
+        tester,
+        testCase.size,
+        viewPadding: testCase.viewPadding,
+      );
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'Compact Overview must not throw layout overflow errors.',
+      );
+      expect(
+        tester.getSize(find.byType(OverviewResponsiveLayout)).height,
+        closeTo(testCase.availableHeight.clamp(0, 684), 0.02),
+      );
+      expect(
+        find.byKey(const Key('overview-compact-scroll')),
+        testCase.scrolls ? findsOneWidget : findsNothing,
+      );
+      if (testCase.scrolls) {
+        final scrollable = find.descendant(
+          of: find.byKey(const Key('overview-compact-scroll')),
+          matching: find.byType(Scrollable),
         );
-        final compact = find.byKey(const Key('overview-compact'));
+        expect(scrollable, findsOneWidget);
         expect(
-          find.descendant(of: compact, matching: find.byType(Scrollable)),
-          findsNothing,
+          tester.state<ScrollableState>(scrollable).position.maxScrollExtent,
+          greaterThan(0),
         );
-        for (final key in const [
-          'overview-today',
-          'overview-actions',
-          'overview-work-areas',
-          'overview-streak',
-          'overview-statistics',
-        ]) {
-          expect(find.byKey(Key(key)), findsOneWidget);
-        }
-        final navigationTop = tester.getTopLeft(find.byType(NavigationBar)).dy;
-        final statisticsBottom = tester
-            .getBottomLeft(find.byKey(const Key('overview-statistics')))
-            .dy;
-        expect(statisticsBottom, lessThanOrEqualTo(navigationTop));
-        expect(
-          navigationTop - statisticsBottom,
-          lessThanOrEqualTo(AppSpacing.lg + 0.01),
-        );
+      }
+      for (final key in const [
+        'overview-today',
+        'overview-actions',
+        'overview-work-areas',
+        'overview-streak',
+        'overview-statistics',
+      ]) {
+        expect(find.byKey(Key(key)), findsOneWidget);
+      }
+      expect(
+        tester.getSize(find.byKey(const Key('overview-streak'))).height,
+        164,
+      );
+      expect(
+        tester.getSize(find.byKey(const Key('overview-today'))).height,
+        196,
+      );
+      expect(
+        tester.getSize(find.byKey(const Key('overview-work-areas'))).height,
+        120,
+      );
+      expect(
+        tester.getSize(find.byKey(const Key('overview-statistics'))).height,
+        168,
+      );
 
-        final pillar = tester.getRect(
-          find.byKey(const Key('compact-today-pillar')),
-        );
-        final actions = tester.getRect(
-          find.byKey(const Key('overview-actions')),
-        );
-        expect(pillar.bottom, lessThanOrEqualTo(actions.top));
-
-        final workGoals = tester.getSize(
-          find.byKey(const Key('compact-edit-goals-action')),
-        );
-        expect(workGoals.width, greaterThanOrEqualTo(48));
-        expect(workGoals.height, greaterThanOrEqualTo(48));
-      },
-    );
+      final workGoals = tester.getSize(
+        find.byKey(const Key('compact-edit-goals-action')),
+      );
+      expect(workGoals.width, greaterThanOrEqualTo(48));
+      expect(workGoals.height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getSize(find.widgetWithText(FilledButton, 'Start Focus')).height,
+        greaterThanOrEqualTo(48),
+      );
+      expect(
+        tester.getSize(find.widgetWithText(TextButton, 'Log Work')).height,
+        greaterThanOrEqualTo(48),
+      );
+    });
   }
 
   testWidgets('compact Overview scrolls only when 200% text cannot fit', (
@@ -392,6 +460,7 @@ Future<void> _pumpOverview(
   Size size, {
   TargetPlatform platform = TargetPlatform.android,
   TextScaler textScaler = TextScaler.noScaling,
+  EdgeInsets viewPadding = EdgeInsets.zero,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -406,7 +475,11 @@ Future<void> _pumpOverview(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light.copyWith(platform: platform),
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: textScaler,
+            padding: viewPadding,
+            viewPadding: viewPadding,
+          ),
           child: child!,
         ),
         home: const HomePage(),

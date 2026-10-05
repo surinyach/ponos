@@ -136,6 +136,10 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
                                 ),
                                 icon: destination.icon,
                                 selected: false,
+                                iconSize:
+                                    destination == PonosDestination.workAreas
+                                    ? 18
+                                    : null,
                               ),
                               selectedIcon: _NavigationIcon(
                                 key: ValueKey(
@@ -143,6 +147,10 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
                                 ),
                                 icon: destination.selectedIcon,
                                 selected: true,
+                                iconSize:
+                                    destination == PonosDestination.workAreas
+                                    ? 18
+                                    : null,
                               ),
                               label: destination.label,
                             ),
@@ -182,10 +190,12 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
         return textTheme.labelSmall?.copyWith(
           fontSize: 10,
           height: 14 / 10,
+          letterSpacing: 0,
           color: selected ? AppColors.primaryDark : AppColors.textSecondary,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
         );
       }),
+      labelPadding: EdgeInsets.zero,
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
@@ -286,11 +296,13 @@ class _NavigationIcon extends StatefulWidget {
   const _NavigationIcon({
     required this.icon,
     required this.selected,
+    this.iconSize,
     super.key,
   });
 
   final IconData icon;
   final bool selected;
+  final double? iconSize;
 
   @override
   State<_NavigationIcon> createState() => _NavigationIconState();
@@ -337,7 +349,7 @@ class _NavigationIconState extends State<_NavigationIcon> {
                     ? Border.all(color: AppColors.accent, width: 2)
                     : null,
               ),
-              child: Icon(widget.icon),
+              child: Icon(widget.icon, size: widget.iconSize),
             ),
           ),
         ),

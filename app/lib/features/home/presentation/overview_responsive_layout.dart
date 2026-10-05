@@ -187,6 +187,7 @@ class OverviewResponsiveLayout extends StatelessWidget {
 
 abstract final class _CompactOverviewMetrics {
   static const double gap = AppSpacing.sm;
+  static const double minimumGap = AppSpacing.xs;
   static const double streakMinimumHeight = 164;
   static const double todayMinimumHeight = 196;
   static const double workAreasMinimumHeight = 120;
@@ -197,6 +198,12 @@ abstract final class _CompactOverviewMetrics {
       workAreasMinimumHeight +
       statisticsMinimumHeight +
       (gap * 3);
+  static const double minimumRequiredHeight =
+      streakMinimumHeight +
+      todayMinimumHeight +
+      workAreasMinimumHeight +
+      statisticsMinimumHeight +
+      (minimumGap * 3);
 }
 
 class _CompactOverview extends StatelessWidget {
@@ -260,82 +267,73 @@ class _CompactOverview extends StatelessWidget {
           ),
         );
       }
-      final canonicalFits =
-          constraints.maxHeight >= _CompactOverviewMetrics.minimumTotalHeight;
-      const denseMinimums = [150.0, 161.0, 82.0, 83.0];
-      final denseTotal =
-          denseMinimums.reduce((a, b) => a + b) +
-          (_CompactOverviewMetrics.gap * 3);
-      final extraHeight = canonicalFits
-          ? constraints.maxHeight - _CompactOverviewMetrics.minimumTotalHeight
-          : (constraints.maxHeight - denseTotal).clamp(0.0, double.infinity);
-
-      double sectionHeight(double canonical, double dense, int share) =>
-          (canonicalFits ? canonical : dense) + (extraHeight * share / 14);
-
-      return SizedBox(
-        height: constraints.maxHeight,
-        child: Column(
-          key: const Key('overview-compact'),
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: sectionHeight(
-                _CompactOverviewMetrics.streakMinimumHeight,
-                denseMinimums[0],
-                5,
-              ),
-              child: _CompactStreakSection(
-                data: data,
-                workGoals: workGoals,
-                onEditGoals: onWorkGoals,
-                dense: !canonicalFits,
-              ),
-            ),
-            const SizedBox(height: _CompactOverviewMetrics.gap),
-            SizedBox(
-              height: sectionHeight(
-                _CompactOverviewMetrics.todayMinimumHeight,
-                denseMinimums[1],
-                5,
-              ),
-              child: _CompactTodaySection(
-                data: data,
-                onStartFocus: onStartFocus,
-                onLogWork: onLogWork,
-                dense: !canonicalFits,
-                pillarTopInset: 6,
-              ),
-            ),
-            const SizedBox(height: _CompactOverviewMetrics.gap),
-            SizedBox(
-              height: sectionHeight(
-                _CompactOverviewMetrics.workAreasMinimumHeight,
-                denseMinimums[2],
-                2,
-              ),
-              child: _CompactWorkAreasSection(
-                data: data,
-                onManageWorkAreas: onManageWorkAreas,
-                dense: !canonicalFits,
-              ),
-            ),
-            const SizedBox(height: _CompactOverviewMetrics.gap),
-            SizedBox(
-              height: sectionHeight(
-                _CompactOverviewMetrics.statisticsMinimumHeight,
-                denseMinimums[3],
-                2,
-              ),
-              child: _CompactStatisticsSection(
-                data: data,
-                dense: !canonicalFits,
-              ),
-            ),
-          ],
-        ),
+      final availableGap =
+          (constraints.maxHeight -
+              (_CompactOverviewMetrics.minimumRequiredHeight -
+                  (_CompactOverviewMetrics.minimumGap * 3))) /
+          3;
+      final gap = availableGap.clamp(
+        _CompactOverviewMetrics.minimumGap,
+        _CompactOverviewMetrics.gap,
       );
+      final compact = _buildCompactComposition(gap);
+      if (constraints.maxHeight <
+          _CompactOverviewMetrics.minimumRequiredHeight) {
+        return SingleChildScrollView(
+          key: const Key('overview-compact-scroll'),
+          primary: false,
+          child: compact,
+        );
+      }
+      return compact;
     },
+  );
+
+  Widget _buildCompactComposition(double gap) => Column(
+    key: const Key('overview-compact'),
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      SizedBox(
+        height: _CompactOverviewMetrics.streakMinimumHeight,
+        child: _CompactStreakSection(
+          data: data,
+          workGoals: workGoals,
+          onEditGoals: onWorkGoals,
+        ),
+      ),
+      SizedBox(height: gap),
+      SizedBox(
+        height: _CompactOverviewMetrics.todayMinimumHeight,
+        child: _CompactTodaySection(
+          data: data,
+          onStartFocus: onStartFocus,
+          onLogWork: onLogWork,
+          pillarTopInset: 8,
+          pillarHorizontalOffset: -16,
+          pillarMaxWidth: 86,
+          pillarMaxHeight: 112,
+          stretchPillar: true,
+        ),
+      ),
+      SizedBox(height: gap),
+      SizedBox(
+        height: _CompactOverviewMetrics.workAreasMinimumHeight,
+        child: _CompactWorkAreasSection(
+          data: data,
+          onManageWorkAreas: onManageWorkAreas,
+          referenceMobileGeometry: true,
+        ),
+      ),
+      SizedBox(height: gap),
+      SizedBox(
+        height: _CompactOverviewMetrics.statisticsMinimumHeight,
+        child: _CompactStatisticsSection(
+          data: data,
+          referenceMobileGeometry: true,
+        ),
+      ),
+    ],
   );
 }
 
@@ -542,10 +540,13 @@ class _CompactTodaySection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Today',
-                        style: _overviewSectionTitleStyle.copyWith(
-                          fontSize: 15,
+                      Transform.translate(
+                        offset: Offset(0, stretchPillar ? -2 : 0),
+                        child: Text(
+                          'Today',
+                          style: _overviewSectionTitleStyle.copyWith(
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                       Text(
@@ -713,6 +714,7 @@ class _CompactWorkAreasSection extends StatelessWidget {
     this.accessibilityLayout = false,
     this.referenceWideTypography = false,
     this.referenceDesktopSpacing = false,
+    this.referenceMobileGeometry = false,
   });
 
   final TodayOverview data;
@@ -721,6 +723,7 @@ class _CompactWorkAreasSection extends StatelessWidget {
   final bool accessibilityLayout;
   final bool referenceWideTypography;
   final bool referenceDesktopSpacing;
+  final bool referenceMobileGeometry;
 
   @override
   Widget build(BuildContext context) {
@@ -787,6 +790,9 @@ class _CompactWorkAreasSection extends StatelessWidget {
       accessibilityLayout: accessibilityLayout,
       referenceWideTypography: referenceWideTypography,
       referenceDesktopSpacing: referenceDesktopSpacing,
+      bodyGap: referenceMobileGeometry ? 6 : AppSpacing.xxs,
+      rowGap: referenceMobileGeometry ? 12 : null,
+      titleVerticalOffset: referenceMobileGeometry ? -5 : 0,
     );
   }
 }
@@ -840,6 +846,7 @@ class _CompactStreakSection extends StatelessWidget {
                   Align(
                     alignment: Alignment.topCenter,
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           width: 3,
@@ -851,9 +858,12 @@ class _CompactStreakSection extends StatelessWidget {
                         ),
                         const SizedBox(width: 11),
                         Expanded(
-                          child: Text(
-                            'Streak consistency',
-                            style: _overviewSectionTitleStyle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Text(
+                              'Streak consistency',
+                              style: _overviewSectionTitleStyle,
+                            ),
                           ),
                         ),
                         const Icon(
@@ -866,7 +876,7 @@ class _CompactStreakSection extends StatelessWidget {
                   Positioned(
                     left: AppSpacing.xs,
                     right: 0,
-                    top: 36,
+                    top: 33,
                     child: Row(
                       children: [
                         Expanded(
@@ -892,7 +902,7 @@ class _CompactStreakSection extends StatelessWidget {
                   ),
                   Positioned(
                     left: -4,
-                    top: 54,
+                    top: 59,
                     child: _RecentDayIndicators(
                       days: data.streak.recentDays,
                       compact: true,
@@ -923,7 +933,7 @@ class _CompactStreakSection extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    right: 0,
+                    right: -10,
                     bottom: 0,
                     child: SizedBox.square(
                       key: const Key('compact-edit-goals-action'),
@@ -931,7 +941,11 @@ class _CompactStreakSection extends StatelessWidget {
                       child: PonosIconButton(
                         semanticLabel: 'Edit goals',
                         tooltip: 'Edit goals',
-                        icon: const Icon(Icons.tune),
+                        icon: Transform.translate(
+                          offset: const Offset(0, 13),
+                          transformHitTests: false,
+                          child: const Icon(Icons.tune, size: 16),
+                        ),
                         onPressed: onEditGoals,
                       ),
                     ),
@@ -1001,10 +1015,15 @@ class _DenseStreakContent extends StatelessWidget {
 }
 
 class _CompactStatisticsSection extends StatelessWidget {
-  const _CompactStatisticsSection({required this.data, this.dense = false});
+  const _CompactStatisticsSection({
+    required this.data,
+    this.dense = false,
+    this.referenceMobileGeometry = false,
+  });
 
   final TodayOverview data;
   final bool dense;
+  final bool referenceMobileGeometry;
 
   @override
   Widget build(BuildContext context) => _CompactCard(
@@ -1014,12 +1033,18 @@ class _CompactStatisticsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Work statistics', style: _overviewSectionTitleStyle),
+        Transform.translate(
+          offset: Offset(0, referenceMobileGeometry ? -3 : 0),
+          child: const Text(
+            'Work statistics',
+            style: _overviewSectionTitleStyle,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xxs),
         Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: AppSpacing.xxs),
+            SizedBox(height: referenceMobileGeometry ? 2 : AppSpacing.xxs),
             Row(
               children: [
                 _CompactMetric(
@@ -1034,6 +1059,7 @@ class _CompactStatisticsSection extends StatelessWidget {
                 ),
               ],
             ),
+            if (referenceMobileGeometry) const SizedBox(height: 24),
             Row(
               children: [
                 _CompactMetric(
@@ -1182,6 +1208,9 @@ class _CompactSummaryCard extends StatelessWidget {
     this.accessibilityLayout = false,
     this.referenceWideTypography = false,
     this.referenceDesktopSpacing = false,
+    this.bodyGap = AppSpacing.xxs,
+    this.rowGap,
+    this.titleVerticalOffset = 0,
     super.key,
   });
 
@@ -1193,6 +1222,9 @@ class _CompactSummaryCard extends StatelessWidget {
   final bool accessibilityLayout;
   final bool referenceWideTypography;
   final bool referenceDesktopSpacing;
+  final double bodyGap;
+  final double? rowGap;
+  final double titleVerticalOffset;
 
   @override
   Widget build(BuildContext context) => _CompactCard(
@@ -1206,19 +1238,25 @@ class _CompactSummaryCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    style: _overviewSectionTitleStyle,
+            Transform.translate(
+              offset: Offset(0, titleVerticalOffset),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      style: _overviewSectionTitleStyle,
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-              ],
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.xxs),
+            SizedBox(height: bodyGap),
             for (var index = 0; index < rows.length; index++)
               if (accessibilityLayout)
                 Padding(
@@ -1242,8 +1280,8 @@ class _CompactSummaryCard extends StatelessWidget {
               else
                 Padding(
                   padding: EdgeInsets.only(
-                    bottom: referenceDesktopSpacing && index < rows.length - 1
-                        ? 12
+                    bottom: index < rows.length - 1
+                        ? rowGap ?? (referenceDesktopSpacing ? 12 : 0)
                         : 0,
                   ),
                   child: Row(
