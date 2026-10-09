@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.focus_area import FocusArea, FocusAreaTarget
+from app.models.focus_area import FocusArea
 from app.models.special_activity import SpecialActivity
 from app.schemas.today_overview import (
     FocusAreaTodayProgress,
@@ -17,6 +17,9 @@ from app.services.work_totals import (
     lifetime_totals,
     totals_between,
 )
+from app.services.focus_area_targets import target_for
+from app.services.streak_evaluator import daily_goal_minutes, get_streak_summary
+from app.services.work_goals import load_goal_history
 
 
 async def get_today_overview(
@@ -35,6 +38,7 @@ async def get_today_overview(
     )
 
     daily = await aggregate_day(db, work_date)
+    daily_goals, _ = await load_goal_history(db)
     special_time = daily.time_by_special_activity
     special_activities = list(
         (
@@ -49,7 +53,7 @@ async def get_today_overview(
 
     progress = []
     for area in areas:
-        target = _target_for(area, work_date)
+        target = target_for(area, work_date)
         target_seconds = None if target is None else target.target_minutes * 60
         focused_seconds = daily.focused_by_area.get(area.id, 0)
         progress.append(
@@ -71,7 +75,7 @@ async def get_today_overview(
     days, overall_focused, overall_rest = await lifetime_totals(db)
     return TodayOverviewResponse(
         date=work_date,
-        expected_focus_seconds=sum(item.target_seconds or 0 for item in targeted),
+        expected_focus_seconds=daily_goal_minutes(daily_goals, work_date) * 60,
         actual_focused_seconds=actual_focused,
         actual_rest_seconds=actual_rest,
         actual_tracked_seconds=actual_focused + actual_rest,
@@ -86,6 +90,7 @@ async def get_today_overview(
             )
             for activity in special_activities
         ],
+        streak=await get_streak_summary(db, areas, work_date),
         week=WeekTotalsResponse(
             week_start=week_start,
             week_end=week_end,
@@ -99,19 +104,4 @@ async def get_today_overview(
             rest_seconds=overall_rest,
             tracked_seconds=overall_focused + overall_rest,
         ),
-    )
-
-
-def _target_for(area: FocusArea, work_date: date) -> FocusAreaTarget | None:
-    if area.target_end_date is not None and work_date > area.target_end_date:
-        return None
-    return next(
-        (
-            target
-            for target in area.targets
-            if target.weekday == work_date.isoweekday()
-            and target.valid_from <= work_date
-            and (target.valid_until is None or target.valid_until >= work_date)
-        ),
-        None,
     )

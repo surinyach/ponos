@@ -15,6 +15,7 @@ class TodayOverviewDto {
     required this.targetedFocusAreas,
     required this.areas,
     required this.specialActivities,
+    required this.streak,
     required this.week,
     required this.overall,
   });
@@ -42,6 +43,7 @@ class TodayOverviewDto {
                     SpecialActivityTodayProgressDto.fromJson(asObject(value)),
               )
               .toList(growable: false),
+      streak: StreakSummaryDto.fromJson(asObject(json['streak'])),
       week: WeeklyWorkTotalsDto.fromJson(asObject(json['week'])),
       overall: OverallWorkTotalsDto.fromJson(asObject(json['overall'])),
     );
@@ -56,6 +58,7 @@ class TodayOverviewDto {
   final int targetedFocusAreas;
   final List<FocusAreaTodayProgressDto> areas;
   final List<SpecialActivityTodayProgressDto> specialActivities;
+  final StreakSummaryDto streak;
   final WeeklyWorkTotalsDto week;
   final OverallWorkTotalsDto overall;
 
@@ -71,8 +74,66 @@ class TodayOverviewDto {
     specialActivities: specialActivities
         .map((value) => value.toDomain())
         .toList(growable: false),
+    streak: streak.toDomain(),
     week: week.toDomain(),
     overall: overall.toDomain(),
+  );
+}
+
+class DailyCompletionDto {
+  const DailyCompletionDto({required this.date, required this.state});
+
+  factory DailyCompletionDto.fromJson(Map<String, Object?> json) =>
+      DailyCompletionDto(
+        date: requiredDate(json, 'date'),
+        state: _completionState(required<String>(json, 'state')),
+      );
+
+  final DateTime date;
+  final DailyCompletionState state;
+
+  DailyCompletion toDomain() => DailyCompletion(date: date, state: state);
+}
+
+DailyCompletionState _completionState(String value) => switch (value) {
+  'completed' => DailyCompletionState.completed,
+  'failed' => DailyCompletionState.failed,
+  'neutral' => DailyCompletionState.neutral,
+  'in_progress' => DailyCompletionState.inProgress,
+  _ => throw FormatException('Unknown daily completion state: $value'),
+};
+
+class StreakSummaryDto {
+  const StreakSummaryDto({
+    required this.currentDailyStreak,
+    required this.currentWeeklyStreak,
+    required this.recentDays,
+  });
+
+  factory StreakSummaryDto.fromJson(Map<String, Object?> json) {
+    final days = json['recent_days'];
+    if (days is! List<Object?>) {
+      throw const FormatException('recent_days must be a list');
+    }
+    return StreakSummaryDto(
+      currentDailyStreak: required<int>(json, 'current_daily_streak'),
+      currentWeeklyStreak: required<int>(json, 'current_weekly_streak'),
+      recentDays: days
+          .map((value) => DailyCompletionDto.fromJson(asObject(value)))
+          .toList(growable: false),
+    );
+  }
+
+  final int currentDailyStreak;
+  final int currentWeeklyStreak;
+  final List<DailyCompletionDto> recentDays;
+
+  StreakSummary toDomain() => StreakSummary(
+    currentDailyStreak: currentDailyStreak,
+    currentWeeklyStreak: currentWeeklyStreak,
+    recentDays: recentDays
+        .map((value) => value.toDomain())
+        .toList(growable: false),
   );
 }
 

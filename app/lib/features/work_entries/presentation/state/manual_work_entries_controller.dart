@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/work_entry_providers.dart';
+import '../../../home/presentation/state/today_overview_provider.dart';
 import '../../domain/models/manual_work_entry.dart';
 import '../../domain/repositories/manual_work_entry_repository.dart';
 import 'manual_work_entries_state.dart';
@@ -41,6 +42,7 @@ class ManualWorkEntriesController extends Notifier<ManualWorkEntriesState> {
       await _repository.delete(id);
       if (!ref.mounted) return false;
       _loaded(state.entries.where((entry) => entry.id != id));
+      ref.invalidate(todayOverviewProvider);
       return true;
     } catch (error) {
       if (ref.mounted) _failed(error);
@@ -87,6 +89,7 @@ class ManualWorkEntriesController extends Notifier<ManualWorkEntriesState> {
           final entries = {for (final item in state.entries) item.id: item};
           entries[changed.id] = changed;
           _loaded(entries.values);
+          ref.invalidate(todayOverviewProvider);
           return true;
         } catch (error) {
           if (ref.mounted) _failed(error);

@@ -37,29 +37,53 @@ class DailyWorkAggregation:
 
 async def aggregate_day(db: AsyncSession, work_date: date) -> DailyWorkAggregation:
     """Use the same timer/manual rows for today's totals and work-area progress."""
+    return (await aggregate_days(db, work_date, work_date)).get(
+        work_date,
+        DailyWorkAggregation(0, 0, {}, {}),
+    )
+
+
+async def aggregate_days(
+    db: AsyncSession,
+    start_date: date,
+    end_date: date,
+) -> dict[date, DailyWorkAggregation]:
+    """Aggregate timer and manual work once for each local work date."""
     rows = _work_rows()
     result = await db.execute(
         select(
+            rows.c.work_date,
             rows.c.focus_area_id,
             rows.c.special_activity_id,
             func.sum(rows.c.focused_seconds),
             func.sum(rows.c.rest_seconds),
         )
-        .where(rows.c.work_date == work_date)
-        .group_by(rows.c.focus_area_id, rows.c.special_activity_id)
+        .where(rows.c.work_date.between(start_date, end_date))
+        .group_by(
+            rows.c.work_date,
+            rows.c.focus_area_id,
+            rows.c.special_activity_id,
+        )
     )
-    focused = rest = 0
-    by_area: dict[int, int] = {}
-    by_special: dict[int, tuple[int, int]] = {}
-    for area_id, activity_id, row_focused, row_rest in result.all():
+    totals: dict[date, list] = {}
+    for row_date, area_id, activity_id, row_focused, row_rest in result.all():
         row_focused, row_rest = int(row_focused), int(row_rest)
-        focused += row_focused
-        rest += row_rest
+        current = totals.setdefault(row_date, [0, 0, {}, {}])
+        current[0] += row_focused
+        current[1] += row_rest
         if area_id is not None:
-            by_area[int(area_id)] = row_focused
+            current[2][int(area_id)] = row_focused
         else:
-            by_special[int(activity_id)] = (row_focused, row_rest)
-    return DailyWorkAggregation(focused, rest, by_area, by_special)
+            current[3][int(activity_id)] = (row_focused, row_rest)
+    return {
+        row_date: DailyWorkAggregation(
+            values[0],
+            values[1],
+            values[2],
+            values[3],
+        )
+        for row_date, values in totals.items()
+    }
 
 
 async def totals_between(

@@ -37,6 +37,7 @@ def test_openapi_exposes_only_the_requested_operations() -> None:
         paths["/api/v1/focus-areas/{focus_area_id}/deletion-preview"]
     ) == {"get"}
     assert set(paths["/api/v1/overview/today"]) == {"get"}
+    assert set(paths["/api/v1/work-goals"]) == {"get", "put"}
 
 
 def test_create_requires_initial_targets_and_allows_optional_end_date() -> None:
@@ -113,4 +114,5 @@ def test_today_overview_contract_requires_derived_totals_and_progress() -> None:
         "completed_focus_areas",
         "targeted_focus_areas",
         "areas",
+        "streak",
     }.issubset(TodayOverviewResponse.model_fields)

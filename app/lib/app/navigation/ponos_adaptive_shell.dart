@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -40,46 +41,81 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < AppBreakpoints.medium;
+        final compact =
+            _usesMobileNavigation(context) &&
+            constraints.maxWidth < AppBreakpoints.medium;
         final expanded = AppBreakpoints.usesExpandedSidebar(
           constraints.maxWidth,
         );
-        final content = _DestinationStack(
-          selectedDestination: widget.selectedDestination,
-          mountedDestinations: _mountedDestinations,
+        const railWidth = 72.0;
+        final content = PonosViewportScope(
+          size: Size(constraints.maxWidth, constraints.maxHeight),
+          child: _DestinationStack(
+            selectedDestination: widget.selectedDestination,
+            mountedDestinations: _mountedDestinations,
+          ),
         );
 
         return Scaffold(
-          appBar: widget.appBar,
+          appBar: compact ? widget.appBar : null,
           body: compact
               ? content
               : Row(
                   children: [
-                    _NavigationInteractionTheme(
-                      child: NavigationRailTheme(
-                        data: _railTheme(context),
-                        child: NavigationRail(
-                          extended: expanded,
-                          selectedIndex: widget.selectedDestination.index,
-                          onDestinationSelected: _selectIndex,
-                          labelType: expanded
-                              ? NavigationRailLabelType.none
-                              : NavigationRailLabelType.all,
-                          leading: expanded ? const _ExpandedRailBrand() : null,
-                          destinations: [
-                            for (final destination in PonosDestination.values)
-                              NavigationRailDestination(
-                                icon: _NavigationIcon(icon: destination.icon),
-                                selectedIcon: _NavigationIcon(
-                                  icon: destination.selectedIcon,
-                                ),
-                                label: Text(destination.label),
+                    SizedBox(
+                      width: expanded ? 200 : railWidth,
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            right: BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        child: _NavigationInteractionTheme(
+                          child: _RailInteractionTheme(
+                            child: NavigationRailTheme(
+                              data: _railTheme(context),
+                              child: NavigationRail(
+                                extended: expanded,
+                                selectedIndex: widget.selectedDestination.index,
+                                onDestinationSelected: _selectIndex,
+                                minWidth: expanded ? 56 : railWidth,
+                                minExtendedWidth: 200,
+                                labelType: NavigationRailLabelType.none,
+                                leading: expanded
+                                    ? const _ExpandedRailBrand()
+                                    : const _CompactRailBrand(),
+                                destinations: [
+                                  for (final destination
+                                      in PonosDestination.values)
+                                    NavigationRailDestination(
+                                      icon: _NavigationIcon(
+                                        key: ValueKey(
+                                          'navigation-${destination.name}-default',
+                                        ),
+                                        icon: destination.icon,
+                                        selected: false,
+                                      ),
+                                      selectedIcon: _NavigationIcon(
+                                        key: ValueKey(
+                                          'navigation-${destination.name}-selected',
+                                        ),
+                                        icon: destination.selectedIcon,
+                                        selected: true,
+                                      ),
+                                      label: Padding(
+                                        padding: EdgeInsets.only(
+                                          left: expanded ? 16 : 0,
+                                        ),
+                                        child: Text(destination.label),
+                                      ),
+                                    ),
+                                ],
                               ),
-                          ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    const VerticalDivider(width: 1),
                     Expanded(child: content),
                   ],
                 ),
@@ -92,13 +128,34 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
                     child: NavigationBarTheme(
                       data: _barTheme(context),
                       child: NavigationBar(
+                        height: 72,
                         selectedIndex: widget.selectedDestination.index,
                         onDestinationSelected: _selectIndex,
                         destinations: [
                           for (final destination in PonosDestination.values)
                             NavigationDestination(
-                              icon: Icon(destination.icon),
-                              selectedIcon: Icon(destination.selectedIcon),
+                              icon: _NavigationIcon(
+                                key: ValueKey(
+                                  'navigation-${destination.name}-default',
+                                ),
+                                icon: destination.icon,
+                                selected: false,
+                                iconSize:
+                                    destination == PonosDestination.workAreas
+                                    ? 18
+                                    : null,
+                              ),
+                              selectedIcon: _NavigationIcon(
+                                key: ValueKey(
+                                  'navigation-${destination.name}-selected',
+                                ),
+                                icon: destination.selectedIcon,
+                                selected: true,
+                                iconSize:
+                                    destination == PonosDestination.workAreas
+                                    ? 18
+                                    : null,
+                              ),
                               label: destination.label,
                             ),
                         ],
@@ -116,13 +173,18 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
     widget.onDestinationSelected(PonosDestination.values[index]);
   }
 
+  bool _usesMobileNavigation(BuildContext context) =>
+      !kIsWeb &&
+      (Theme.of(context).platform == TargetPlatform.android ||
+          Theme.of(context).platform == TargetPlatform.iOS);
+
   NavigationBarThemeData _barTheme(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return NavigationBarThemeData(
       backgroundColor: AppColors.white,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: AppColors.surfaceTinted,
+      indicatorColor: Colors.transparent,
       indicatorShape: const RoundedRectangleBorder(
         borderRadius: AppRadius.control,
       ),
@@ -130,10 +192,14 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return textTheme.labelSmall?.copyWith(
+          fontSize: 10,
+          height: 14 / 10,
+          letterSpacing: 0,
           color: selected ? AppColors.primaryDark : AppColors.textSecondary,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
         );
       }),
+      labelPadding: EdgeInsets.zero,
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
@@ -159,10 +225,10 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
   NavigationRailThemeData _railTheme(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return NavigationRailThemeData(
-      backgroundColor: AppColors.white,
+      backgroundColor: const Color(0xFFFBFCFE),
       elevation: 0,
-      groupAlignment: -0.85,
-      useIndicator: true,
+      groupAlignment: -1.0,
+      useIndicator: false,
       indicatorColor: AppColors.surfaceTinted,
       indicatorShape: const RoundedRectangleBorder(
         borderRadius: AppRadius.control,
@@ -176,15 +242,36 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
         size: 24,
       ),
       selectedLabelTextStyle: textTheme.labelMedium?.copyWith(
+        fontSize: 13,
+        height: 18 / 13,
         color: AppColors.primaryDark,
         fontWeight: FontWeight.w600,
       ),
       unselectedLabelTextStyle: textTheme.labelMedium?.copyWith(
+        fontSize: 13,
+        height: 18 / 13,
         color: AppColors.textSecondary,
         fontWeight: FontWeight.w400,
       ),
     );
   }
+}
+
+class PonosViewportScope extends InheritedWidget {
+  const PonosViewportScope({
+    required this.size,
+    required super.child,
+    super.key,
+  });
+
+  final Size size;
+
+  static Size sizeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PonosViewportScope>()?.size ??
+      MediaQuery.sizeOf(context);
+
+  @override
+  bool updateShouldNotify(PonosViewportScope oldWidget) => size != oldWidget.size;
 }
 
 class _NavigationInteractionTheme extends StatelessWidget {
@@ -206,16 +293,90 @@ class _NavigationInteractionTheme extends StatelessWidget {
   }
 }
 
-class _NavigationIcon extends StatelessWidget {
-  const _NavigationIcon({required this.icon});
+class _RailInteractionTheme extends StatelessWidget {
+  const _RailInteractionTheme({required this.child});
 
-  final IconData icon;
+  final Widget child;
 
   @override
-  Widget build(BuildContext context) => SizedBox.square(
-    dimension: AppSpacing.minimumTouchTarget,
-    child: Center(child: Icon(icon)),
-  );
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Theme(
+      data: theme.copyWith(
+        colorScheme: theme.colorScheme.copyWith(primary: Colors.transparent),
+        focusColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        splashColor: Colors.transparent,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _NavigationIcon extends StatefulWidget {
+  const _NavigationIcon({
+    required this.icon,
+    required this.selected,
+    this.iconSize,
+    super.key,
+  });
+
+  final IconData icon;
+  final bool selected;
+  final double? iconSize;
+
+  @override
+  State<_NavigationIcon> createState() => _NavigationIconState();
+}
+
+class _NavigationIconState extends State<_NavigationIcon> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final focused = Focus.of(context).hasFocus;
+    final background = _pressed
+        ? AppColors.primary.withValues(alpha: 0.12)
+        : focused
+        ? AppColors.accent.withValues(alpha: 0.20)
+        : _hovered
+        ? Color.alphaBlend(
+            AppColors.accent.withValues(alpha: 0.12),
+            AppColors.surfaceTinted,
+          )
+        : widget.selected
+        ? AppColors.surfaceTinted
+        : Colors.transparent;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Listener(
+        onPointerDown: (_) => setState(() => _pressed = true),
+        onPointerUp: (_) => setState(() => _pressed = false),
+        onPointerCancel: (_) => setState(() => _pressed = false),
+        child: SizedBox.square(
+          dimension: AppSpacing.minimumTouchTarget,
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 100),
+              width: AppSpacing.minimumTouchTarget,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: background,
+                borderRadius: AppRadius.control,
+                border: focused
+                    ? Border.all(color: AppColors.accent, width: 2)
+                    : null,
+              ),
+              child: Icon(widget.icon, size: widget.iconSize),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ExpandedRailBrand extends StatelessWidget {
@@ -225,17 +386,53 @@ class _ExpandedRailBrand extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       key: const Key('ponos-expanded-rail-brand'),
-      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.lg),
-      child: SizedBox.square(
-        dimension: AppSpacing.xxxl,
-        child: SvgPicture.asset(
-          AppAssets.ponosEmblemFull,
-          fit: BoxFit.contain,
-          excludeFromSemantics: true,
+      padding: const EdgeInsets.only(top: 10, bottom: AppSpacing.xs),
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: 164,
+          height: 40,
+          child: Row(
+            children: [
+              SizedBox.square(
+                dimension: 40,
+                child: SvgPicture.asset(
+                  AppAssets.ponosEmblemFull,
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Ponos',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: 18,
+                  height: 24 / 18,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _CompactRailBrand extends StatelessWidget {
+  const _CompactRailBrand();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    key: const Key('ponos-compact-rail-brand'),
+    padding: const EdgeInsets.only(top: 10, bottom: AppSpacing.xs),
+    child: SizedBox.square(
+      dimension: 42,
+      child: SvgPicture.asset(
+        AppAssets.ponosEmblemCompact,
+        fit: BoxFit.contain,
+        excludeFromSemantics: true,
+      ),
+    ),
+  );
 }
 
 class _DestinationStack extends StatelessWidget {

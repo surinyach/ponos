@@ -115,6 +115,18 @@ class FocusAreas extends StatelessWidget {
                 ),
               ),
             ],
+            if (specialActivities.isEmpty) ...[
+              if (sortedAreas.isNotEmpty) Divider(color: colors.outlineVariant),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: Text(
+                  'No special activity recorded today',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

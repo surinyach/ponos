@@ -14,6 +14,7 @@ class PonosPageScaffold extends StatelessWidget {
     this.appBar,
     this.safeArea = true,
     this.resizeToAvoidBottomInset = true,
+    this.contentPadding,
   });
 
   final Widget child;
@@ -23,6 +24,7 @@ class PonosPageScaffold extends StatelessWidget {
   final PreferredSizeWidget? appBar;
   final bool safeArea;
   final bool resizeToAvoidBottomInset;
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -39,10 +41,12 @@ class PonosPageScaffold extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxContentWidth),
               child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: AppSpacing.lg,
-                ),
+                padding:
+                    contentPadding ??
+                    EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: AppSpacing.lg,
+                    ),
                 child: child,
               ),
             ),

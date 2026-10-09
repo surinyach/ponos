@@ -28,6 +28,28 @@ class SpecialActivityTodayProgress {
   final Duration restTime;
 }
 
+enum DailyCompletionState { completed, failed, neutral, inProgress }
+
+class DailyCompletion {
+  const DailyCompletion({required this.date, required this.state});
+
+  final DateTime date;
+  final DailyCompletionState state;
+  bool get completed => state == DailyCompletionState.completed;
+}
+
+class StreakSummary {
+  const StreakSummary({
+    required this.currentDailyStreak,
+    required this.currentWeeklyStreak,
+    required this.recentDays,
+  });
+
+  final int currentDailyStreak;
+  final int currentWeeklyStreak;
+  final List<DailyCompletion> recentDays;
+}
+
 class TodayOverview {
   const TodayOverview({
     required this.date,
@@ -39,6 +61,7 @@ class TodayOverview {
     required this.targetedFocusAreas,
     required this.areas,
     this.specialActivities = const [],
+    required this.streak,
     required this.week,
     required this.overall,
   });
@@ -52,6 +75,7 @@ class TodayOverview {
   final int targetedFocusAreas;
   final List<FocusAreaTodayProgress> areas;
   final List<SpecialActivityTodayProgress> specialActivities;
+  final StreakSummary streak;
   final WeeklyWorkTotals week;
   final OverallWorkTotals overall;
 }

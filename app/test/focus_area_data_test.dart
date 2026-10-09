@@ -50,6 +50,7 @@ void main() {
               'actual_focused_seconds': 1800,
               'actual_rest_seconds': 300,
               'actual_tracked_seconds': 2100,
+              'streak': _streakResponse(),
               'week': {
                 'week_start': '2026-09-07',
                 'week_end': '2026-09-13',
@@ -204,6 +205,7 @@ void main() {
             'actual_focused_seconds': 1800,
             'actual_rest_seconds': 300,
             'actual_tracked_seconds': 2100,
+            'streak': _streakResponse(),
             'week': {
               'week_start': '2026-09-07',
               'week_end': '2026-09-13',
@@ -243,6 +245,10 @@ void main() {
       );
       expect(overview.areas.single.focusArea.name, 'Work placement');
       expect(overview.areas.single.completed, isFalse);
+      expect(overview.streak.currentDailyStreak, 2);
+      expect(overview.streak.currentWeeklyStreak, 1);
+      expect(overview.streak.recentDays, hasLength(2));
+      expect(overview.streak.recentDays.first.completed, isTrue);
     });
   });
 
@@ -309,6 +315,15 @@ void main() {
     expect(() => ApiConfig('localhost:8000'), throwsArgumentError);
   });
 }
+
+Map<String, Object?> _streakResponse() => {
+  'current_daily_streak': 2,
+  'current_weekly_streak': 1,
+  'recent_days': [
+    {'date': '2026-09-06', 'completed': true, 'state': 'completed'},
+    {'date': '2026-09-07', 'completed': false, 'state': 'in_progress'},
+  ],
+};
 
 RemoteFocusAreaRepository _repository(
   Future<http.Response> Function(http.Request) handler,
