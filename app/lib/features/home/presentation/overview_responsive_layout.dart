@@ -43,6 +43,8 @@ class OverviewResponsiveLayout extends StatelessWidget {
   const OverviewResponsiveLayout({
     required this.data,
     required this.workGoals,
+    required this.workGoalsUnavailable,
+    required this.onRetryWorkGoals,
     required this.layout,
     required this.onStartFocus,
     required this.onManageWorkAreas,
@@ -77,6 +79,8 @@ class OverviewResponsiveLayout extends StatelessWidget {
 
   final TodayOverview data;
   final WorkGoals? workGoals;
+  final bool workGoalsUnavailable;
+  final VoidCallback onRetryWorkGoals;
   final AppLayoutSize layout;
   final VoidCallback onStartFocus;
   final VoidCallback onManageWorkAreas;
@@ -90,6 +94,8 @@ class OverviewResponsiveLayout extends StatelessWidget {
       return _CompactDesktopOverview(
         data: data,
         workGoals: workGoals,
+        workGoalsUnavailable: workGoalsUnavailable,
+        onRetryWorkGoals: onRetryWorkGoals,
         onStartFocus: onStartFocus,
         onManageWorkAreas: onManageWorkAreas,
         onLogWork: onLogWork,
@@ -100,6 +106,8 @@ class OverviewResponsiveLayout extends StatelessWidget {
       return _CompactOverview(
         data: data,
         workGoals: workGoals,
+        workGoalsUnavailable: workGoalsUnavailable,
+        onRetryWorkGoals: onRetryWorkGoals,
         onStartFocus: onStartFocus,
         onManageWorkAreas: onManageWorkAreas,
         onLogWork: onLogWork,
@@ -121,6 +129,8 @@ class OverviewResponsiveLayout extends StatelessWidget {
     final streak = _ReferenceExpandedStreakSection(
       data: data,
       workGoals: workGoals,
+      workGoalsUnavailable: workGoalsUnavailable,
+      onRetryWorkGoals: onRetryWorkGoals,
       onEditGoals: onWorkGoals,
     );
     return switch (layout) {
@@ -128,6 +138,8 @@ class OverviewResponsiveLayout extends StatelessWidget {
       AppLayoutSize.medium => _MediumOverview(
         data: data,
         workGoals: workGoals,
+        workGoalsUnavailable: workGoalsUnavailable,
+        onRetryWorkGoals: onRetryWorkGoals,
         onStartFocus: onStartFocus,
         onManageWorkAreas: onManageWorkAreas,
         onLogWork: onLogWork,
@@ -179,6 +191,8 @@ class _MediumOverview extends StatelessWidget {
   const _MediumOverview({
     required this.data,
     required this.workGoals,
+    required this.workGoalsUnavailable,
+    required this.onRetryWorkGoals,
     required this.onStartFocus,
     required this.onManageWorkAreas,
     required this.onLogWork,
@@ -187,6 +201,8 @@ class _MediumOverview extends StatelessWidget {
 
   final TodayOverview data;
   final WorkGoals? workGoals;
+  final bool workGoalsUnavailable;
+  final VoidCallback onRetryWorkGoals;
   final VoidCallback onStartFocus;
   final VoidCallback onManageWorkAreas;
   final VoidCallback onLogWork;
@@ -212,6 +228,8 @@ class _MediumOverview extends StatelessWidget {
               _CompactStreakSection(
                 data: data,
                 workGoals: workGoals,
+                workGoalsUnavailable: workGoalsUnavailable,
+                onRetryWorkGoals: onRetryWorkGoals,
                 onEditGoals: onWorkGoals,
                 dense: true,
                 accessibilityLayout: true,
@@ -260,6 +278,8 @@ class _MediumOverview extends StatelessWidget {
         child: _CompactStreakSection(
           data: data,
           workGoals: workGoals,
+          workGoalsUnavailable: workGoalsUnavailable,
+          onRetryWorkGoals: onRetryWorkGoals,
           onEditGoals: onWorkGoals,
           referenceMediumGeometry: true,
         ),
@@ -336,6 +356,8 @@ class _CompactOverview extends StatelessWidget {
   const _CompactOverview({
     required this.data,
     required this.workGoals,
+    required this.workGoalsUnavailable,
+    required this.onRetryWorkGoals,
     required this.onStartFocus,
     required this.onManageWorkAreas,
     required this.onLogWork,
@@ -344,6 +366,8 @@ class _CompactOverview extends StatelessWidget {
 
   final TodayOverview data;
   final WorkGoals? workGoals;
+  final bool workGoalsUnavailable;
+  final VoidCallback onRetryWorkGoals;
   final VoidCallback onStartFocus;
   final VoidCallback onManageWorkAreas;
   final VoidCallback onLogWork;
@@ -369,6 +393,8 @@ class _CompactOverview extends StatelessWidget {
               _CompactStreakSection(
                 data: data,
                 workGoals: workGoals,
+                workGoalsUnavailable: workGoalsUnavailable,
+                onRetryWorkGoals: onRetryWorkGoals,
                 onEditGoals: onWorkGoals,
                 dense: true,
                 accessibilityLayout: true,
@@ -425,6 +451,8 @@ class _CompactOverview extends StatelessWidget {
         child: _CompactStreakSection(
           data: data,
           workGoals: workGoals,
+          workGoalsUnavailable: workGoalsUnavailable,
+          onRetryWorkGoals: onRetryWorkGoals,
           onEditGoals: onWorkGoals,
         ),
       ),
@@ -468,6 +496,8 @@ class _CompactDesktopOverview extends StatelessWidget {
   const _CompactDesktopOverview({
     required this.data,
     required this.workGoals,
+    required this.workGoalsUnavailable,
+    required this.onRetryWorkGoals,
     required this.onStartFocus,
     required this.onManageWorkAreas,
     required this.onLogWork,
@@ -491,6 +521,8 @@ class _CompactDesktopOverview extends StatelessWidget {
 
   final TodayOverview data;
   final WorkGoals? workGoals;
+  final bool workGoalsUnavailable;
+  final VoidCallback onRetryWorkGoals;
   final VoidCallback onStartFocus;
   final VoidCallback onManageWorkAreas;
   final VoidCallback onLogWork;
@@ -587,6 +619,8 @@ class _CompactDesktopOverview extends StatelessWidget {
       _CompactStreakSection(
         data: data,
         workGoals: workGoals,
+        workGoalsUnavailable: workGoalsUnavailable,
+        onRetryWorkGoals: onRetryWorkGoals,
         onEditGoals: onWorkGoals,
         dense: true,
         accessibilityLayout: true,
@@ -613,6 +647,8 @@ class _CompactDesktopOverview extends StatelessWidget {
   Widget _streak() => _CompactStreakSection(
     data: data,
     workGoals: workGoals,
+    workGoalsUnavailable: workGoalsUnavailable,
+    onRetryWorkGoals: onRetryWorkGoals,
     onEditGoals: onWorkGoals,
   );
 
@@ -907,8 +943,10 @@ class _CompactWorkAreasSection extends StatelessWidget {
       rows: [
         _SummaryRowData(
           label: 'Focus Areas',
-          value:
-              '${data.completedFocusAreas} / ${data.targetedFocusAreas} complete',
+          value: data.areas.isEmpty
+              ? 'No focus areas configured'
+              : '${data.completedFocusAreas} / '
+                    '${data.targetedFocusAreas} complete',
         ),
         _SummaryRowData(label: 'Special Activities', value: specialSummary),
       ],
@@ -963,6 +1001,8 @@ class _CompactStreakSection extends StatelessWidget {
   const _CompactStreakSection({
     required this.data,
     required this.workGoals,
+    required this.workGoalsUnavailable,
+    required this.onRetryWorkGoals,
     required this.onEditGoals,
     this.dense = false,
     this.accessibilityLayout = false,
@@ -971,6 +1011,8 @@ class _CompactStreakSection extends StatelessWidget {
 
   final TodayOverview data;
   final WorkGoals? workGoals;
+  final bool workGoalsUnavailable;
+  final VoidCallback onRetryWorkGoals;
   final VoidCallback onEditGoals;
   final bool dense;
   final bool accessibilityLayout;
@@ -1002,6 +1044,8 @@ class _CompactStreakSection extends StatelessWidget {
             ? _DenseStreakContent(
                 data: data,
                 workGoals: workGoals,
+                workGoalsUnavailable: workGoalsUnavailable,
+                onRetryWorkGoals: onRetryWorkGoals,
                 onEditGoals: onEditGoals,
                 accessibilityLayout: accessibilityLayout,
               )
@@ -1130,6 +1174,15 @@ class _CompactStreakSection extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (workGoalsUnavailable)
+                    Positioned(
+                      right: referenceMediumGeometry ? 48 : 38,
+                      bottom: 0,
+                      child: _GoalsUnavailableFeedback(
+                        onRetry: onRetryWorkGoals,
+                        compact: true,
+                      ),
+                    ),
                 ],
               ),
       ),
@@ -1141,12 +1194,16 @@ class _DenseStreakContent extends StatelessWidget {
   const _DenseStreakContent({
     required this.data,
     required this.workGoals,
+    required this.workGoalsUnavailable,
+    required this.onRetryWorkGoals,
     required this.onEditGoals,
     this.accessibilityLayout = false,
   });
 
   final TodayOverview data;
   final WorkGoals? workGoals;
+  final bool workGoalsUnavailable;
+  final VoidCallback onRetryWorkGoals;
   final VoidCallback onEditGoals;
   final bool accessibilityLayout;
 
@@ -1186,6 +1243,8 @@ class _DenseStreakContent extends StatelessWidget {
       _StreakGoals(
         date: data.date,
         workGoals: workGoals,
+        unavailable: workGoalsUnavailable,
+        onRetry: onRetryWorkGoals,
         onEditGoals: onEditGoals,
         compact: true,
         accessibilityLayout: accessibilityLayout,
@@ -1647,6 +1706,15 @@ class _RecentDayIndicators extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visibleDays = days.length <= 7 ? days : days.sublist(days.length - 7);
+    if (visibleDays.isEmpty) {
+      return Text(
+        'No streak history yet',
+        key: const Key('overview-empty-streak-history'),
+        style: compact
+            ? _overviewSummaryValueStyle
+            : Theme.of(context).textTheme.bodySmall,
+      );
+    }
     return Wrap(
       alignment: WrapAlignment.start,
       children: [
@@ -1877,6 +1945,8 @@ class _StreakGoals extends StatelessWidget {
     required this.date,
     required this.workGoals,
     required this.onEditGoals,
+    this.unavailable = false,
+    this.onRetry,
     this.compact = false,
     this.accessibilityLayout = false,
     this.referenceTypography = false,
@@ -1886,6 +1956,8 @@ class _StreakGoals extends StatelessWidget {
   final DateTime date;
   final WorkGoals? workGoals;
   final VoidCallback onEditGoals;
+  final bool unavailable;
+  final VoidCallback? onRetry;
   final bool compact;
   final bool accessibilityLayout;
   final bool referenceTypography;
@@ -1948,6 +2020,8 @@ class _StreakGoals extends StatelessWidget {
         children: [
           Flexible(child: values),
           const SizedBox(width: AppSpacing.xxs),
+          if (unavailable && onRetry != null)
+            _GoalsUnavailableFeedback(onRetry: onRetry!, compact: true),
           editAction,
         ],
       );
@@ -1971,6 +2045,15 @@ class _StreakGoals extends StatelessWidget {
               ),
             ),
             Positioned(left: 0, top: 25, child: values),
+            if (unavailable && onRetry != null)
+              Positioned(
+                left: 0,
+                top: 67,
+                child: _GoalsUnavailableFeedback(
+                  onRetry: onRetry!,
+                  compact: true,
+                ),
+              ),
             Positioned(right: 0, top: 86, child: editAction),
           ],
         ),
@@ -1992,10 +2075,58 @@ class _StreakGoals extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xxs),
         values,
+        if (unavailable && onRetry != null)
+          _GoalsUnavailableFeedback(onRetry: onRetry!),
         Align(alignment: Alignment.centerRight, child: editAction),
       ],
     );
   }
+}
+
+class _GoalsUnavailableFeedback extends StatelessWidget {
+  const _GoalsUnavailableFeedback({
+    required this.onRetry,
+    this.compact = false,
+  });
+
+  final VoidCallback onRetry;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Goals unavailable. Retry',
+    child: InkWell(
+      key: const Key('retry-work-goals'),
+      borderRadius: AppRadius.control,
+      onTap: onRetry,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minHeight: AppSpacing.minimumTouchTarget,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? AppSpacing.xxs : AppSpacing.xs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  'Goals unavailable',
+                  style: compact
+                      ? _overviewSummaryLabelStyle
+                      : Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.xxs),
+              const Icon(Icons.refresh, size: 16, color: AppColors.primary),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _GoalValue extends StatelessWidget {
@@ -2120,11 +2251,15 @@ class _ReferenceExpandedStreakSection extends StatelessWidget {
   const _ReferenceExpandedStreakSection({
     required this.data,
     required this.workGoals,
+    required this.workGoalsUnavailable,
+    required this.onRetryWorkGoals,
     required this.onEditGoals,
   });
 
   final TodayOverview data;
   final WorkGoals? workGoals;
+  final bool workGoalsUnavailable;
+  final VoidCallback onRetryWorkGoals;
   final VoidCallback onEditGoals;
 
   @override
@@ -2135,6 +2270,8 @@ class _ReferenceExpandedStreakSection extends StatelessWidget {
         return _CompactStreakSection(
           data: data,
           workGoals: workGoals,
+          workGoalsUnavailable: workGoalsUnavailable,
+          onRetryWorkGoals: onRetryWorkGoals,
           onEditGoals: onEditGoals,
         );
       }
@@ -2243,6 +2380,8 @@ class _ReferenceExpandedStreakSection extends StatelessWidget {
               child: _StreakGoals(
                 date: data.date,
                 workGoals: workGoals,
+                unavailable: workGoalsUnavailable,
+                onRetry: onRetryWorkGoals,
                 onEditGoals: onEditGoals,
                 referenceTypography: true,
                 referenceDesktopGeometry: true,

@@ -362,9 +362,19 @@ void main() {
     },
   );
 
+  for (final viewport in const [Size(600, 800), Size(640, 960)]) {
+    testWidgets('narrow desktop uses compact desktop at '
+        '${viewport.width.toInt()}x${viewport.height.toInt()}', (tester) async {
+      await _pumpOverview(tester, viewport, platform: TargetPlatform.windows);
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const Key('overview-compact-desktop')), findsOneWidget);
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+    });
+  }
+
   for (final viewport in const [
-    Size(600, 800),
-    Size(640, 960),
     Size(768, 1024),
     Size(820, 1180),
     Size(839, 1024),

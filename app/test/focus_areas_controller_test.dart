@@ -7,9 +7,11 @@ import 'package:ponos_app/core/errors/app_exception.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_input.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
+import 'package:ponos_app/features/focus_areas/domain/models/work_totals.dart';
 import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_repository.dart';
 import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_controller.dart';
 import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_state.dart';
+import 'package:ponos_app/features/home/presentation/state/today_overview_provider.dart';
 
 void main() {
   late FakeRepository repository;
@@ -262,6 +264,38 @@ void main() {
     },
   );
 
+  test(
+    'successful mutation invalidates Overview but failed mutation does not',
+    () async {
+      await settle();
+      final subscription = container.listen(
+        todayOverviewProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      await container.read(todayOverviewProvider.future);
+      expect(repository.overviewLoads, 1);
+
+      repository.change = () async => [area(1, name: 'Updated')];
+      expect(
+        await controller.update(1, const FocusAreaUpdateInput(name: 'Updated')),
+        isTrue,
+      );
+      await container.read(todayOverviewProvider.future);
+      expect(repository.overviewLoads, 2);
+
+      repository.change = () async =>
+          throw const ConflictException('update failed');
+      expect(
+        await controller.update(1, const FocusAreaUpdateInput(name: 'Fails')),
+        isFalse,
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(repository.overviewLoads, 2);
+      subscription.close();
+    },
+  );
+
   test('disposal ignores a pending response', () async {
     await settle();
     final pending = Completer<List<FocusArea>>();
@@ -299,6 +333,7 @@ class FakeRepository implements FocusAreaRepository {
   Future<List<FocusArea>> Function() change = () async => [area(2)];
   String? lastAction;
   List<FocusAreaPriorityInput>? priorities;
+  int overviewLoads = 0;
 
   @override
   Future<bool> hasHistoricalWork(int id) => throw UnimplementedError();
@@ -311,8 +346,11 @@ class FakeRepository implements FocusAreaRepository {
   @override
   Future<List<FocusArea>> getActive() => load();
   @override
-  Future<TodayOverview> getTodayOverview(DateTime localDate) =>
-      throw UnimplementedError();
+  Future<TodayOverview> getTodayOverview(DateTime localDate) async {
+    overviewLoads += 1;
+    return overview(localDate);
+  }
+
   Future<FocusArea> mutate(String action) async {
     lastAction = action;
     return (await change()).single;
@@ -341,3 +379,32 @@ class FakeRepository implements FocusAreaRepository {
   @override
   Future<FocusArea> getById(int id) => throw UnimplementedError();
 }
+
+TodayOverview overview(DateTime date) => TodayOverview(
+  date: date,
+  expectedFocusTime: Duration.zero,
+  actualFocusedTime: Duration.zero,
+  actualRestTime: Duration.zero,
+  actualTrackedTime: Duration.zero,
+  completedFocusAreas: 0,
+  targetedFocusAreas: 0,
+  areas: const [],
+  streak: const StreakSummary(
+    currentDailyStreak: 0,
+    currentWeeklyStreak: 0,
+    recentDays: [],
+  ),
+  week: WeeklyWorkTotals(
+    weekStart: date,
+    weekEnd: date,
+    focusedTime: Duration.zero,
+    restTime: Duration.zero,
+    trackedTime: Duration.zero,
+  ),
+  overall: const OverallWorkTotals(
+    daysWorked: 0,
+    focusedTime: Duration.zero,
+    restTime: Duration.zero,
+    trackedTime: Duration.zero,
+  ),
+);

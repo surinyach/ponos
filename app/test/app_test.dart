@@ -374,7 +374,7 @@ void main() {
   testWidgets('overview shows empty and error states', (tester) async {
     await tester.pumpWidget(_testApp(overview: _overview(areas: const [])));
     await tester.pumpAndSettle();
-    expect(find.text('0 / 0 complete'), findsOneWidget);
+    expect(find.text('No focus areas configured'), findsOneWidget);
     expect(find.byKey(const Key('overview-statistics')), findsOneWidget);
     expect(find.byKey(const Key('overview-today')), findsOneWidget);
     expect(find.byKey(const Key('overview-streak')), findsOneWidget);
@@ -382,6 +382,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpWidget(
       ProviderScope(
+        retry: (_, _) => null,
         overrides: [
           todayOverviewProvider.overrideWith(
             (ref) => Future<TodayOverview>.error(Exception('offline')),

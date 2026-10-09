@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/focus_area_providers.dart';
+import '../../../home/presentation/state/today_overview_provider.dart';
 import '../../domain/models/focus_area.dart';
 import '../../domain/models/focus_area_input.dart';
 import '../../domain/repositories/focus_area_repository.dart';
@@ -76,6 +77,7 @@ class FocusAreasController extends Notifier<FocusAreasState> {
       if (!ref.mounted) return false;
       ref.invalidate(archivedFocusAreasProvider);
       _loaded(state.areas);
+      ref.invalidate(todayOverviewProvider);
       return true;
     } catch (error) {
       if (ref.mounted) _failed(error);
@@ -102,6 +104,7 @@ class FocusAreasController extends Notifier<FocusAreasState> {
           byId[area.id] = area;
         }
         _loaded(byId.values);
+        ref.invalidate(todayOverviewProvider);
         return true;
       } catch (error) {
         if (ref.mounted) {
@@ -164,6 +167,7 @@ class FocusAreasController extends Notifier<FocusAreasState> {
             }
           }
           _loaded(byId.values);
+          ref.invalidate(todayOverviewProvider);
           return true;
         } catch (error) {
           if (ref.mounted) _failed(error);
