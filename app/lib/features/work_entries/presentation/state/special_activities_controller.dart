@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/work_entry_providers.dart';
+import '../../../home/presentation/state/today_overview_provider.dart';
 import '../../domain/models/special_activity.dart';
 import '../../domain/repositories/special_activity_repository.dart';
 import 'special_activities_state.dart';
@@ -43,7 +44,7 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
   }
 
   Future<bool> update(int id, SpecialActivityUpdateInput input) =>
-      _save(() => _repository.update(id, input));
+      _save(() => _repository.update(id, input), refreshOverview: true);
   Future<bool> delete(int id) => _enqueue(() async {
     if (!_hasLoaded && !await _load()) return false;
     state = SpecialActivitiesState(
@@ -87,26 +88,29 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
     }
   }
 
-  Future<bool> _save(Future<SpecialActivity> Function() operation) =>
-      _enqueue(() async {
-        if (!_hasLoaded && !await _load()) return false;
-        state = SpecialActivitiesState(
-          status: SpecialActivitiesStatus.saving,
-          active: state.active,
-        );
-        try {
-          final changed = await operation();
-          if (!ref.mounted) return false;
-          final active = {for (final item in state.active) item.id: item};
-          active.remove(changed.id);
-          active[changed.id] = changed;
-          _loaded(active.values);
-          return true;
-        } catch (error) {
-          if (ref.mounted) _failed(error);
-          return false;
-        }
-      });
+  Future<bool> _save(
+    Future<SpecialActivity> Function() operation, {
+    bool refreshOverview = false,
+  }) => _enqueue(() async {
+    if (!_hasLoaded && !await _load()) return false;
+    state = SpecialActivitiesState(
+      status: SpecialActivitiesStatus.saving,
+      active: state.active,
+    );
+    try {
+      final changed = await operation();
+      if (!ref.mounted) return false;
+      final active = {for (final item in state.active) item.id: item};
+      active.remove(changed.id);
+      active[changed.id] = changed;
+      _loaded(active.values);
+      if (refreshOverview) ref.invalidate(todayOverviewProvider);
+      return true;
+    } catch (error) {
+      if (ref.mounted) _failed(error);
+      return false;
+    }
+  });
 
   void _loaded(Iterable<SpecialActivity> active) {
     final activeList = active.toList()..sort(_byId);

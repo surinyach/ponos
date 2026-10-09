@@ -93,6 +93,89 @@ void main() {
     container.dispose();
   });
 
+  testWidgets('repeated refresh failures keep one notice and recover', (
+    tester,
+  ) async {
+    final overview = _Sequence<TodayOverview>();
+    final goals = _Sequence<WorkGoals>();
+    final container = await _pumpApp(tester, overview: overview, goals: goals);
+    overview.requests.single.complete(_overview());
+    goals.requests.single.complete(_goals());
+    await tester.pumpAndSettle();
+
+    container.invalidate(todayOverviewProvider);
+    await tester.pump();
+    overview.requests.last.completeError(Exception('first failure'));
+    await tester.pump();
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('retry-overview-refresh')));
+    await tester.pump();
+    overview.requests.last.completeError(Exception('second failure'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const Key('overview-streak')), findsOneWidget);
+    expect(find.byKey(const Key('overview-refresh-error')), findsOneWidget);
+    expect(find.byKey(const Key('retry-overview-refresh')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('retry-overview-refresh')));
+    await tester.pump();
+    overview.requests.last.complete(_overview());
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('overview-refresh-error')), findsNothing);
+    expect(overview.requests, hasLength(4));
+    container.dispose();
+  });
+
+  testWidgets(
+    'concurrent Overview and Work Goals refresh states stay isolated',
+    (tester) async {
+      final overview = _Sequence<TodayOverview>();
+      final goals = _Sequence<WorkGoals>();
+      final container = await _pumpApp(
+        tester,
+        overview: overview,
+        goals: goals,
+      );
+      overview.requests.single.complete(_overview());
+      goals.requests.single.complete(_goals());
+      await tester.pumpAndSettle();
+
+      container.invalidate(todayOverviewProvider);
+      container.invalidate(workGoalsProvider);
+      await tester.pump();
+      expect(
+        find.byKey(const Key('overview-refresh-indicator')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('overview-streak')), findsOneWidget);
+
+      goals.requests.last.completeError(Exception('goals failed'));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Goals unavailable'), findsOneWidget);
+      expect(
+        find.byKey(const Key('overview-refresh-indicator')),
+        findsOneWidget,
+      );
+
+      overview.requests.last.complete(
+        _overview(focused: const Duration(minutes: 45)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('overview-refresh-indicator')), findsNothing);
+      expect(find.text('Goals unavailable'), findsOneWidget);
+      expect(find.byKey(const Key('overview-refresh-error')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('retry-work-goals')));
+      await tester.pump();
+      goals.requests.last.complete(_goals());
+      await tester.pumpAndSettle();
+      expect(find.text('Goals unavailable'), findsNothing);
+      container.dispose();
+    },
+  );
+
   testWidgets('Work Goals loading and failure do not hide Streak', (
     tester,
   ) async {

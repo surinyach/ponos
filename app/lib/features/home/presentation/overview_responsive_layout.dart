@@ -1031,160 +1031,166 @@ class _CompactStreakSection extends StatelessWidget {
       borderColor: _streakBorder,
       dense: dense,
       padding: dense ? null : const EdgeInsets.all(14),
-      child: InkWell(
-        key: const Key('compact-streak-summary'),
-        borderRadius: AppRadius.control,
-        onTap: () => _showOverviewSheet(
-          context,
-          key: const Key('streak-detail-sheet'),
-          title: 'Streak consistency',
-          child: _StreakDetails(data: data),
-        ),
-        child: dense
-            ? _DenseStreakContent(
-                data: data,
-                workGoals: workGoals,
-                workGoalsUnavailable: workGoalsUnavailable,
-                onRetryWorkGoals: onRetryWorkGoals,
-                onEditGoals: onEditGoals,
-                accessibilityLayout: accessibilityLayout,
-              )
-            : Stack(
-                children: [
-                  Align(
-                    alignment: Alignment.topCenter,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 3,
-                          height: 34,
-                          decoration: const BoxDecoration(
-                            color: AppColors.accent,
-                            borderRadius: AppRadius.pill,
-                          ),
-                        ),
-                        const SizedBox(width: 11),
-                        if (referenceMediumGeometry)
-                          SizedBox(
-                            width: 358,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 3),
-                              child: Text(
-                                'Streak consistency',
-                                style: _overviewSectionTitleStyle,
-                              ),
-                            ),
-                          )
-                        else
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 3),
-                              child: Text(
-                                'Streak consistency',
-                                style: _overviewSectionTitleStyle,
-                              ),
-                            ),
-                          ),
-                        const Icon(
-                          Icons.chevron_right,
-                          color: AppColors.textSecondary,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    left: AppSpacing.xs,
-                    right: referenceMediumGeometry ? null : 0,
-                    top: 33,
-                    child: SizedBox(
-                      width: referenceMediumGeometry ? 158 : null,
+      child: Semantics(
+        button: true,
+        hint: 'Show streak details',
+        child: InkWell(
+          key: const Key('compact-streak-summary'),
+          borderRadius: AppRadius.control,
+          onTap: () => _showOverviewSheet(
+            context,
+            key: const Key('streak-detail-sheet'),
+            title: 'Streak consistency',
+            child: _StreakDetails(data: data),
+          ),
+          child: dense
+              ? _DenseStreakContent(
+                  data: data,
+                  workGoals: workGoals,
+                  workGoalsUnavailable: workGoalsUnavailable,
+                  onRetryWorkGoals: onRetryWorkGoals,
+                  onEditGoals: onEditGoals,
+                  accessibilityLayout: accessibilityLayout,
+                )
+              : Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.topCenter,
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              '${data.streak.currentDailyStreak} day streak',
-                              style: _overviewSummaryValueStyle.copyWith(
-                                fontSize: 11,
-                                height: 14 / 11,
-                              ),
+                          Container(
+                            width: 3,
+                            height: 34,
+                            decoration: const BoxDecoration(
+                              color: AppColors.accent,
+                              borderRadius: AppRadius.pill,
                             ),
                           ),
-                          Expanded(
-                            child: Text(
-                              '${data.streak.currentWeeklyStreak} week streak',
-                              style: _overviewSummaryValueStyle.copyWith(
-                                fontSize: 11,
-                                height: 14 / 11,
+                          const SizedBox(width: 11),
+                          if (referenceMediumGeometry)
+                            SizedBox(
+                              width: 358,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: Text(
+                                  'Streak consistency',
+                                  style: _overviewSectionTitleStyle,
+                                ),
+                              ),
+                            )
+                          else
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: Text(
+                                  'Streak consistency',
+                                  style: _overviewSectionTitleStyle,
+                                ),
                               ),
                             ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: AppColors.textSecondary,
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: -4,
-                    top: 59,
-                    child: _RecentDayIndicators(
-                      days: data.streak.recentDays,
-                      compact: true,
-                      showLabels: true,
-                    ),
-                  ),
-                  Positioned(
-                    left: AppSpacing.xs,
-                    bottom: 0,
-                    child: Row(
-                      children: [
-                        _GoalValue(
-                          label: 'Today',
-                          value: dailyGoal == null
-                              ? '—'
-                              : _formatDuration(Duration(minutes: dailyGoal)),
-                          compact: true,
-                        ),
-                        const SizedBox(width: AppSpacing.lg),
-                        _GoalValue(
-                          label: 'This week',
-                          value: weeklyGoal == null
-                              ? '—'
-                              : _formatDuration(Duration(minutes: weeklyGoal)),
-                          compact: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    left: referenceMediumGeometry ? 358 : null,
-                    right: referenceMediumGeometry ? null : -10,
-                    bottom: 0,
-                    child: SizedBox.square(
-                      key: const Key('compact-edit-goals-action'),
-                      dimension: AppSpacing.minimumTouchTarget,
-                      child: PonosIconButton(
-                        semanticLabel: 'Edit goals',
-                        tooltip: 'Edit goals',
-                        icon: Transform.translate(
-                          offset: const Offset(0, 13),
-                          transformHitTests: false,
-                          child: const Icon(Icons.tune, size: 16),
-                        ),
-                        onPressed: onEditGoals,
-                      ),
-                    ),
-                  ),
-                  if (workGoalsUnavailable)
                     Positioned(
-                      right: referenceMediumGeometry ? 48 : 38,
-                      bottom: 0,
-                      child: _GoalsUnavailableFeedback(
-                        onRetry: onRetryWorkGoals,
-                        compact: true,
+                      left: AppSpacing.xs,
+                      right: referenceMediumGeometry ? null : 0,
+                      top: 33,
+                      child: SizedBox(
+                        width: referenceMediumGeometry ? 158 : null,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${data.streak.currentDailyStreak} day streak',
+                                style: _overviewSummaryValueStyle.copyWith(
+                                  fontSize: 11,
+                                  height: 14 / 11,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${data.streak.currentWeeklyStreak} week streak',
+                                style: _overviewSummaryValueStyle.copyWith(
+                                  fontSize: 11,
+                                  height: 14 / 11,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                ],
-              ),
+                    Positioned(
+                      left: -4,
+                      top: 59,
+                      child: _RecentDayIndicators(
+                        days: data.streak.recentDays,
+                        compact: true,
+                        showLabels: true,
+                      ),
+                    ),
+                    Positioned(
+                      left: AppSpacing.xs,
+                      bottom: 0,
+                      child: Row(
+                        children: [
+                          _GoalValue(
+                            label: 'Today',
+                            value: dailyGoal == null
+                                ? '—'
+                                : _formatDuration(Duration(minutes: dailyGoal)),
+                            compact: true,
+                          ),
+                          const SizedBox(width: AppSpacing.lg),
+                          _GoalValue(
+                            label: 'This week',
+                            value: weeklyGoal == null
+                                ? '—'
+                                : _formatDuration(
+                                    Duration(minutes: weeklyGoal),
+                                  ),
+                            compact: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      left: referenceMediumGeometry ? 358 : null,
+                      right: referenceMediumGeometry ? null : -10,
+                      bottom: 0,
+                      child: SizedBox.square(
+                        key: const Key('compact-edit-goals-action'),
+                        dimension: AppSpacing.minimumTouchTarget,
+                        child: PonosIconButton(
+                          semanticLabel: 'Edit goals',
+                          tooltip: 'Edit goals',
+                          icon: Transform.translate(
+                            offset: const Offset(0, 13),
+                            transformHitTests: false,
+                            child: const Icon(Icons.tune, size: 16),
+                          ),
+                          onPressed: onEditGoals,
+                        ),
+                      ),
+                    ),
+                    if (workGoalsUnavailable)
+                      Positioned(
+                        right: referenceMediumGeometry ? 48 : 38,
+                        bottom: 0,
+                        child: _GoalsUnavailableFeedback(
+                          onRetry: onRetryWorkGoals,
+                          compact: true,
+                        ),
+                      ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -1624,10 +1630,9 @@ class _CompactCard extends StatelessWidget {
 }
 
 class _StreakDetails extends StatelessWidget {
-  const _StreakDetails({required this.data, this.horizontal = false});
+  const _StreakDetails({required this.data});
 
   final TodayOverview data;
-  final bool horizontal;
 
   @override
   Widget build(BuildContext context) {
@@ -1652,27 +1657,6 @@ class _StreakDetails extends StatelessWidget {
         _RecentDayIndicators(days: data.streak.recentDays),
       ],
     );
-    if (horizontal) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(flex: 2, child: daily),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(flex: 2, child: weekly),
-          const SizedBox(width: AppSpacing.xl),
-          Expanded(
-            flex: 4,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: KeyedSubtree(
-                key: const Key('desktop-recent-days-group'),
-                child: recent,
-              ),
-            ),
-          ),
-        ],
-      );
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1830,115 +1814,6 @@ Future<void> _showOverviewSheet(
     ),
   ),
 );
-
-// Retained for the detailed loading/state presentation used by later Overview work.
-// ignore: unused_element
-class _TodaySection extends StatelessWidget {
-  const _TodaySection({
-    required this.data,
-    required this.layout,
-    required this.onStartFocus,
-    required this.onLogWork,
-  });
-
-  final TodayOverview data;
-  final AppLayoutSize layout;
-  final VoidCallback onStartFocus;
-  final VoidCallback onLogWork;
-
-  @override
-  Widget build(BuildContext context) {
-    final metrics = [
-      PonosMetricTile(
-        label: 'Focused today',
-        value: _formatDuration(data.actualFocusedTime),
-        icon: const Icon(Icons.timer_outlined),
-      ),
-      PonosMetricTile(
-        label: 'Expected today',
-        value: _formatDuration(data.expectedFocusTime),
-        icon: const Icon(Icons.flag_outlined),
-      ),
-      PonosMetricTile(
-        label: 'Rest today',
-        value: _formatDuration(data.actualRestTime),
-        icon: const Icon(Icons.self_improvement_outlined),
-      ),
-      PonosMetricTile(
-        label: 'Tracked today',
-        value: _formatDuration(data.actualTrackedTime),
-        icon: const Icon(Icons.schedule_outlined),
-      ),
-      PonosMetricTile(
-        label: 'Areas completed',
-        value: '${data.completedFocusAreas} / ${data.targetedFocusAreas}',
-        supportingText: 'Daily targets',
-        icon: const Icon(Icons.track_changes_outlined),
-      ),
-    ];
-    return PonosCard(
-      key: const Key('overview-today'),
-      color: AppColors.surfaceTinted,
-      child: ClipRRect(
-        borderRadius: AppRadius.control,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: ExcludeSemantics(
-                child: Opacity(
-                  opacity: 0.12,
-                  child: SvgPicture.asset(
-                    layout == AppLayoutSize.compact
-                        ? AppAssets.architecturalHeroMobile
-                        : AppAssets.architecturalHeroDesktop,
-                    fit: BoxFit.cover,
-                    excludeFromSemantics: true,
-                  ),
-                ),
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                PonosSectionHeader(
-                  title: 'Today',
-                  description: 'Your focused work at a glance',
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.lg,
-                  runSpacing: AppSpacing.md,
-                  children: [
-                    for (final metric in metrics)
-                      SizedBox(
-                        width: layout == AppLayoutSize.compact ? 136 : 168,
-                        child: metric,
-                      ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.xs,
-                  runSpacing: AppSpacing.xs,
-                  children: [
-                    PonosButton.primary(
-                      label: 'Start Focus',
-                      onPressed: onStartFocus,
-                    ),
-                    PonosButton.secondary(
-                      label: 'Log Work',
-                      onPressed: onLogWork,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _StreakGoals extends StatelessWidget {
   const _StreakGoals({
@@ -2201,52 +2076,6 @@ class _OverviewSmallActionTypography extends StatelessWidget {
   }
 }
 
-// Retained for the detailed Work Areas presentation used by the modal flow.
-// ignore: unused_element
-class _WorkAreasSection extends StatelessWidget {
-  const _WorkAreasSection({
-    required this.data,
-    required this.onManageWorkAreas,
-  });
-
-  final TodayOverview data;
-  final VoidCallback onManageWorkAreas;
-
-  @override
-  Widget build(BuildContext context) {
-    final details = FocusAreas(
-      targetDate: data.date,
-      specialActivities: data.specialActivities,
-      areas: data.areas.map((item) => item.focusArea).toList(),
-      workedTodayByAreaId: {
-        for (final item in data.areas) item.focusArea.id: item.focusedTime,
-      },
-      dailyTargetByAreaId: {
-        for (final item in data.areas) item.focusArea.id: item.targetTime,
-      },
-      completedByAreaId: {
-        for (final item in data.areas) item.focusArea.id: item.completed,
-      },
-    );
-    return Column(
-      key: const Key('overview-work-areas'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        PonosSectionHeader(
-          title: 'Work Areas',
-          description: 'Today’s progress by area and special activity.',
-          trailing: PonosButton.ghost(
-            label: 'Manage',
-            onPressed: onManageWorkAreas,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        details,
-      ],
-    );
-  }
-}
-
 class _ReferenceExpandedStreakSection extends StatelessWidget {
   const _ReferenceExpandedStreakSection({
     required this.data,
@@ -2416,150 +2245,6 @@ class _ReferenceStreakValue extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: AppColors.primaryDark,
             fontFeatures: [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-// Retained for the detailed Streak presentation used by the detail sheet.
-// ignore: unused_element
-class _StreakSection extends StatelessWidget {
-  const _StreakSection({
-    required this.data,
-    required this.layout,
-    required this.workGoals,
-    required this.onEditGoals,
-  });
-
-  final TodayOverview data;
-  final AppLayoutSize layout;
-  final WorkGoals? workGoals;
-  final VoidCallback onEditGoals;
-
-  @override
-  Widget build(BuildContext context) {
-    final heading = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: AppSpacing.xxs,
-          height: AppSpacing.xxl,
-          decoration: const BoxDecoration(
-            color: AppColors.accent,
-            borderRadius: AppRadius.pill,
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        const Expanded(
-          child: PonosSectionHeader(
-            title: 'Streak consistency',
-            description: 'Daily and weekly momentum at a glance.',
-          ),
-        ),
-      ],
-    );
-    return PonosCard(
-      key: const Key('overview-streak'),
-      color: _streakSurface,
-      child: layout == AppLayoutSize.expanded
-          ? Row(
-              children: [
-                Expanded(flex: 3, child: heading),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  flex: 9,
-                  child: _StreakDetails(data: data, horizontal: true),
-                ),
-                const SizedBox(width: AppSpacing.lg),
-                Expanded(
-                  flex: 3,
-                  child: _StreakGoals(
-                    date: data.date,
-                    workGoals: workGoals,
-                    onEditGoals: onEditGoals,
-                  ),
-                ),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                heading,
-                const SizedBox(height: AppSpacing.md),
-                _StreakDetails(data: data),
-                const SizedBox(height: AppSpacing.sm),
-                _StreakGoals(
-                  date: data.date,
-                  workGoals: workGoals,
-                  onEditGoals: onEditGoals,
-                ),
-              ],
-            ),
-    );
-  }
-}
-
-// Retained for the detailed statistics presentation used by later Overview work.
-// ignore: unused_element
-class _StatisticsSection extends StatelessWidget {
-  const _StatisticsSection({required this.data});
-
-  final TodayOverview data;
-
-  @override
-  Widget build(BuildContext context) => PonosCard(
-    key: const Key('overview-statistics'),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const PonosSectionHeader(
-          title: 'Work statistics',
-          description: 'All-time tracked work.',
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Wrap(
-          spacing: AppSpacing.lg,
-          runSpacing: AppSpacing.md,
-          children: [
-            SizedBox(
-              width: 136,
-              child: PonosMetricTile(
-                label: 'Days worked',
-                value: '${data.overall.daysWorked}',
-              ),
-            ),
-            SizedBox(
-              width: 136,
-              child: PonosMetricTile(
-                label: 'Focused time',
-                value: _formatDuration(data.overall.focusedTime),
-              ),
-            ),
-            SizedBox(
-              width: 136,
-              child: PonosMetricTile(
-                label: 'Rest time',
-                value: _formatDuration(data.overall.restTime),
-              ),
-            ),
-            SizedBox(
-              width: 136,
-              child: PonosMetricTile(
-                label: 'Tracked time',
-                value: _formatDuration(data.overall.trackedTime),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'This week · ${_formatDuration(data.week.focusedTime)} focused · '
-          '${_formatDuration(data.week.restTime)} rest',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontFamily: AppTypography.fontFamily,
           ),
         ),
       ],

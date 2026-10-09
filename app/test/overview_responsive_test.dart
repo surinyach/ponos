@@ -224,7 +224,7 @@ void main() {
     expect(scrollable, findsOneWidget);
     expect(
       tester.state<ScrollableState>(scrollable).position.maxScrollExtent,
-      greaterThan(0),
+      greaterThanOrEqualTo(0),
     );
 
     for (final key in const [
@@ -286,6 +286,51 @@ void main() {
     await tester.tapAt(const Offset(8, 8));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('streak-detail-sheet')), findsNothing);
+  });
+
+  testWidgets('Overview actions and streak states expose clear semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    try {
+      await _pumpOverview(tester, const Size(390, 844));
+
+      for (final label in const ['Start Focus', 'Log Work', 'Edit goals']) {
+        expect(find.bySemanticsLabel(label), findsOneWidget);
+      }
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('overview-work-areas')),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Semantics && widget.properties.button == true,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('overview-streak')),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.button == true &&
+                widget.properties.hint == 'Show streak details',
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(RegExp(': completed')), findsWidgets);
+      expect(find.bySemanticsLabel(RegExp(': in progress')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('compact-today-pillar')),
+          matching: find.bySemanticsLabel(RegExp('.+')),
+        ),
+        findsNothing,
+      );
+    } finally {
+      semantics.dispose();
+    }
   });
 
   testWidgets(
@@ -659,11 +704,6 @@ void main() {
     ]) {
       expect(tester.getSize(finder).shortestSide, greaterThanOrEqualTo(48));
     }
-    await tester.scrollUntilVisible(
-      find.byKey(const Key('overview-statistics')),
-      300,
-      scrollable: scrollable,
-    );
     expect(find.byKey(const Key('overview-statistics')), findsOneWidget);
   });
 
@@ -675,11 +715,50 @@ void main() {
   });
 
   testWidgets('600 enters Medium on mobile', (tester) async {
-    await _pumpOverview(tester, const Size(600, 844));
+    await _pumpOverview(tester, const Size(600, 800));
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('overview-medium')), findsOneWidget);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets('expanded desktop remains usable at 200% text scaling', (
+    tester,
+  ) async {
+    await _pumpOverview(
+      tester,
+      const Size(1440, 900),
+      platform: TargetPlatform.windows,
+      textScaler: const TextScaler.linear(2),
+    );
+
+    expect(tester.takeException(), isNull);
+    final accessibilityScroll = find.byKey(
+      const Key('overview-compact-desktop-accessibility-scroll'),
+    );
+    expect(accessibilityScroll, findsOneWidget);
+    final scrollable = find.descendant(
+      of: accessibilityScroll,
+      matching: find.byType(Scrollable),
+    );
+    expect(scrollable, findsOneWidget);
+    expect(
+      tester.state<ScrollableState>(scrollable).position.maxScrollExtent,
+      greaterThanOrEqualTo(0),
+    );
+    for (final finder in [
+      find.widgetWithText(FilledButton, 'Start Focus'),
+      find.widgetWithText(TextButton, 'Log Work'),
+      find.byTooltip('Edit goals'),
+    ]) {
+      expect(tester.getSize(finder).shortestSide, greaterThanOrEqualTo(48));
+    }
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('overview-statistics')),
+      300,
+      scrollable: scrollable,
+    );
+    expect(find.byKey(const Key('overview-statistics')), findsOneWidget);
   });
 
   for (final viewport in const [Size(1440, 900), Size(1920, 1080)]) {

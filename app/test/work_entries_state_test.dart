@@ -146,6 +146,65 @@ void main() {
       expect(await controller.refresh(), isFalse);
       expect(current().active.single.id, 1);
     });
+
+    test(
+      'successful Special Activity update invalidates Overview only once',
+      () async {
+        final syncRepository = FakeSpecialRepository();
+        var overviewLoads = 0;
+        final syncContainer = ProviderContainer(
+          overrides: [
+            specialActivityRepositoryProvider.overrideWithValue(syncRepository),
+            todayOverviewProvider.overrideWith((ref) async {
+              overviewLoads += 1;
+              return overview();
+            }),
+          ],
+        );
+        addTearDown(syncContainer.dispose);
+        final activitySubscription = syncContainer.listen(
+          specialActivitiesProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        final overviewSubscription = syncContainer.listen(
+          todayOverviewProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(activitySubscription.close);
+        addTearDown(overviewSubscription.close);
+        await Future<void>.delayed(Duration.zero);
+        await syncContainer.read(todayOverviewProvider.future);
+        expect(overviewLoads, 1);
+
+        final syncController = syncContainer.read(
+          specialActivitiesProvider.notifier,
+        );
+        syncRepository.mutate = () async => special(1, name: 'Renamed');
+        expect(
+          await syncController.update(
+            1,
+            const SpecialActivityUpdateInput(name: 'Renamed'),
+          ),
+          isTrue,
+        );
+        await syncContainer.read(todayOverviewProvider.future);
+        expect(overviewLoads, 2);
+
+        syncRepository.mutate = () async =>
+            throw const ConflictException('update failed');
+        expect(
+          await syncController.update(
+            1,
+            const SpecialActivityUpdateInput(name: 'Fails'),
+          ),
+          isFalse,
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(overviewLoads, 2);
+      },
+    );
   });
 
   group('ManualWorkEntriesController', () {

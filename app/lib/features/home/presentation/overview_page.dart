@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +17,7 @@ import '../../work_goals/presentation/work_goals_page.dart';
 import 'overview_responsive_layout.dart';
 import 'state/today_overview_provider.dart';
 
-class OverviewPage extends ConsumerWidget {
+class OverviewPage extends ConsumerStatefulWidget {
   const OverviewPage({
     required this.onStartFocus,
     required this.onManageWorkAreas,
@@ -28,7 +30,59 @@ class OverviewPage extends ConsumerWidget {
   final VoidCallback onLogWork;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OverviewPage> createState() => _OverviewPageState();
+}
+
+class _OverviewPageState extends ConsumerState<OverviewPage>
+    with WidgetsBindingObserver {
+  Timer? _midnightTimer;
+  late DateTime _observedLocalDate;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _observedLocalDate = _localDate(_now());
+    _scheduleMidnightRefresh();
+  }
+
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    _refreshAfterDateChange();
+    _scheduleMidnightRefresh();
+  }
+
+  DateTime _now() => ref.read(overviewClockProvider)().toLocal();
+
+  void _refreshAfterDateChange() {
+    final date = _localDate(_now());
+    if (date == _observedLocalDate) return;
+    _observedLocalDate = date;
+    ref.invalidate(currentDateTimeProvider);
+  }
+
+  void _scheduleMidnightRefresh() {
+    _midnightTimer?.cancel();
+    final now = _now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final delay = nextMidnight.difference(now);
+    _midnightTimer = Timer(delay.isNegative ? Duration.zero : delay, () {
+      if (!mounted) return;
+      _refreshAfterDateChange();
+      _scheduleMidnightRefresh();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final overview = ref.watch(todayOverviewProvider);
     final workGoals = ref.watch(workGoalsProvider);
     return LayoutBuilder(
@@ -49,22 +103,29 @@ class OverviewPage extends ConsumerWidget {
             constraints.maxWidth - normalPadding.horizontal;
         final availableContentHeight =
             constraints.maxHeight - normalPadding.vertical;
+        final expandedAccessibilityFallback =
+            layout == AppLayoutSize.expanded &&
+            MediaQuery.textScalerOf(
+                  context,
+                ).scale(OverviewResponsiveLayout.minimumNormalHeight(layout)) >
+                availableContentHeight;
         final compactDesktop =
             desktop &&
             (layout == AppLayoutSize.compact ||
                 availableContentWidth <
                     OverviewResponsiveLayout.minimumNormalWidth(layout) ||
                 availableContentHeight <
-                    OverviewResponsiveLayout.minimumNormalHeight(layout));
+                    OverviewResponsiveLayout.minimumNormalHeight(layout) ||
+                expandedAccessibilityFallback);
         Widget dashboard() => OverviewResponsiveLayout(
           data: overview.value!,
           workGoals: workGoals.hasError ? null : workGoals.value,
           workGoalsUnavailable: workGoals.hasError,
           onRetryWorkGoals: () => ref.invalidate(workGoalsProvider),
           layout: layout,
-          onStartFocus: onStartFocus,
-          onManageWorkAreas: onManageWorkAreas,
-          onLogWork: onLogWork,
+          onStartFocus: widget.onStartFocus,
+          onManageWorkAreas: widget.onManageWorkAreas,
+          onLogWork: widget.onLogWork,
           compactDesktop: compactDesktop,
           onWorkGoals: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const WorkGoalsPage()),
@@ -127,6 +188,9 @@ class OverviewPage extends ConsumerWidget {
     );
   }
 }
+
+DateTime _localDate(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
 
 class _OverviewRefreshIndicator extends StatelessWidget {
   const _OverviewRefreshIndicator();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/providers/focus_area_providers.dart';
@@ -96,6 +98,39 @@ void main() {
       expect(container.read(todayOverviewProvider).hasError, isTrue);
     },
   );
+
+  test('an older request cannot replace newer Overview data', () async {
+    final repository = OverviewRepository();
+    final requests = <Completer<TodayOverview>>[];
+    repository.load = () {
+      final request = Completer<TodayOverview>();
+      requests.add(request);
+      return request.future;
+    };
+    final container = ProviderContainer(
+      overrides: [focusAreaRepositoryProvider.overrideWithValue(repository)],
+    );
+    addTearDown(container.dispose);
+    final subscription = container.listen(
+      todayOverviewProvider,
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+    await Future<void>.delayed(Duration.zero);
+
+    container.invalidate(todayOverviewProvider);
+    await Future<void>.delayed(Duration.zero);
+    expect(requests, hasLength(2));
+
+    final newer = overviewFor(DateTime(2026, 9, 8), daysWorked: 2);
+    requests.last.complete(newer);
+    expect(await container.read(todayOverviewProvider.future), same(newer));
+
+    requests.first.complete(overviewFor(DateTime(2026, 9, 7), daysWorked: 1));
+    await Future<void>.delayed(Duration.zero);
+    expect(container.read(todayOverviewProvider).value, same(newer));
+  });
 }
 
 class OverviewRepository implements FocusAreaRepository {
@@ -137,3 +172,33 @@ class OverviewRepository implements FocusAreaRepository {
     List<FocusAreaPriorityInput> priorities,
   ) => throw UnimplementedError();
 }
+
+TodayOverview overviewFor(DateTime date, {required int daysWorked}) =>
+    TodayOverview(
+      date: date,
+      expectedFocusTime: Duration.zero,
+      actualFocusedTime: Duration.zero,
+      actualRestTime: Duration.zero,
+      actualTrackedTime: Duration.zero,
+      completedFocusAreas: 0,
+      targetedFocusAreas: 0,
+      areas: const [],
+      streak: const StreakSummary(
+        currentDailyStreak: 0,
+        currentWeeklyStreak: 0,
+        recentDays: [],
+      ),
+      week: WeeklyWorkTotals(
+        weekStart: date,
+        weekEnd: date,
+        focusedTime: Duration.zero,
+        restTime: Duration.zero,
+        trackedTime: Duration.zero,
+      ),
+      overall: OverallWorkTotals(
+        daysWorked: daysWorked,
+        focusedTime: Duration.zero,
+        restTime: Duration.zero,
+        trackedTime: Duration.zero,
+      ),
+    );
