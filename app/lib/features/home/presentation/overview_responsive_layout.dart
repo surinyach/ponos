@@ -68,6 +68,13 @@ class OverviewResponsiveLayout extends StatelessWidget {
       _expandedStreakMinimumHeight + 40 + _normalMainRegionMinimumHeight + 150,
   };
 
+  /// Minimum content width required by each approved non-compact composition.
+  static double minimumNormalWidth(AppLayoutSize layout) => switch (layout) {
+    AppLayoutSize.compact => double.infinity,
+    AppLayoutSize.medium => 302 + AppSpacing.md + 330,
+    AppLayoutSize.expanded => 688,
+  };
+
   final TodayOverview data;
   final WorkGoals? workGoals;
   final AppLayoutSize layout;
@@ -468,6 +475,19 @@ class _CompactDesktopOverview extends StatelessWidget {
   });
 
   static const double _minimumColumnWidth = 280;
+  static const double _streakHeight = 150;
+  static const double _todayHeight = 190;
+  static const double _workAreasHeight = 110;
+  static const double _statisticsHeight = 124;
+  static const double _gap = AppSpacing.sm;
+  static const double _singleColumnHeight =
+      _streakHeight +
+      _todayHeight +
+      _workAreasHeight +
+      _statisticsHeight +
+      (_gap * 3);
+  static const double _twoColumnHeight =
+      _streakHeight + _todayHeight + _statisticsHeight + (_gap * 2);
 
   final TodayOverview data;
   final WorkGoals? workGoals;
@@ -479,128 +499,144 @@ class _CompactDesktopOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      final scaledRequiredHeight = MediaQuery.textScalerOf(
+        context,
+      ).scale(_singleColumnHeight);
+      final needsAccessibilityLayout =
+          scaledRequiredHeight > _singleColumnHeight;
+      if (needsAccessibilityLayout) {
+        return SingleChildScrollView(
+          key: const Key('overview-compact-desktop-accessibility-scroll'),
+          primary: false,
+          child: _buildAccessibilityComposition(),
+        );
+      }
+
       final twoColumnsFit =
           constraints.maxWidth >=
           (_minimumColumnWidth * 2) + _CompactOverviewMetrics.gap;
       if (!twoColumnsFit) {
-        const canonicalHeight = 150.0 + 190 + 110 + 124 + (12 * 3);
-        if (constraints.maxHeight >= canonicalHeight) {
-          return Column(
-            key: const Key('overview-compact-desktop'),
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                height: 150,
-                child: _CompactStreakSection(
-                  data: data,
-                  workGoals: workGoals,
-                  onEditGoals: onWorkGoals,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 190,
-                child: _CompactTodaySection(
-                  data: data,
-                  onStartFocus: onStartFocus,
-                  onLogWork: onLogWork,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 110,
-                child: _CompactWorkAreasSection(
-                  data: data,
-                  onManageWorkAreas: onManageWorkAreas,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 124,
-                child: _CompactStatisticsSection(data: data),
-              ),
-            ],
-          );
+        final composition = _buildSingleColumnComposition();
+        if (constraints.maxHeight >= _singleColumnHeight) {
+          return composition;
         }
-        return _CompactOverview(
-          data: data,
-          workGoals: workGoals,
-          onStartFocus: onStartFocus,
-          onManageWorkAreas: onManageWorkAreas,
-          onLogWork: onLogWork,
-          onWorkGoals: onWorkGoals,
+        return SingleChildScrollView(
+          key: const Key('overview-compact-desktop-scroll'),
+          primary: false,
+          child: composition,
         );
       }
 
-      const lowerMinimumHeight =
-          _CompactOverviewMetrics.workAreasMinimumHeight +
-          _CompactOverviewMetrics.gap +
-          _CompactOverviewMetrics.statisticsMinimumHeight;
-      final extraHeight =
-          constraints.maxHeight -
-          _CompactOverviewMetrics.streakMinimumHeight -
-          _CompactOverviewMetrics.gap -
-          lowerMinimumHeight;
-      final availableExtra = extraHeight > 0 ? extraHeight : 0.0;
-      final streakHeight =
-          _CompactOverviewMetrics.streakMinimumHeight + (availableExtra * 0.35);
-      final lowerHeight = lowerMinimumHeight + (availableExtra * 0.65);
-      final secondaryExtra =
-          lowerHeight -
-          _CompactOverviewMetrics.gap -
-          _CompactOverviewMetrics.workAreasMinimumHeight -
-          _CompactOverviewMetrics.statisticsMinimumHeight;
-
-      return Column(
-        key: const Key('overview-compact-desktop'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: streakHeight,
-            child: _CompactStreakSection(
-              data: data,
-              workGoals: workGoals,
-              onEditGoals: onWorkGoals,
-            ),
-          ),
-          const SizedBox(height: _CompactOverviewMetrics.gap),
-          SizedBox(
-            height: lowerHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _CompactTodaySection(
-                    data: data,
-                    onStartFocus: onStartFocus,
-                    onLogWork: onLogWork,
-                  ),
-                ),
-                const SizedBox(width: _CompactOverviewMetrics.gap),
-                Expanded(
-                  child: Column(
-                    children: [
-                      SizedBox(
-                        height:
-                            _CompactOverviewMetrics.workAreasMinimumHeight +
-                            (secondaryExtra * 0.4),
-                        child: _CompactWorkAreasSection(
-                          data: data,
-                          onManageWorkAreas: onManageWorkAreas,
-                        ),
-                      ),
-                      const SizedBox(height: _CompactOverviewMetrics.gap),
-                      Expanded(child: _CompactStatisticsSection(data: data)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      final composition = _buildTwoColumnComposition();
+      if (constraints.maxHeight >= _twoColumnHeight) return composition;
+      return SingleChildScrollView(
+        key: const Key('overview-compact-desktop-scroll'),
+        primary: false,
+        child: composition,
       );
     },
   );
+
+  Widget _buildSingleColumnComposition() => Column(
+    key: const Key('overview-compact-desktop'),
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      SizedBox(height: _streakHeight, child: _streak()),
+      const SizedBox(height: _gap),
+      SizedBox(height: _todayHeight, child: _today()),
+      const SizedBox(height: _gap),
+      SizedBox(height: _workAreasHeight, child: _workAreas()),
+      const SizedBox(height: _gap),
+      SizedBox(height: _statisticsHeight, child: _statistics()),
+    ],
+  );
+
+  Widget _buildTwoColumnComposition() => Column(
+    key: const Key('overview-compact-desktop'),
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      SizedBox(height: _streakHeight, child: _streak()),
+      const SizedBox(height: _gap),
+      SizedBox(
+        height: _todayHeight,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: SizedBox(height: _todayHeight, child: _today()),
+            ),
+            const SizedBox(width: _gap),
+            Expanded(
+              child: SizedBox(height: _workAreasHeight, child: _workAreas()),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: _gap),
+      SizedBox(height: _statisticsHeight, child: _statistics()),
+    ],
+  );
+
+  Widget _buildAccessibilityComposition() => Column(
+    key: const Key('overview-compact-desktop'),
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _CompactStreakSection(
+        data: data,
+        workGoals: workGoals,
+        onEditGoals: onWorkGoals,
+        dense: true,
+        accessibilityLayout: true,
+      ),
+      const SizedBox(height: _gap),
+      _CompactTodaySection(
+        data: data,
+        onStartFocus: onStartFocus,
+        onLogWork: onLogWork,
+        dense: true,
+      ),
+      const SizedBox(height: _gap),
+      _CompactWorkAreasSection(
+        data: data,
+        onManageWorkAreas: onManageWorkAreas,
+        dense: true,
+        accessibilityLayout: true,
+      ),
+      const SizedBox(height: _gap),
+      _CompactStatisticsSection(data: data, dense: true),
+    ],
+  );
+
+  Widget _streak() => _CompactStreakSection(
+    data: data,
+    workGoals: workGoals,
+    onEditGoals: onWorkGoals,
+  );
+
+  Widget _today() => _CompactTodaySection(
+    data: data,
+    onStartFocus: onStartFocus,
+    onLogWork: onLogWork,
+    pillarTopInset: 10,
+    pillarHorizontalOffset: -16,
+    pillarMaxWidth: 86,
+    pillarMaxHeight: 112,
+    stretchPillar: true,
+    titleVerticalOffset: -3,
+    progressWidthFactor: 150.48 / 364,
+  );
+
+  Widget _workAreas() => _CompactWorkAreasSection(
+    data: data,
+    onManageWorkAreas: onManageWorkAreas,
+    referenceMobileGeometry: true,
+  );
+
+  Widget _statistics() =>
+      _CompactStatisticsSection(data: data, titleVerticalOffset: -4);
 }
 
 class _CompactTodaySection extends StatelessWidget {
@@ -999,12 +1035,12 @@ class _CompactStreakSection extends StatelessWidget {
                         else
                           Expanded(
                             child: Padding(
-                            padding: const EdgeInsets.only(top: 3),
-                            child: Text(
-                              'Streak consistency',
-                              style: _overviewSectionTitleStyle,
+                              padding: const EdgeInsets.only(top: 3),
+                              child: Text(
+                                'Streak consistency',
+                                style: _overviewSectionTitleStyle,
+                              ),
                             ),
-                          ),
                           ),
                         const Icon(
                           Icons.chevron_right,
@@ -1020,26 +1056,26 @@ class _CompactStreakSection extends StatelessWidget {
                     child: SizedBox(
                       width: referenceMediumGeometry ? 158 : null,
                       child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${data.streak.currentDailyStreak} day streak',
-                            style: _overviewSummaryValueStyle.copyWith(
-                              fontSize: 11,
-                              height: 14 / 11,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${data.streak.currentDailyStreak} day streak',
+                              style: _overviewSummaryValueStyle.copyWith(
+                                fontSize: 11,
+                                height: 14 / 11,
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            '${data.streak.currentWeeklyStreak} week streak',
-                            style: _overviewSummaryValueStyle.copyWith(
-                              fontSize: 11,
-                              height: 14 / 11,
+                          Expanded(
+                            child: Text(
+                              '${data.streak.currentWeeklyStreak} week streak',
+                              style: _overviewSummaryValueStyle.copyWith(
+                                fontSize: 11,
+                                height: 14 / 11,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
                       ),
                     ),
                   ),
@@ -1163,11 +1199,13 @@ class _CompactStatisticsSection extends StatelessWidget {
     required this.data,
     this.dense = false,
     this.referenceMobileGeometry = false,
+    this.titleVerticalOffset = 0,
   });
 
   final TodayOverview data;
   final bool dense;
   final bool referenceMobileGeometry;
+  final double titleVerticalOffset;
 
   @override
   Widget build(BuildContext context) => _CompactCard(
@@ -1178,7 +1216,7 @@ class _CompactStatisticsSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Transform.translate(
-          offset: Offset(0, referenceMobileGeometry ? -3 : 0),
+          offset: Offset(0, referenceMobileGeometry ? -3 : titleVerticalOffset),
           child: const Text(
             'Work statistics',
             style: _overviewSectionTitleStyle,

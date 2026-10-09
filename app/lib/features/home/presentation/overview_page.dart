@@ -42,11 +42,16 @@ class OverviewPage extends ConsumerWidget {
             platform == TargetPlatform.windows ||
             platform == TargetPlatform.macOS ||
             platform == TargetPlatform.linux;
+        final normalPadding = _overviewPadding(layout, false);
+        final availableContentWidth =
+            constraints.maxWidth - normalPadding.horizontal;
         final availableContentHeight =
-            constraints.maxHeight - (AppSpacing.lg * 2);
+            constraints.maxHeight - normalPadding.vertical;
         final compactDesktop =
-            (desktop && layout == AppLayoutSize.compact) ||
-            (layout != AppLayoutSize.compact &&
+            desktop &&
+            (layout == AppLayoutSize.compact ||
+                availableContentWidth <
+                    OverviewResponsiveLayout.minimumNormalWidth(layout) ||
                 availableContentHeight <
                     OverviewResponsiveLayout.minimumNormalHeight(layout));
         final content = overview.when(
