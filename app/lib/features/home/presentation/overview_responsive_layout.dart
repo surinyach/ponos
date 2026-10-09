@@ -109,6 +109,7 @@ class OverviewResponsiveLayout extends StatelessWidget {
       pillarMaxWidth: layout == AppLayoutSize.expanded ? 86 : 96,
       pillarMaxHeight: 112,
       stretchPillar: layout == AppLayoutSize.expanded,
+      titleVerticalOffset: 0,
     );
     final streak = _ReferenceExpandedStreakSection(
       data: data,
@@ -117,40 +118,13 @@ class OverviewResponsiveLayout extends StatelessWidget {
     );
     return switch (layout) {
       AppLayoutSize.compact => throw StateError('Handled above'),
-      AppLayoutSize.medium => Column(
-        key: const Key('overview-medium'),
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            height: 154,
-            child: _CompactStreakSection(
-              data: data,
-              workGoals: workGoals,
-              onEditGoals: onWorkGoals,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            height: 260,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(flex: 302, child: today),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  flex: 330,
-                  child: _CompactWorkAreasSection(
-                    data: data,
-                    onManageWorkAreas: onManageWorkAreas,
-                    referenceWideTypography: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(height: 148, child: _ReferenceStatisticsSection(data: data)),
-        ],
+      AppLayoutSize.medium => _MediumOverview(
+        data: data,
+        workGoals: workGoals,
+        onStartFocus: onStartFocus,
+        onManageWorkAreas: onManageWorkAreas,
+        onLogWork: onLogWork,
+        onWorkGoals: onWorkGoals,
       ),
       AppLayoutSize.expanded => Column(
         key: const Key('overview-expanded'),
@@ -183,6 +157,151 @@ class OverviewResponsiveLayout extends StatelessWidget {
       ),
     };
   }
+}
+
+abstract final class _MediumOverviewMetrics {
+  static const double streakHeight = 154;
+  static const double mainHeight = 260;
+  static const double statisticsHeight = 148;
+  static const double gap = AppSpacing.md;
+  static const double requiredHeight =
+      streakHeight + mainHeight + statisticsHeight + (gap * 2);
+}
+
+class _MediumOverview extends StatelessWidget {
+  const _MediumOverview({
+    required this.data,
+    required this.workGoals,
+    required this.onStartFocus,
+    required this.onManageWorkAreas,
+    required this.onLogWork,
+    required this.onWorkGoals,
+  });
+
+  final TodayOverview data;
+  final WorkGoals? workGoals;
+  final VoidCallback onStartFocus;
+  final VoidCallback onManageWorkAreas;
+  final VoidCallback onLogWork;
+  final VoidCallback onWorkGoals;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final scaledRequiredHeight = MediaQuery.textScalerOf(
+        context,
+      ).scale(_MediumOverviewMetrics.requiredHeight);
+      final needsAccessibilityLayout =
+          scaledRequiredHeight > _MediumOverviewMetrics.requiredHeight &&
+          scaledRequiredHeight > constraints.maxHeight;
+      if (needsAccessibilityLayout) {
+        return SingleChildScrollView(
+          key: const Key('overview-medium-accessibility-scroll'),
+          primary: false,
+          child: Column(
+            key: const Key('overview-medium'),
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _CompactStreakSection(
+                data: data,
+                workGoals: workGoals,
+                onEditGoals: onWorkGoals,
+                dense: true,
+                accessibilityLayout: true,
+              ),
+              const SizedBox(height: _MediumOverviewMetrics.gap),
+              _CompactTodaySection(
+                data: data,
+                onStartFocus: onStartFocus,
+                onLogWork: onLogWork,
+                dense: true,
+              ),
+              const SizedBox(height: _MediumOverviewMetrics.gap),
+              _CompactWorkAreasSection(
+                data: data,
+                onManageWorkAreas: onManageWorkAreas,
+                dense: true,
+                accessibilityLayout: true,
+                referenceWideTypography: true,
+              ),
+              const SizedBox(height: _MediumOverviewMetrics.gap),
+              _CompactStatisticsSection(data: data, dense: true),
+            ],
+          ),
+        );
+      }
+
+      final composition = _buildComposition();
+      if (constraints.maxHeight < _MediumOverviewMetrics.requiredHeight) {
+        return SingleChildScrollView(
+          key: const Key('overview-medium-scroll'),
+          primary: false,
+          child: composition,
+        );
+      }
+      return composition;
+    },
+  );
+
+  Widget _buildComposition() => Column(
+    key: const Key('overview-medium'),
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      SizedBox(
+        height: _MediumOverviewMetrics.streakHeight,
+        child: _CompactStreakSection(
+          data: data,
+          workGoals: workGoals,
+          onEditGoals: onWorkGoals,
+          referenceMediumGeometry: true,
+        ),
+      ),
+      const SizedBox(height: _MediumOverviewMetrics.gap),
+      SizedBox(
+        height: _MediumOverviewMetrics.mainHeight,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 302,
+              child: _CompactTodaySection(
+                data: data,
+                onStartFocus: onStartFocus,
+                onLogWork: onLogWork,
+                pillarTopInset: 10,
+                pillarHorizontalOffset: -24.5,
+                pillarMaxWidth: 57.09,
+                pillarMaxHeight: 83.85,
+                stretchPillar: true,
+                titleVerticalOffset: -6,
+                progressWidthFactor: 0.425,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              flex: 330,
+              child: _CompactWorkAreasSection(
+                data: data,
+                onManageWorkAreas: onManageWorkAreas,
+                referenceWideTypography: true,
+                titleVerticalOffset: -6,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: _MediumOverviewMetrics.gap),
+      SizedBox(
+        height: _MediumOverviewMetrics.statisticsHeight,
+        child: _ReferenceStatisticsSection(
+          data: data,
+          titleVerticalOffset: -6,
+          metricFlexes: const [122, 154, 154, 186],
+        ),
+      ),
+    ],
+  );
 }
 
 abstract final class _CompactOverviewMetrics {
@@ -314,6 +433,7 @@ class _CompactOverview extends StatelessWidget {
           pillarMaxWidth: 86,
           pillarMaxHeight: 112,
           stretchPillar: true,
+          titleVerticalOffset: -2,
         ),
       ),
       SizedBox(height: gap),
@@ -494,6 +614,8 @@ class _CompactTodaySection extends StatelessWidget {
     this.pillarMaxWidth = 96,
     this.pillarMaxHeight = 112,
     this.stretchPillar = false,
+    this.titleVerticalOffset = 0,
+    this.progressWidthFactor = 0.416,
   });
 
   final TodayOverview data;
@@ -505,6 +627,8 @@ class _CompactTodaySection extends StatelessWidget {
   final double pillarMaxWidth;
   final double pillarMaxHeight;
   final bool stretchPillar;
+  final double titleVerticalOffset;
+  final double progressWidthFactor;
 
   @override
   Widget build(BuildContext context) {
@@ -541,7 +665,7 @@ class _CompactTodaySection extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Transform.translate(
-                        offset: Offset(0, stretchPillar ? -2 : 0),
+                        offset: Offset(0, titleVerticalOffset),
                         child: Text(
                           'Today',
                           style: _overviewSectionTitleStyle.copyWith(
@@ -570,7 +694,7 @@ class _CompactTodaySection extends StatelessWidget {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: SizedBox(
-                          width: constraints.maxWidth * 0.416,
+                          width: constraints.maxWidth * progressWidthFactor,
                           child: Semantics(
                             label: 'Daily focus goal',
                             value: '${(progress * 100).round()} percent',
@@ -715,6 +839,7 @@ class _CompactWorkAreasSection extends StatelessWidget {
     this.referenceWideTypography = false,
     this.referenceDesktopSpacing = false,
     this.referenceMobileGeometry = false,
+    this.titleVerticalOffset = 0,
   });
 
   final TodayOverview data;
@@ -724,6 +849,7 @@ class _CompactWorkAreasSection extends StatelessWidget {
   final bool referenceWideTypography;
   final bool referenceDesktopSpacing;
   final bool referenceMobileGeometry;
+  final double titleVerticalOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -792,7 +918,7 @@ class _CompactWorkAreasSection extends StatelessWidget {
       referenceDesktopSpacing: referenceDesktopSpacing,
       bodyGap: referenceMobileGeometry ? 6 : AppSpacing.xxs,
       rowGap: referenceMobileGeometry ? 12 : null,
-      titleVerticalOffset: referenceMobileGeometry ? -5 : 0,
+      titleVerticalOffset: referenceMobileGeometry ? -5 : titleVerticalOffset,
     );
   }
 }
@@ -804,6 +930,7 @@ class _CompactStreakSection extends StatelessWidget {
     required this.onEditGoals,
     this.dense = false,
     this.accessibilityLayout = false,
+    this.referenceMediumGeometry = false,
   });
 
   final TodayOverview data;
@@ -811,6 +938,7 @@ class _CompactStreakSection extends StatelessWidget {
   final VoidCallback onEditGoals;
   final bool dense;
   final bool accessibilityLayout;
+  final bool referenceMediumGeometry;
 
   @override
   Widget build(BuildContext context) {
@@ -857,15 +985,27 @@ class _CompactStreakSection extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 11),
-                        Expanded(
-                          child: Padding(
+                        if (referenceMediumGeometry)
+                          SizedBox(
+                            width: 358,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: Text(
+                                'Streak consistency',
+                                style: _overviewSectionTitleStyle,
+                              ),
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: Padding(
                             padding: const EdgeInsets.only(top: 3),
                             child: Text(
                               'Streak consistency',
                               style: _overviewSectionTitleStyle,
                             ),
                           ),
-                        ),
+                          ),
                         const Icon(
                           Icons.chevron_right,
                           color: AppColors.textSecondary,
@@ -875,9 +1015,11 @@ class _CompactStreakSection extends StatelessWidget {
                   ),
                   Positioned(
                     left: AppSpacing.xs,
-                    right: 0,
+                    right: referenceMediumGeometry ? null : 0,
                     top: 33,
-                    child: Row(
+                    child: SizedBox(
+                      width: referenceMediumGeometry ? 158 : null,
+                      child: Row(
                       children: [
                         Expanded(
                           child: Text(
@@ -898,6 +1040,7 @@ class _CompactStreakSection extends StatelessWidget {
                           ),
                         ),
                       ],
+                      ),
                     ),
                   ),
                   Positioned(
@@ -933,7 +1076,8 @@ class _CompactStreakSection extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    right: -10,
+                    left: referenceMediumGeometry ? 358 : null,
+                    right: referenceMediumGeometry ? null : -10,
                     bottom: 0,
                     child: SizedBox.square(
                       key: const Key('compact-edit-goals-action'),
@@ -1082,9 +1226,15 @@ class _CompactStatisticsSection extends StatelessWidget {
 }
 
 class _ReferenceStatisticsSection extends StatelessWidget {
-  const _ReferenceStatisticsSection({required this.data});
+  const _ReferenceStatisticsSection({
+    required this.data,
+    this.titleVerticalOffset = 0,
+    this.metricFlexes,
+  });
 
   final TodayOverview data;
+  final double titleVerticalOffset;
+  final List<int>? metricFlexes;
 
   @override
   Widget build(BuildContext context) => _CompactCard(
@@ -1092,7 +1242,13 @@ class _ReferenceStatisticsSection extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Work statistics', style: _overviewSectionTitleStyle),
+        Transform.translate(
+          offset: Offset(0, titleVerticalOffset),
+          child: const Text(
+            'Work statistics',
+            style: _overviewSectionTitleStyle,
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
         Row(
           children: [
@@ -1100,21 +1256,25 @@ class _ReferenceStatisticsSection extends StatelessWidget {
               label: 'Days',
               value: '${data.overall.daysWorked}',
               referenceWideTypography: true,
+              flex: metricFlexes?[0] ?? 1,
             ),
             _CompactMetric(
               label: 'Focused',
               value: _formatDuration(data.overall.focusedTime),
               referenceWideTypography: true,
+              flex: metricFlexes?[1] ?? 1,
             ),
             _CompactMetric(
               label: 'Rest',
               value: _formatDuration(data.overall.restTime),
               referenceWideTypography: true,
+              flex: metricFlexes?[2] ?? 1,
             ),
             _CompactMetric(
               label: 'Tracked',
               value: _formatDuration(data.overall.trackedTime),
               referenceWideTypography: true,
+              flex: metricFlexes?[3] ?? 1,
             ),
           ],
         ),
@@ -1129,15 +1289,18 @@ class _CompactMetric extends StatelessWidget {
     required this.value,
     this.dense = false,
     this.referenceWideTypography = false,
+    this.flex = 1,
   });
 
   final String label;
   final String value;
   final bool dense;
   final bool referenceWideTypography;
+  final int flex;
 
   @override
   Widget build(BuildContext context) => Expanded(
+    flex: flex,
     child: Semantics(
       label: label,
       value: value,

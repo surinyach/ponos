@@ -47,9 +47,13 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
         final expanded = AppBreakpoints.usesExpandedSidebar(
           constraints.maxWidth,
         );
-        final content = _DestinationStack(
-          selectedDestination: widget.selectedDestination,
-          mountedDestinations: _mountedDestinations,
+        const railWidth = 72.0;
+        final content = PonosViewportScope(
+          size: Size(constraints.maxWidth, constraints.maxHeight),
+          child: _DestinationStack(
+            selectedDestination: widget.selectedDestination,
+            mountedDestinations: _mountedDestinations,
+          ),
         );
 
         return Scaffold(
@@ -59,7 +63,7 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
               : Row(
                   children: [
                     SizedBox(
-                      width: expanded ? 200 : 72,
+                      width: expanded ? 200 : railWidth,
                       child: DecoratedBox(
                         decoration: const BoxDecoration(
                           border: Border(
@@ -74,7 +78,7 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
                                 extended: expanded,
                                 selectedIndex: widget.selectedDestination.index,
                                 onDestinationSelected: _selectIndex,
-                                minWidth: expanded ? 56 : 72,
+                                minWidth: expanded ? 56 : railWidth,
                                 minExtendedWidth: 200,
                                 labelType: NavigationRailLabelType.none,
                                 leading: expanded
@@ -251,6 +255,23 @@ class _PonosAdaptiveShellState extends State<PonosAdaptiveShell> {
       ),
     );
   }
+}
+
+class PonosViewportScope extends InheritedWidget {
+  const PonosViewportScope({
+    required this.size,
+    required super.child,
+    super.key,
+  });
+
+  final Size size;
+
+  static Size sizeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<PonosViewportScope>()?.size ??
+      MediaQuery.sizeOf(context);
+
+  @override
+  bool updateShouldNotify(PonosViewportScope oldWidget) => size != oldWidget.size;
 }
 
 class _NavigationInteractionTheme extends StatelessWidget {

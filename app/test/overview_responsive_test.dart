@@ -362,6 +362,146 @@ void main() {
     },
   );
 
+  for (final viewport in const [
+    Size(600, 800),
+    Size(640, 960),
+    Size(768, 1024),
+    Size(820, 1180),
+    Size(839, 1024),
+    Size(768, 700),
+  ]) {
+    testWidgets(
+      'medium Overview is stable at ${viewport.width.toInt()}x${viewport.height.toInt()}',
+      (tester) async {
+        await _pumpOverview(
+          tester,
+          viewport,
+          platform: TargetPlatform.windows,
+        );
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('overview-medium')), findsOneWidget);
+        expect(find.byType(NavigationRail), findsOneWidget);
+        expect(find.byType(NavigationBar), findsNothing);
+        expect(
+          find.byKey(const Key('overview-medium-scroll')),
+          findsNothing,
+        );
+        expect(
+          tester.getSize(find.byKey(const Key('overview-streak'))).height,
+          154,
+        );
+        expect(
+          tester.getSize(find.byKey(const Key('overview-today'))).height,
+          260,
+        );
+        expect(
+          tester.getSize(find.byKey(const Key('overview-work-areas'))).height,
+          260,
+        );
+        expect(
+          tester.getSize(find.byKey(const Key('overview-statistics'))).height,
+          148,
+        );
+        expect(
+          tester.getRect(find.byKey(const Key('overview-statistics'))).right,
+          lessThanOrEqualTo(viewport.width - 24),
+        );
+        expect(
+          tester.getSize(find.byKey(const Key('overview-actions'))).height,
+          greaterThanOrEqualTo(48),
+        );
+        expect(
+          tester
+              .getSize(find.byKey(const Key('compact-edit-goals-action')))
+              .shortestSide,
+          greaterThanOrEqualTo(48),
+        );
+        expect(
+          tester
+              .getSize(
+                find.byKey(const Key('navigation-overview-selected')),
+              )
+              .shortestSide,
+          greaterThanOrEqualTo(48),
+        );
+      },
+    );
+  }
+
+  testWidgets('medium Overview scrolls only when 200% text cannot fit', (
+    tester,
+  ) async {
+    await _pumpOverview(
+      tester,
+      const Size(768, 1024),
+      platform: TargetPlatform.windows,
+      textScaler: const TextScaler.linear(2),
+    );
+
+    expect(tester.takeException(), isNull);
+    final fallback = find.byKey(
+      const Key('overview-medium-accessibility-scroll'),
+    );
+    expect(fallback, findsOneWidget);
+    final scrollable = find.descendant(
+      of: fallback,
+      matching: find.byType(Scrollable),
+    );
+    expect(scrollable, findsOneWidget);
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.maxScrollExtent, 0);
+    final scrollViewport = tester.getRect(scrollable);
+    final statistics = tester.getRect(
+      find.byKey(const Key('overview-statistics')),
+    );
+    expect(
+      statistics.bottom,
+      lessThanOrEqualTo(scrollViewport.bottom + position.maxScrollExtent),
+    );
+    expect(find.byTooltip('Edit goals'), findsOneWidget);
+    final today = find.byKey(const Key('overview-today'));
+    expect(
+      find.descendant(of: today, matching: find.text('Start Focus')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: today, matching: find.text('Log Work')),
+      findsOneWidget,
+    );
+    expect(
+      tester.getSize(find.byKey(const Key('overview-actions'))).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const Key('compact-edit-goals-action')))
+          .shortestSide,
+      greaterThanOrEqualTo(48),
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const Key('navigation-overview-selected')))
+          .shortestSide,
+      greaterThanOrEqualTo(48),
+    );
+  });
+
+  testWidgets('599 remains Compact on mobile', (tester) async {
+    await _pumpOverview(tester, const Size(599, 844));
+    expect(find.byKey(const Key('overview-compact')), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
+  });
+
+  testWidgets('600 enters Medium on mobile', (tester) async {
+    await _pumpOverview(tester, const Size(600, 844));
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('overview-medium')), findsOneWidget);
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
   for (final viewport in const [Size(1440, 900), Size(1920, 1080)]) {
     testWidgets(
       'expanded hierarchy keeps streak first at ${viewport.width.toInt()}x${viewport.height.toInt()}',
@@ -400,12 +540,13 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.byType(NavigationBar), findsNothing);
         expect(find.byType(NavigationRail), findsOneWidget);
+        final overviewScrollables = find.descendant(
+          of: find.byType(OverviewPage),
+          matching: find.byType(Scrollable),
+        );
         expect(
-          find.descendant(
-            of: find.byType(OverviewPage),
-            matching: find.byType(Scrollable),
-          ),
-          findsNothing,
+          overviewScrollables,
+          viewport == const Size(500, 600) ? findsOneWidget : findsNothing,
         );
         expect(
           tester.getRect(find.byKey(const Key('overview-streak'))).right,

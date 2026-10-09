@@ -7,6 +7,7 @@ import '../../../app/theme/app_assets.dart';
 import '../../../app/theme/app_breakpoints.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/providers/work_goals_providers.dart';
+import '../../../app/navigation/ponos_adaptive_shell.dart';
 import '../../../app/widgets/ponos_widgets.dart';
 import '../../work_goals/presentation/work_goals_page.dart';
 import 'overview_responsive_layout.dart';
@@ -30,7 +31,11 @@ class OverviewPage extends ConsumerWidget {
     final workGoals = ref.watch(workGoalsProvider);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final layout = AppBreakpoints.layoutFor(constraints.maxWidth);
+        // The adaptive shell exposes the complete application viewport even
+        // though navigation consumes part of the horizontal content area.
+        final layout = AppBreakpoints.layoutFor(
+          PonosViewportScope.sizeOf(context).width,
+        );
         final platform = Theme.of(context).platform;
         final desktop =
             kIsWeb ||
