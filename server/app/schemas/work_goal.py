@@ -12,7 +12,6 @@ class DailyGoalValue(ContractModel):
 
 class WorkGoalsUpdate(ContractModel):
     daily_goals: list[DailyGoalValue]
-    weekly_goal_minutes: int = Field(ge=0)
 
     @model_validator(mode="after")
     def require_every_weekday(self) -> "WorkGoalsUpdate":

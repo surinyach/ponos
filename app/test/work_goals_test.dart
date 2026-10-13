@@ -17,7 +17,7 @@ import 'package:ponos_app/features/work_goals/domain/repositories/work_goals_rep
 import 'package:ponos_app/features/work_goals/presentation/work_goals_page.dart';
 
 void main() {
-  test('loads and saves weekday and weekly goals through the API', () async {
+  test('loads calculated weekly goal but saves only weekday goals', () async {
     final requests = <http.Request>[];
     final repository = RemoteWorkGoalsRepository(
       WorkGoalsApiClient(
@@ -36,7 +36,7 @@ void main() {
     expect(requests.last.method, 'PUT');
     expect(requests.last.url.queryParameters['date'], '2026-09-09');
     final body = jsonDecode(requests.last.body) as Map<String, Object?>;
-    expect(body['weekly_goal_minutes'], 600);
+    expect(body.containsKey('weekly_goal_minutes'), isFalse);
     expect(body['daily_goals'], hasLength(7));
   });
 
@@ -62,16 +62,15 @@ void main() {
       find.widgetWithText(TextFormField, 'Monday minutes'),
       '90',
     );
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Weekly minutes'),
-      '720',
-    );
+    expect(find.byKey(const Key('calculated-weekly-goal')), findsOneWidget);
+    expect(find.text('600 minutes'), findsOneWidget);
+    expect(find.widgetWithText(TextFormField, 'Weekly minutes'), findsNothing);
     await tester.ensureVisible(find.text('Save goals'));
     await tester.tap(find.text('Save goals'));
     await tester.pumpAndSettle();
 
     expect(repository.saved!.dailyGoals.first.targetMinutes, 90);
-    expect(repository.saved!.weeklyGoalMinutes, 720);
+    expect(repository.saved!.weeklyGoalMinutes, 600);
     expect(overviewLoads, 2);
   });
 }

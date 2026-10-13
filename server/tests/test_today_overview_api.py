@@ -71,7 +71,7 @@ def overview_params(work_date):
     }
 
 
-async def save_goals(client, effective_date, daily=None, weekly=0):
+async def save_goals(client, effective_date, daily=None):
     daily = daily or {}
     response = await client.put(
         "/api/v1/work-goals",
@@ -81,7 +81,6 @@ async def save_goals(client, effective_date, daily=None, weekly=0):
                 {"weekday": weekday, "target_minutes": daily.get(weekday, 0)}
                 for weekday in range(1, 8)
             ],
-            "weekly_goal_minutes": weekly,
         },
     )
     assert response.status_code == 200
@@ -239,8 +238,8 @@ async def test_priority_one_target_cannot_be_replaced_by_other_work(client):
 
 
 @pytest.mark.asyncio
-async def test_weekly_streak_uses_configured_weekly_goal(client):
-    await save_goals(client, "2026-08-31", weekly=60)
+async def test_weekly_streak_uses_derived_daily_goals(client):
+    await save_goals(client, "2026-08-31", daily={1: 60})
     area = await create_area(client, "Weekly", 1, weekday=1)
     async with engine.begin() as connection:
         await connection.execute(
@@ -269,6 +268,29 @@ async def test_weekly_streak_uses_configured_weekly_goal(client):
     )
     assert response.status_code == 200
     assert response.json()["streak"]["current_weekly_streak"] == 1
+
+
+@pytest.mark.asyncio
+async def test_weekly_streak_requires_every_priority_one_obligation(client):
+    await save_goals(client, "2026-09-07", daily={1: 60})
+    await create_area(client, "Mandatory", 1, weekday=2, minutes=30)
+    flexible = await create_area(client, "Flexible", 2, weekday=1, minutes=0)
+    async with engine.begin() as connection:
+        await connection.execute(
+            text(
+                "INSERT INTO manual_work_entries "
+                "(focus_area_id, work_date, focused_seconds, rest_seconds) "
+                "VALUES (:area, '2026-09-07', 3600, 0)"
+            ),
+            {"area": flexible["id"]},
+        )
+
+    response = await client.get(
+        "/api/v1/overview/today",
+        params=overview_params("2026-09-16"),
+    )
+    assert response.status_code == 200
+    assert response.json()["streak"]["current_weekly_streak"] == 0
 
 
 @pytest.mark.asyncio
@@ -329,7 +351,7 @@ async def test_failed_completed_day_resets_and_manual_work_recovers_streak(clien
 
 @pytest.mark.asyncio
 async def test_failed_week_resets_and_historical_manual_work_recovers_streak(client):
-    await save_goals(client, "2026-08-31", weekly=60)
+    await save_goals(client, "2026-08-31", daily={1: 60})
     area = await create_area(client, "Flexible", 2, weekday=1)
     failed = await client.get(
         "/api/v1/overview/today",

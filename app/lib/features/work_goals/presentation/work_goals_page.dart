@@ -16,7 +16,6 @@ class WorkGoalsPage extends ConsumerStatefulWidget {
 class _WorkGoalsPageState extends ConsumerState<WorkGoalsPage> {
   final _formKey = GlobalKey<FormState>();
   final _dailyControllers = List.generate(7, (_) => TextEditingController());
-  final _weeklyController = TextEditingController();
   bool _initialized = false;
   bool _saving = false;
   String? _saveError;
@@ -26,7 +25,6 @@ class _WorkGoalsPageState extends ConsumerState<WorkGoalsPage> {
     for (final controller in _dailyControllers) {
       controller.dispose();
     }
-    _weeklyController.dispose();
     super.dispose();
   }
 
@@ -81,18 +79,20 @@ class _WorkGoalsPageState extends ConsumerState<WorkGoalsPage> {
                       ],
                       const SizedBox(height: AppSpacing.md),
                       Text(
-                        'Weekly focused-time goal',
+                        'Calculated weekly goal',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: AppSpacing.sm),
-                      TextFormField(
-                        controller: _weeklyController,
+                      InputDecorator(
                         decoration: const InputDecoration(
-                          labelText: 'Weekly minutes',
-                          helperText: 'Changes take effect next calendar week.',
+                          labelText: 'Monday–Sunday total',
+                          helperText:
+                              'Calculated from the daily goal effective on each day.',
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: _validateMinutes,
+                        child: Text(
+                          '${value.weeklyGoalMinutes} minutes',
+                          key: const Key('calculated-weekly-goal'),
+                        ),
                       ),
                       if (_saveError != null) ...[
                         const SizedBox(height: AppSpacing.sm),
@@ -126,7 +126,6 @@ class _WorkGoalsPageState extends ConsumerState<WorkGoalsPage> {
       _dailyControllers[index].text = (byWeekday[index + 1]?.targetMinutes ?? 0)
           .toString();
     }
-    _weeklyController.text = goals.weeklyGoalMinutes.toString();
     _initialized = true;
   }
 
@@ -151,7 +150,7 @@ class _WorkGoalsPageState extends ConsumerState<WorkGoalsPage> {
             targetMinutes: int.parse(_dailyControllers[index].text),
           ),
       ],
-      weeklyGoalMinutes: int.parse(_weeklyController.text),
+      weeklyGoalMinutes: current.weeklyGoalMinutes,
       weeklyGoalEffectiveFrom: current.weeklyGoalEffectiveFrom,
     );
     try {

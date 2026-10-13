@@ -33,6 +33,12 @@ class DailyWorkGoal(Base):
 
 
 class WeeklyWorkGoal(Base):
+    """Legacy storage retained for non-destructive upgrade compatibility.
+
+    New weekly requirements are derived from ``DailyWorkGoal`` versions and
+    this table is no longer written or read by application services.
+    """
+
     __tablename__ = "weekly_work_goals"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
