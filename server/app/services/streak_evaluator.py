@@ -4,10 +4,14 @@ from enum import StrEnum
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.focus_area import FocusArea
-from app.models.work_goal import DailyWorkGoal, WeeklyWorkGoal
+from app.models.work_goal import DailyWorkGoal
 from app.schemas.today_overview import DailyCompletionResponse, StreakSummaryResponse
 from app.services.focus_area_targets import target_for
-from app.services.work_goals import load_goal_history, version_for
+from app.services.work_goals import (
+    daily_goal_minutes,
+    load_daily_goal_history,
+    weekly_goal_minutes,
+)
 from app.services.work_totals import DailyWorkAggregation, aggregate_days
 
 
@@ -23,8 +27,8 @@ async def get_streak_summary(
     areas: list[FocusArea],
     today: date,
 ) -> StreakSummaryResponse:
-    daily_goals, weekly_goals = await load_goal_history(db)
-    starts = [goal.valid_from for goal in daily_goals + weekly_goals]
+    daily_goals = await load_daily_goal_history(db)
+    starts = [goal.valid_from for goal in daily_goals]
     starts.extend(target.valid_from for area in areas for target in area.targets)
     earliest = min(starts, default=today)
     totals = await aggregate_days(db, earliest, today)
@@ -48,21 +52,13 @@ async def get_streak_summary(
         current_daily_streak=_daily_streak(areas, daily_goals, totals, today, earliest),
         current_weekly_streak=_weekly_streak(
             areas,
-            weekly_goals,
+            daily_goals,
             totals,
             today,
             earliest,
         ),
         recent_days=recent_days,
     )
-
-
-def daily_goal_minutes(goals: list[DailyWorkGoal], work_date: date) -> int:
-    version = version_for(
-        [goal for goal in goals if goal.weekday == work_date.isoweekday()],
-        work_date,
-    )
-    return version.target_minutes if version else 0
 
 
 def _daily_streak(
@@ -112,7 +108,7 @@ def _daily_state(
 
 def _weekly_streak(
     areas: list[FocusArea],
-    goals: list[WeeklyWorkGoal],
+    goals: list[DailyWorkGoal],
     totals: dict[date, DailyWorkAggregation],
     today: date,
     earliest: date,
@@ -132,11 +128,11 @@ def _weekly_streak(
 
 def _weekly_state(
     areas: list[FocusArea],
-    goals: list[WeeklyWorkGoal],
+    goals: list[DailyWorkGoal],
     totals: dict[date, DailyWorkAggregation],
     week_start: date,
 ) -> PeriodState:
-    goal = version_for(goals, week_start)
+    goal_minutes = weekly_goal_minutes(goals, week_start)
     obligations: list[tuple[date, FocusArea, int]] = []
     focused_seconds = 0
     for offset in range(7):
@@ -150,14 +146,14 @@ def _weekly_state(
             and (target := target_for(area, work_date)) is not None
             and target.target_minutes > 0
         )
-    if (goal is None or goal.target_minutes == 0) and not obligations:
+    if goal_minutes == 0 and not obligations:
         return PeriodState.NEUTRAL
     compulsory_met = all(
         totals.get(work_date, _empty_day()).focused_by_area.get(area.id, 0)
         >= target_seconds
         for work_date, area, target_seconds in obligations
     )
-    weekly_goal_seconds = (goal.target_minutes if goal else 0) * 60
+    weekly_goal_seconds = goal_minutes * 60
     if focused_seconds >= weekly_goal_seconds and compulsory_met:
         return PeriodState.COMPLETED
     return PeriodState.FAILED

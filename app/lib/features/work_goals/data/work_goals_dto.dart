@@ -53,7 +53,6 @@ class WorkGoalsDto {
           },
         )
         .toList(growable: false),
-    'weekly_goal_minutes': goals.weeklyGoalMinutes,
   };
 }
 

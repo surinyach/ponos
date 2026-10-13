@@ -18,8 +18,8 @@ from app.services.work_totals import (
     totals_between,
 )
 from app.services.focus_area_targets import target_for
-from app.services.streak_evaluator import daily_goal_minutes, get_streak_summary
-from app.services.work_goals import load_goal_history
+from app.services.streak_evaluator import get_streak_summary
+from app.services.work_goals import daily_goal_minutes, load_daily_goal_history
 
 
 async def get_today_overview(
@@ -38,7 +38,7 @@ async def get_today_overview(
     )
 
     daily = await aggregate_day(db, work_date)
-    daily_goals, _ = await load_goal_history(db)
+    daily_goals = await load_daily_goal_history(db)
     special_time = daily.time_by_special_activity
     special_activities = list(
         (
