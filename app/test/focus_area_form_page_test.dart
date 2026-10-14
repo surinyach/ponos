@@ -15,6 +15,10 @@ import 'package:ponos_app/features/focus_areas/presentation/focus_area_form_data
 import 'package:ponos_app/features/focus_areas/presentation/focus_area_form_page.dart';
 
 void main() {
+  test('empty Focus Area form contains exactly seven weekdays', () {
+    expect(FocusAreaFormData.empty().targets, hasLength(7));
+  });
+
   testWidgets('validates required fields and weekday targets', (tester) async {
     final repository = FormRepository();
     await openForm(tester, repository);
@@ -25,6 +29,24 @@ void main() {
 
     expect(find.text('Enter a name'), findsOneWidget);
     expect(find.text('Enable at least one weekday'), findsOneWidget);
+    expect(repository.created, isNull);
+  });
+
+  testWidgets('requires positive minutes for an enabled weekday', (
+    tester,
+  ) async {
+    final repository = FormRepository();
+    await openForm(tester, repository);
+
+    await tester.enterText(find.byKey(const Key('focus-area-name')), 'Area');
+    await tester.tap(find.byKey(const Key('target-enabled-1')));
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('target-minutes-1')), '0');
+    await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
+    await tester.tap(find.byKey(const Key('focus-area-submit')));
+    await tester.pump();
+
+    expect(find.text('Must be at least 1 minute'), findsOneWidget);
     expect(repository.created, isNull);
   });
 

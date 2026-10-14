@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/errors/app_exception.dart';
@@ -346,7 +347,7 @@ class _FocusAreaFormState extends State<FocusAreaForm> {
                       if (!_enabled[index]) return null;
                       final parsed = int.tryParse(value ?? '');
                       if (parsed == null) return 'Whole number';
-                      return parsed < 0 ? 'Min. 0' : null;
+                      return parsed < 1 ? 'Must be at least 1 minute' : null;
                     },
                     onChanged: (_) => _notify(),
                   ),
@@ -421,6 +422,11 @@ class _FormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
+    color: AppColors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: AppRadius.card,
+      side: BorderSide(color: AppColors.borderStrong),
+    ),
     child: Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(

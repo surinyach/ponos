@@ -26,6 +26,12 @@ class FocusArea {
   bool get isArchived => archivedAt != null;
 
   FocusAreaTarget? targetFor(DateTime date) {
+    final endDate = targetEndDate;
+    if (endDate != null) {
+      final localDay = DateTime(date.year, date.month, date.day);
+      final localEndDate = DateTime(endDate.year, endDate.month, endDate.day);
+      if (localDay.isAfter(localEndDate)) return null;
+    }
     for (final target in targets.reversed) {
       if (target.appliesOn(date)) return target;
     }

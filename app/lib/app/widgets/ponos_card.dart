@@ -12,11 +12,13 @@ class PonosCard extends StatelessWidget {
     required this.child,
     this.padding = PonosCardPadding.standard,
     this.color,
+    this.borderColor,
   });
 
   final Widget child;
   final PonosCardPadding padding;
   final Color? color;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +29,7 @@ class PonosCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: color ?? AppColors.white,
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: borderColor ?? AppColors.border),
         borderRadius: AppRadius.card,
       ),
       child: Padding(padding: EdgeInsets.all(inset), child: child),

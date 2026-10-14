@@ -61,6 +61,21 @@ void main() {
     expect(() => current().areas.clear(), throwsUnsupportedError);
   });
 
+  test(
+    'duplicate priorities remain unchanged and use stable ID order',
+    () async {
+      repository.load = () async => [
+        area(3, priority: 1),
+        area(1, priority: 1),
+        area(2, priority: 1),
+      ];
+      await settle();
+
+      expect(current().areas.map((item) => item.id), [1, 2, 3]);
+      expect(current().areas.map((item) => item.priority), [1, 1, 1]);
+    },
+  );
+
   test('an empty response produces empty state', () async {
     repository.load = () async => [];
     await settle();
@@ -108,7 +123,7 @@ void main() {
     expect(current().areas.single.id, 2);
   });
 
-  for (final action in ['create', 'update', 'archive', 'restore', 'reorder']) {
+  for (final action in ['create', 'update', 'archive', 'restore']) {
     Future<bool> invoke() => switch (action) {
       'create' => controller.create(
         FocusAreaCreateInput(
@@ -129,10 +144,7 @@ void main() {
       ),
       'archive' => controller.archive(1),
       'restore' => controller.restore(2),
-      _ => controller.reorder(const [
-        FocusAreaPriorityInput(id: 1, priority: 2),
-        FocusAreaPriorityInput(id: 2, priority: 2),
-      ]),
+      _ => throw StateError('Unsupported action: $action'),
     };
 
     test(
@@ -149,7 +161,6 @@ void main() {
         final changed = switch (action) {
           'archive' => [area(1, archived: true)],
           'update' => [area(1, name: 'Updated')],
-          'reorder' => [area(2, priority: 2), area(1, priority: 2)],
           _ => [area(2)],
         };
         pending.complete(changed);
@@ -161,11 +172,8 @@ void main() {
               : FocusAreasStatus.loaded,
         );
         if (action == 'update') expect(current().areas.single.name, 'Updated');
-        if (action == 'create' || action == 'restore' || action == 'reorder') {
+        if (action == 'create' || action == 'restore') {
           expect(current().areas.map((a) => a.id), [1, 2]);
-        }
-        if (action == 'reorder') {
-          expect(repository.priorities!.map((a) => a.priority), [2, 2]);
         }
         expect(transitions, contains(FocusAreasStatus.saving));
         expect(current().error, isNull);
@@ -207,60 +215,6 @@ void main() {
       expect(await refresh, isTrue);
       expect(await save, isTrue);
       expect(current().areas.single.name, 'Updated');
-    },
-  );
-
-  test(
-    'reorder is optimistic and restores the exact list on failure',
-    () async {
-      repository.load = () async => [
-        area(1, priority: 1),
-        area(2, priority: 2),
-        area(3, priority: 3),
-      ];
-      await settle();
-      final pending = Completer<List<FocusArea>>();
-      repository.change = () => pending.future;
-
-      final result = controller.reorder(const [
-        FocusAreaPriorityInput(id: 3, priority: 1),
-        FocusAreaPriorityInput(id: 1, priority: 2),
-        FocusAreaPriorityInput(id: 2, priority: 3),
-      ]);
-      await settle();
-
-      expect(current().status, FocusAreasStatus.saving);
-      expect(current().areas.map((area) => area.id), [3, 1, 2]);
-      expect(current().areas.map((area) => area.priority), [1, 2, 3]);
-
-      pending.completeError(const ConflictException('priority conflict'));
-      expect(await result, isFalse);
-      expect(current().status, FocusAreasStatus.error);
-      expect(current().areas.map((area) => area.id), [1, 2, 3]);
-      expect(current().areas.map((area) => area.priority), [1, 2, 3]);
-    },
-  );
-
-  test(
-    'reorder forwards duplicate priorities without rejecting them',
-    () async {
-      repository.load = () async => [area(1), area(2), area(3)];
-      await settle();
-      repository.change = () async => [
-        area(2, priority: 1),
-        area(3, priority: 1),
-        area(1, priority: 2),
-      ];
-
-      expect(
-        await controller.reorder(const [
-          FocusAreaPriorityInput(id: 2, priority: 1),
-          FocusAreaPriorityInput(id: 3, priority: 1),
-          FocusAreaPriorityInput(id: 1, priority: 2),
-        ]),
-        isTrue,
-      );
-      expect(repository.priorities!.map((item) => item.priority), [1, 1, 2]);
     },
   );
 

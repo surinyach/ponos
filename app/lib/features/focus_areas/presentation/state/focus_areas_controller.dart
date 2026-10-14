@@ -85,40 +85,6 @@ class FocusAreasController extends Notifier<FocusAreasState> {
     }
   });
 
-  /// Accepts explicit priorities, including duplicates; ties use IDs.
-  Future<bool> reorder(List<FocusAreaPriorityInput> priorities) {
-    final snapshot = List<FocusAreaPriorityInput>.unmodifiable(priorities);
-    return _enqueue(() async {
-      if (!_hasLoaded && !await _load()) return false;
-
-      final previous = state.areas;
-      state = FocusAreasState(
-        status: FocusAreasStatus.saving,
-        areas: _applyPriorities(previous, snapshot),
-      );
-      try {
-        final changed = await _repository.updatePriorities(snapshot);
-        if (!ref.mounted) return false;
-        final byId = {for (final area in previous) area.id: area};
-        for (final area in changed) {
-          byId[area.id] = area;
-        }
-        _loaded(byId.values);
-        ref.invalidate(todayOverviewProvider);
-        return true;
-      } catch (error) {
-        if (ref.mounted) {
-          state = FocusAreasState(
-            status: FocusAreasStatus.error,
-            areas: previous,
-            error: error,
-          );
-        }
-        return false;
-      }
-    });
-  }
-
   Future<bool> _enqueue(Future<bool> Function() operation) {
     final result = _tail.then((_) async {
       if (!ref.mounted) return false;
@@ -194,30 +160,4 @@ class FocusAreasController extends Notifier<FocusAreasState> {
       error: error,
     );
   }
-
-  List<FocusArea> _applyPriorities(
-    List<FocusArea> areas,
-    List<FocusAreaPriorityInput> priorities,
-  ) {
-    final byId = {for (final area in areas) area.id: area};
-    final reordered = <FocusArea>[];
-    for (final item in priorities) {
-      final area = byId.remove(item.id);
-      if (area != null) reordered.add(_withPriority(area, item.priority));
-    }
-    reordered.addAll(byId.values);
-    return reordered;
-  }
-
-  FocusArea _withPriority(FocusArea area, int priority) => FocusArea(
-    id: area.id,
-    name: area.name,
-    description: area.description,
-    priority: priority,
-    targetEndDate: area.targetEndDate,
-    archivedAt: area.archivedAt,
-    createdAt: area.createdAt,
-    updatedAt: area.updatedAt,
-    targets: area.targets,
-  );
 }

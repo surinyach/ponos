@@ -48,6 +48,8 @@ void main() {
   Future<void> pumpSpecialActivities(
     WidgetTester tester, {
     Size size = const Size(390, 800),
+    bool embedded = false,
+    double textScale = 1,
     int? activeSpecialActivityId,
     FocusTimerStatus activeTimerStatus = FocusTimerStatus.paused,
   }) async {
@@ -66,9 +68,16 @@ void main() {
           ),
         ],
         child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
           home: Builder(
             builder: (context) => Scaffold(
               body: SpecialActivitiesPage(
+                embedded: embedded,
                 onCreate: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) => const CreateSpecialActivityPage(),
@@ -86,6 +95,60 @@ void main() {
   setUp(() {
     entries = FakeManualEntries();
     activities = FakeSpecialActivities();
+  });
+
+  testWidgets('embedded create action aligns with compact activity cards', (
+    tester,
+  ) async {
+    const sizes = [
+      Size(320, 568),
+      Size(360, 800),
+      Size(390, 844),
+      Size(430, 932),
+    ];
+
+    for (final size in sizes) {
+      await pumpSpecialActivities(tester, size: size, embedded: true);
+
+      final button = tester.getRect(
+        find.byKey(const Key('new-special-activity')),
+      );
+      final card = tester.getRect(
+        find.ancestor(
+          of: find.text('Release day'),
+          matching: find.byType(Card),
+        ),
+      );
+
+      expect(button.left, closeTo(card.left, 0.1));
+      expect(button.right, closeTo(card.right, 0.1));
+      expect(button.height, greaterThanOrEqualTo(48));
+      expect(card.top - button.bottom, greaterThanOrEqualTo(12));
+      expect(tester.takeException(), isNull, reason: 'viewport: $size');
+    }
+  });
+
+  testWidgets('embedded create action remains accessible at 200 percent', (
+    tester,
+  ) async {
+    await pumpSpecialActivities(
+      tester,
+      size: const Size(390, 844),
+      embedded: true,
+      textScale: 2,
+    );
+
+    final button = tester.getRect(
+      find.byKey(const Key('new-special-activity')),
+    );
+    final card = tester.getRect(
+      find.ancestor(of: find.text('Release day'), matching: find.byType(Card)),
+    );
+    expect(button.left, closeTo(card.left, 0.1));
+    expect(button.right, closeTo(card.right, 0.1));
+    expect(button.height, greaterThanOrEqualTo(48));
+    expect(card.top - button.bottom, greaterThanOrEqualTo(12));
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('creates an entry for a Focus Area and rejects zero time', (

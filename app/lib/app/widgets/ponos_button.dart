@@ -68,10 +68,11 @@ class PonosButton extends StatelessWidget {
         ? Text(label)
         : Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               icon!,
               const SizedBox(width: AppSpacing.xs),
-              Text(label),
+              Flexible(child: Text(label, textAlign: TextAlign.center)),
             ],
           );
     final style = _style(

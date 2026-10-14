@@ -42,7 +42,6 @@ class FocusAreaFormData {
       WeekdayTargetFormData(enabled: false, minutes: 60),
       WeekdayTargetFormData(enabled: false, minutes: 60),
       WeekdayTargetFormData(enabled: false, minutes: 60),
-      WeekdayTargetFormData(enabled: false, minutes: 60),
     ],
   );
 

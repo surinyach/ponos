@@ -1,0 +1,651 @@
+{
+  "package_version": "1.0.0",
+  "design_status": "human-approved visual direction for Active Focus Areas; canonical SVGs in this package are implementation-ready geometric interpretations of the approved concept, subject to final human comparison",
+  "source_of_truth": {
+    "master": "svg/",
+    "raster": "reference/",
+    "rule": "SVG master is authoritative; PNG is direct 1x rasterization of exact master. Do not regenerate references from Flutter goldens."
+  },
+  "approved_information_architecture": {
+    "tabs": [
+      "Focus Areas",
+      "Special Activities"
+    ],
+    "archived_entry": "Inside Focus Areas via compact View archived (count) action, not third top-level tab. Opens Archived Focus Areas view/route; access path remains in Focus Areas context.",
+    "selection": "Select card to edit",
+    "archive": "Explicit secondary action; confirm before archive"
+  },
+  "palette": {
+    "primary": "#315D8C",
+    "deep": "#1E3550",
+    "background": "#F5F8FC",
+    "surface": "#FFFFFF",
+    "pale": "#EAF1F8",
+    "bronze": "#B78A55",
+    "muted": "#62758A",
+    "border": "#DCE5EE",
+    "rail": "#FBFCFE",
+    "blue_fill": "#F0F6FC",
+    "blue_outline": "#CBDFEF",
+    "progress_track": "#DCE8F2",
+    "progress": "#3581CE",
+    "warning": "#995A00",
+    "warning_bg": "#FFF5DF",
+    "warning_border": "#F1D99B",
+    "warning_icon": "#DA8400",
+    "danger": "#B42336",
+    "danger_bg": "#FDEDF0",
+    "danger_border": "#F2CBD1",
+    "danger_icon": "#CC2940",
+    "white": "#FFFFFF"
+  },
+  "canonical_viewports": {
+    "mobile_390x844": {
+      "viewport": [
+        390,
+        844
+      ],
+      "platform": "Android/iOS",
+      "navigation_mode": "bottom",
+      "svg": "svg/work-areas-active-mobile-390x844.svg",
+      "reference": "reference/work-areas-active-mobile-390x844.png",
+      "geometry_px_at_1x": {
+        "navigation.header": [
+          0,
+          0,
+          390,
+          64
+        ],
+        "navigation.bottom": [
+          0,
+          772,
+          390,
+          72
+        ],
+        "navigation.selected_target": [
+          122.25,
+          779,
+          48,
+          44
+        ],
+        "summary": [
+          14,
+          182,
+          362,
+          60
+        ],
+        "actions.archived": [
+          14,
+          253,
+          160,
+          42
+        ],
+        "actions.new": [
+          182,
+          253,
+          194,
+          42
+        ],
+        "areas.101": [
+          14,
+          307,
+          362,
+          93
+        ],
+        "areas.101.archive_action_hit": [
+          328,
+          312,
+          48,
+          48
+        ],
+        "areas.102": [
+          14,
+          408,
+          362,
+          93
+        ],
+        "areas.102.archive_action_hit": [
+          328,
+          413,
+          48,
+          48
+        ],
+        "areas.103": [
+          14,
+          509,
+          362,
+          109
+        ],
+        "areas.103.archive_action_hit": [
+          328,
+          514,
+          48,
+          48
+        ],
+        "areas.104": [
+          14,
+          626,
+          362,
+          109
+        ],
+        "areas.104.archive_action_hit": [
+          328,
+          631,
+          48,
+          48
+        ],
+        "content.viewport": [
+          0,
+          64,
+          390,
+          708
+        ],
+        "content.horizontal_bounds": [
+          14,
+          137,
+          362,
+          603
+        ],
+        "tabs": [
+          15,
+          137,
+          238,
+          30
+        ]
+      },
+      "sample_visible_focus_area_ids": [
+        101,
+        102,
+        103,
+        104
+      ],
+      "screen_may_scroll": true,
+      "notes": "Canonical frozen reference shows viewport crop; scroll naturally to reveal remaining items. Preserve actual provider data and platform insets."
+    },
+    "compact_desktop_500x700": {
+      "viewport": [
+        500,
+        700
+      ],
+      "platform": "desktop/web",
+      "navigation_mode": "collapsed_rail",
+      "svg": "svg/work-areas-active-compact-desktop-500x700.svg",
+      "reference": "reference/work-areas-active-compact-desktop-500x700.png",
+      "geometry_px_at_1x": {
+        "navigation.rail": [
+          0,
+          0,
+          72,
+          700
+        ],
+        "navigation.selected_target": [
+          12.0,
+          142,
+          48,
+          48
+        ],
+        "summary": [
+          88,
+          116,
+          396,
+          60
+        ],
+        "actions.archived": [
+          88,
+          188,
+          175,
+          42
+        ],
+        "actions.new": [
+          271,
+          188,
+          213,
+          42
+        ],
+        "areas.101": [
+          88,
+          242,
+          396,
+          92
+        ],
+        "areas.101.archive_action_hit": [
+          436,
+          247,
+          48,
+          48
+        ],
+        "areas.102": [
+          88,
+          342,
+          396,
+          92
+        ],
+        "areas.102.archive_action_hit": [
+          436,
+          347,
+          48,
+          48
+        ],
+        "areas.103": [
+          88,
+          442,
+          396,
+          110
+        ],
+        "areas.103.archive_action_hit": [
+          436,
+          447,
+          48,
+          48
+        ],
+        "areas.104": [
+          88,
+          560,
+          396,
+          110
+        ],
+        "areas.104.archive_action_hit": [
+          436,
+          565,
+          48,
+          48
+        ],
+        "content.viewport": [
+          72,
+          0,
+          428,
+          700
+        ],
+        "tabs": [
+          88,
+          78,
+          238,
+          30
+        ]
+      },
+      "sample_visible_focus_area_ids": [
+        101,
+        102,
+        103,
+        104
+      ],
+      "screen_may_scroll": true,
+      "notes": "Canonical frozen reference shows viewport crop; scroll naturally to reveal remaining items. Preserve actual provider data and platform insets."
+    },
+    "medium_768x1024": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "platform": "mobile/tablet",
+      "navigation_mode": "collapsed_rail",
+      "svg": "svg/work-areas-active-medium-768x1024.svg",
+      "reference": "reference/work-areas-active-medium-768x1024.png",
+      "geometry_px_at_1x": {
+        "navigation.rail": [
+          0,
+          0,
+          76,
+          1024
+        ],
+        "navigation.selected_target": [
+          14.0,
+          142,
+          48,
+          48
+        ],
+        "actions.archived": [
+          390,
+          94,
+          168,
+          42
+        ],
+        "actions.new": [
+          566,
+          94,
+          178,
+          42
+        ],
+        "summary": [
+          96,
+          150,
+          648,
+          60
+        ],
+        "areas.101": [
+          96,
+          223,
+          648,
+          95
+        ],
+        "areas.101.archive_action_hit": [
+          696,
+          228,
+          48,
+          48
+        ],
+        "areas.102": [
+          96,
+          326,
+          648,
+          95
+        ],
+        "areas.102.archive_action_hit": [
+          696,
+          331,
+          48,
+          48
+        ],
+        "areas.103": [
+          96,
+          429,
+          648,
+          111
+        ],
+        "areas.103.archive_action_hit": [
+          696,
+          434,
+          48,
+          48
+        ],
+        "areas.104": [
+          96,
+          548,
+          648,
+          111
+        ],
+        "areas.104.archive_action_hit": [
+          696,
+          553,
+          48,
+          48
+        ],
+        "areas.105": [
+          96,
+          667,
+          648,
+          95
+        ],
+        "areas.105.archive_action_hit": [
+          696,
+          672,
+          48,
+          48
+        ],
+        "content.viewport": [
+          76,
+          0,
+          692,
+          1024
+        ],
+        "tabs": [
+          96,
+          98,
+          238,
+          30
+        ]
+      },
+      "sample_visible_focus_area_ids": [
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      "screen_may_scroll": true,
+      "notes": "Canonical frozen reference shows viewport crop; scroll naturally to reveal remaining items. Preserve actual provider data and platform insets."
+    },
+    "desktop_1440x900": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "platform": "desktop/web",
+      "navigation_mode": "expanded_sidebar",
+      "svg": "svg/work-areas-active-desktop-1440x900.svg",
+      "reference": "reference/work-areas-active-desktop-1440x900.png",
+      "geometry_px_at_1x": {
+        "navigation.rail": [
+          0,
+          0,
+          200,
+          900
+        ],
+        "navigation.selected_target": [
+          12,
+          157,
+          176,
+          44
+        ],
+        "actions.archived": [
+          1055,
+          27,
+          157,
+          42
+        ],
+        "actions.new": [
+          1220,
+          27,
+          180,
+          42
+        ],
+        "summary": [
+          240,
+          159,
+          1160,
+          62
+        ],
+        "table.header": [
+          240,
+          238,
+          1160,
+          34
+        ],
+        "areas.101": [
+          240,
+          272,
+          1160,
+          85
+        ],
+        "areas.101.archive_action_hit": [
+          1351,
+          291,
+          48,
+          48
+        ],
+        "areas.102": [
+          240,
+          357,
+          1160,
+          85
+        ],
+        "areas.102.archive_action_hit": [
+          1351,
+          376,
+          48,
+          48
+        ],
+        "areas.103": [
+          240,
+          442,
+          1160,
+          91
+        ],
+        "areas.103.archive_action_hit": [
+          1351,
+          461,
+          48,
+          48
+        ],
+        "areas.104": [
+          240,
+          533,
+          1160,
+          91
+        ],
+        "areas.104.archive_action_hit": [
+          1351,
+          552,
+          48,
+          48
+        ],
+        "areas.105": [
+          240,
+          624,
+          1160,
+          85
+        ],
+        "areas.105.archive_action_hit": [
+          1351,
+          643,
+          48,
+          48
+        ],
+        "content.viewport": [
+          200,
+          0,
+          1240,
+          900
+        ],
+        "tabs": [
+          240,
+          109,
+          238,
+          30
+        ]
+      },
+      "sample_visible_focus_area_ids": [
+        101,
+        102,
+        103,
+        104,
+        105
+      ],
+      "screen_may_scroll": true,
+      "notes": "Canonical frozen reference shows viewport crop; scroll naturally to reveal remaining items. Preserve actual provider data and platform insets."
+    }
+  },
+  "component_rules": {
+    "sort": {
+      "priority": "ascending numeric (P1 first)",
+      "tie_break": "ascending stable ID",
+      "manual_reorder": false
+    },
+    "expiration": {
+      "local_date": "2026-10-13 reference fixture only",
+      "not_expired_on_end_date": true,
+      "days_1_to_14": "warning yellow + triangle icon + text",
+      "days_15_plus": "danger red + triangle icon + text",
+      "no_auto_archive": true,
+      "non_applicable_target_after_finish": true
+    },
+    "day_targets": "positive integers only for enabled weekdays; any positive minute count",
+    "card_tap": "opens edit route; secondary ellipsis opens archive confirmation, both keyboard accessible",
+    "archived": "compact button under Focus Areas tab, do not add Archived as primary tab",
+    "empty": "existing AppAssets.emptyFocusAreas may be used for Focus Areas empty view; no new asset required",
+    "work_goals": "This daily target summary is illustrative and must bind to existing correct provider values; do not introduce new Work Goal business logic or fake production values.",
+    "navigation": {
+      "mobile_under_600": "bottom",
+      "mobile_600_plus": "lateral rail",
+      "desktop_web": "lateral always",
+      "expanded_sidebar_from": 1200
+    },
+    "min_interaction_target_dp": 48,
+    "radius": {
+      "cards": 12,
+      "buttons": 10,
+      "chips": 8
+    },
+    "typography": {
+      "family": "Inter",
+      "do_not_scale_type_with_viewport": true,
+      "use_flutter_text_scaler": true
+    },
+    "responsive": {
+      "width": "content-driven, preserve insets",
+      "height": "vertically scrollable when content exceeds available area",
+      "enlarged_text": "wrap text; preserve minimum targets; natural card heights"
+    },
+    "reuse_runtime_assets": "Use existing Ponos emblem/theme/widgets. The SVG/PNG files here are design references, not runtime graphical replacements."
+  },
+  "fixtures": {
+    "reference_local_date": "2026-10-13",
+    "focus_areas": [
+      {
+        "id": 101,
+        "name": "Deep Work",
+        "desc": [
+          "Core product development",
+          "and architecture."
+        ],
+        "priority": 1,
+        "target": "2h 00m today",
+        "finish": "30 Nov 2026",
+        "expired": 0
+      },
+      {
+        "id": 102,
+        "name": "Learning",
+        "desc": [
+          "Technical skills and",
+          "knowledge development."
+        ],
+        "priority": 2,
+        "target": "1h 00m today",
+        "finish": "15 Dec 2026",
+        "expired": 0
+      },
+      {
+        "id": 103,
+        "name": "Content Creation",
+        "desc": [
+          "Articles, tutorials and",
+          "educational content."
+        ],
+        "priority": 3,
+        "target": "No target today",
+        "finish": "7 Oct 2026",
+        "expired": 6
+      },
+      {
+        "id": 104,
+        "name": "Side Projects",
+        "desc": [
+          "Personal and experimental",
+          "projects."
+        ],
+        "priority": 4,
+        "target": "No target today",
+        "finish": "25 Sep 2026",
+        "expired": 18
+      },
+      {
+        "id": 105,
+        "name": "Health & Fitness",
+        "desc": [
+          "Exercise, nutrition and",
+          "overall wellbeing."
+        ],
+        "priority": 5,
+        "target": "30m today",
+        "finish": null,
+        "expired": 0
+      }
+    ],
+    "daily_target_minutes": 210,
+    "focused_minutes": 135,
+    "archived_count": 3
+  },
+  "component_reference_files": [
+    "components/focus-area-states.svg",
+    "components/focus-area-states.png"
+  ],
+  "implementation_constraints": [
+    "Do not modify approved Overview or navigation visuals",
+    "Never invent a third Archived tab",
+    "No independent weekly goal input",
+    "No manual reorder controls",
+    "Preserve existing timer/historical deletion safety",
+    "Canonical raster and master always derived from the same SVG"
+  ]
+}

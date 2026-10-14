@@ -48,4 +48,28 @@ void main() {
 
     expect(area.isArchived, isTrue);
   });
+
+  test('does not return targets after the local finish date', () {
+    final timestamp = DateTime.utc(2026, 9, 1);
+    final area = FocusArea(
+      id: 1,
+      name: 'Finished project',
+      priority: 1,
+      targetEndDate: DateTime(2026, 9, 7),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      targets: [
+        FocusAreaTarget(
+          id: 1,
+          focusAreaId: 1,
+          weekday: DateTime.monday,
+          targetMinutes: 60,
+          validFrom: DateTime(2026, 9, 1),
+        ),
+      ],
+    );
+
+    expect(area.targetFor(DateTime(2026, 9, 7)), isNotNull);
+    expect(area.targetFor(DateTime(2026, 9, 14)), isNull);
+  });
 }

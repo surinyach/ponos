@@ -53,6 +53,25 @@ void main() {
       expect(() => current().active.clear(), throwsUnsupportedError);
     });
 
+    test(
+      'sorts Special Activities alphabetically with stable ID ties',
+      () async {
+        repository.active = () async => [
+          special(4, name: 'Writing'),
+          special(3, name: 'reading'),
+          special(2, name: 'Reading'),
+        ];
+        expect(await controller.refresh(), isTrue);
+
+        expect(current().active.map((item) => item.id), [2, 3, 4]);
+        expect(current().active.map((item) => item.name), [
+          'Reading',
+          'reading',
+          'Writing',
+        ]);
+      },
+    );
+
     test('initial error can recover through refresh', () async {
       // A second container allows the initial request to be configured first.
       container.dispose();

@@ -1612,7 +1612,7 @@ class _CompactCard extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       color: color ?? AppColors.white,
-      border: Border.all(color: borderColor ?? AppColors.border),
+      border: Border.all(color: borderColor ?? AppColors.borderStrong),
       borderRadius: AppRadius.card,
     ),
     child: Padding(
