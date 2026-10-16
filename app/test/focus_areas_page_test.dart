@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/providers/focus_area_providers.dart';
+import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/theme/app_breakpoints.dart';
+import 'package:ponos_app/app/theme/app_priority_colors.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/core/errors/app_exception.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
@@ -13,6 +15,7 @@ import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.d
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
 import 'package:ponos_app/features/focus_areas/domain/repositories/focus_area_repository.dart';
 import 'package:ponos_app/features/focus_areas/presentation/focus_areas_page.dart';
+import 'package:ponos_app/features/focus_areas/presentation/work_areas_page.dart';
 import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_controller.dart';
 import 'package:ponos_app/features/focus_timer/presentation/state/focus_timer_state.dart';
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
@@ -36,6 +39,7 @@ void main() {
       await pumpPage(tester, repository, archived: true);
       await tester.pumpAndSettle();
       expect(find.text('First'), findsOneWidget);
+      await _openArchivedActionMenu(tester, 1);
       await tester.tap(find.text('Restore'));
       await tester.pumpAndSettle();
       expect(find.text('No archived Focus Areas'), findsOneWidget);
@@ -48,7 +52,8 @@ void main() {
         ..archivedIds.add(1);
       await pumpPage(tester, repository, archived: true);
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Permanently delete First'));
+      await _openArchivedActionMenu(tester, 1);
+      await tester.tap(find.text('Delete permanently'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Delete permanently'));
       await tester.pumpAndSettle();
@@ -67,7 +72,8 @@ void main() {
       ..historicalWork = true;
     await pumpPage(tester, repository, archived: true);
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Permanently delete First'));
+    await _openArchivedActionMenu(tester, 1);
+    await tester.tap(find.text('Delete permanently'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete permanently'));
     await tester.pumpAndSettle();
@@ -92,9 +98,8 @@ void main() {
       archived: true,
     );
     await tester.pumpAndSettle();
-    await tester.tap(
-      find.byTooltip('Cannot delete while this area has an active timer'),
-    );
+    await _openArchivedActionMenu(tester, 1);
+    await tester.tap(find.text('Delete unavailable'));
     await tester.pump();
 
     expect(
@@ -112,6 +117,31 @@ void main() {
     await pumpPage(tester, FakeRepository(() => pending.future));
 
     expect(find.byKey(const Key('focus-areas-loading')), findsOneWidget);
+  });
+
+  testWidgets('keeps archived loading and error states inside its page', (
+    tester,
+  ) async {
+    final pending = Completer<List<FocusArea>>();
+    final loadingRepository = FakeRepository(() async => [])
+      ..archivedLoad = () => pending.future;
+    await pumpPage(tester, loadingRepository, archived: true);
+    await tester.pump();
+
+    expect(find.text('Archived Focus Areas'), findsOneWidget);
+    expect(
+      find.byKey(const Key('archived-focus-areas-loading')),
+      findsOneWidget,
+    );
+
+    final errorRepository = FakeRepository(() async => [])
+      ..archivedLoad = () async => throw const NetworkException('Offline');
+    await pumpPage(tester, errorRepository, archived: true);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Archived Focus Areas'), findsOneWidget);
+    expect(find.text('Unable to load archived Focus Areas'), findsOneWidget);
+    expect(find.text('Offline'), findsOneWidget);
   });
 
   testWidgets('shows the empty state and create action', (tester) async {
@@ -182,17 +212,51 @@ void main() {
   });
 
   testWidgets('uses the approved table on expanded screens', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 800));
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await pumpPage(
       tester,
-      FakeRepository(() async => [area(1, 'First', 1, 60)]),
+      FakeRepository(
+        () async => [
+          area(1, 'First', 1, 60),
+          area(2, 'Second', 2, 60),
+          area(10, 'Tenth', 10, 60),
+          area(100, 'Hundredth', 100, 60),
+        ],
+      ),
       layout: AppLayoutSize.expanded,
     );
     await tester.pump();
 
     expect(find.byKey(const Key('focus-areas-table')), findsOneWidget);
     expect(find.byKey(const Key('focus-areas-list')), findsNothing);
+    final nameLefts = <double>[];
+    for (final entry in const [
+      (priority: 1, name: 'First'),
+      (priority: 2, name: 'Second'),
+      (priority: 10, name: 'Tenth'),
+      (priority: 100, name: 'Hundredth'),
+    ]) {
+      final badge = tester.getRect(
+        find.byKey(Key('priority-badge-${entry.priority}')),
+      );
+      final name = tester.getRect(find.text(entry.name));
+      expect(
+        name.left - badge.right,
+        greaterThanOrEqualTo(12),
+        reason: 'P${entry.priority}: badge=$badge name=$name',
+      );
+      nameLefts.add(name.left);
+    }
+    expect(nameLefts.toSet(), hasLength(1));
+    expect(
+      tester.getSize(find.byKey(const Key('priority-badge-1'))),
+      const Size(32, 32),
+    );
+    expect(
+      tester.getSize(find.byKey(const Key('priority-badge-100'))).width,
+      greaterThan(32),
+    );
   });
 
   testWidgets('uses a single list on mobile screens', (tester) async {
@@ -206,6 +270,197 @@ void main() {
 
     expect(find.byKey(const Key('focus-areas-list')), findsOneWidget);
     expect(find.byKey(const Key('focus-areas-table')), findsNothing);
+  });
+
+  testWidgets('expanded priority badges stay compact at 200% text scaling', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await pumpPage(
+      tester,
+      FakeRepository(() async => [area(100, 'Hundredth', 100, 60)]),
+      layout: AppLayoutSize.expanded,
+      textScaler: const TextScaler.linear(2),
+    );
+    await tester.pumpAndSettle();
+
+    final badge = tester.getRect(
+      find.byKey(const Key('priority-badge-100')),
+    );
+    final name = tester.getRect(find.text('Hundredth'));
+    expect(name.left - badge.right, greaterThanOrEqualTo(12));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses priority-colored cards for archived compact layouts', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = FakeRepository(
+      () async => [
+        area(
+          6,
+          'Long-term area',
+          6,
+          60,
+          description: 'An archived description',
+          targetEndDate: DateTime(2026, 8, 31),
+        ),
+      ],
+    )..archivedIds.add(6);
+
+    await pumpPage(
+      tester,
+      repository,
+      archived: true,
+      layout: AppLayoutSize.compact,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('archived-focus-areas-list')), findsOneWidget);
+    expect(find.text('P6'), findsOneWidget);
+    expect(find.text('An archived description'), findsOneWidget);
+    expect(find.text('Finished: 31 Aug 2026'), findsOneWidget);
+    final badge = tester.widget<Container>(
+      find.byKey(const Key('priority-badge-6')),
+    );
+    final decoration = badge.decoration! as BoxDecoration;
+    expect(decoration.color, AppPriorityColors.p5AndHigher.background);
+    expect(
+      decoration.border,
+      Border.all(color: AppPriorityColors.p5AndHigher.border),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('uses the archived table on expanded layouts', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = FakeRepository(
+      () async => [area(1, 'Archived area', 1, 60)],
+    )..archivedIds.add(1);
+
+    await pumpPage(
+      tester,
+      repository,
+      archived: true,
+      layout: AppLayoutSize.expanded,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('archived-focus-areas-table')), findsOneWidget);
+    expect(find.text('Finish Date'), findsOneWidget);
+    expect(find.text('Archived At'), findsOneWidget);
+    expect(find.text('Total Time'), findsNothing);
+    expect(find.byTooltip('Restore Archived area'), findsOneWidget);
+    expect(find.byTooltip('Permanently delete Archived area'), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('priority-badge-1'))),
+      const Size(32, 32),
+    );
+  });
+
+  testWidgets('archived mobile cards use 16px page and internal insets', (
+    tester,
+  ) async {
+    final repository = FakeRepository(
+      () async => [
+        area(
+          100,
+          'A long archived Focus Area name that wraps naturally',
+          100,
+          60,
+          description:
+              'A long optional description that is allowed to wrap naturally.',
+        ),
+      ],
+    )..archivedIds.add(100);
+
+    await pumpWorkAreas(tester, repository, const Size(390, 844));
+    await tester.tap(find.byKey(const Key('view-archived-focus-areas')));
+    await tester.pumpAndSettle();
+
+    final card = tester.getRect(
+      find.byKey(const Key('archived-focus-area-card-100')),
+    );
+    final badge = tester.getRect(find.byKey(const Key('priority-badge-100')));
+    expect(card.left, 16);
+    expect(card.right, 390 - 16);
+    // One painted border pixel plus 16 logical pixels of card padding.
+    expect(badge.left - card.left, 17);
+    expect(badge.height, 32);
+    expect(badge.width, greaterThan(32));
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final viewport in const [
+    Size(320, 568),
+    Size(500, 700),
+    Size(768, 1024),
+  ]) {
+    testWidgets(
+      'archived cards remain overflow free at ${viewport.width.toInt()}x${viewport.height.toInt()}',
+      (tester) async {
+        final repository = FakeRepository(
+          () async => [
+            area(
+              100,
+              'A long archived Focus Area name that wraps naturally',
+              100,
+              60,
+              description:
+                  'A long optional description that is allowed to wrap naturally.',
+            ),
+          ],
+        )..archivedIds.add(100);
+
+        await pumpWorkAreas(tester, repository, viewport);
+        await tester.tap(find.byKey(const Key('view-archived-focus-areas')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const Key('archived-focus-area-card-100')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
+  testWidgets('archived cards remain usable at 200% text scaling', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = FakeRepository(
+      () async => [
+        area(
+          1,
+          'Archived area with a long name',
+          1,
+          60,
+          description: 'A longer description that remains reachable',
+        ),
+      ],
+    )..archivedIds.add(1);
+
+    await pumpPage(
+      tester,
+      repository,
+      archived: true,
+      layout: AppLayoutSize.compact,
+      textScaler: const TextScaler.linear(2),
+    );
+    await tester.pumpAndSettle();
+
+    final actions = tester.getRect(
+      find.byKey(const Key('archived-focus-area-menu-1')),
+    );
+    expect(actions.height, greaterThanOrEqualTo(48));
+    expect(find.byType(ListView), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('does not expose priority-mutating reorder controls', (
@@ -249,6 +504,29 @@ void main() {
     expect(find.text('Expired 6 days ago'), findsOneWidget);
     expect(find.text('Expired 18 days ago'), findsOneWidget);
     expect(find.text('No target today'), findsNWidgets(2));
+
+    final recentlyExpiredBadge = tester.widget<Container>(
+      find.byKey(const Key('priority-badge-1')),
+    );
+    final badgeDecoration = recentlyExpiredBadge.decoration! as BoxDecoration;
+    expect(badgeDecoration.color, AppPriorityColors.p1.background);
+  });
+
+  test('maps every priority from P5 onward to the same sage tier', () {
+    expect(AppPriorityColors.forPriority(1), same(AppPriorityColors.p1));
+    expect(AppPriorityColors.forPriority(2), same(AppPriorityColors.p2));
+    expect(AppPriorityColors.forPriority(3), same(AppPriorityColors.p3));
+    expect(AppPriorityColors.forPriority(4), same(AppPriorityColors.p4));
+    expect(
+      AppPriorityColors.forPriority(5),
+      same(AppPriorityColors.p5AndHigher),
+    );
+    expect(
+      AppPriorityColors.forPriority(37),
+      same(AppPriorityColors.p5AndHigher),
+    );
+    expect(AppPriorityColors.p1.background, const Color(0xFFFFB4B8));
+    expect(AppPriorityColors.p5AndHigher.foreground, const Color(0xFF3E5642));
   });
 }
 
@@ -256,6 +534,40 @@ Future<void> _openArchiveDialog(WidgetTester tester, int id) async {
   await tester.tap(find.byKey(Key('focus-area-menu-$id')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Archive'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openArchivedActionMenu(WidgetTester tester, int id) async {
+  await tester.tap(find.byKey(Key('archived-focus-area-menu-$id')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> pumpWorkAreas(
+  WidgetTester tester,
+  FocusAreaRepository repository,
+  Size size,
+) async {
+  await tester.binding.setSurfaceSize(size);
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        focusAreaRepositoryProvider.overrideWithValue(repository),
+        focusTimerProvider.overrideWith(() => TestFocusTimerController(null)),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: PonosViewportScope(
+          size: size,
+          child: WorkAreasPage(
+            onCreateFocusArea: () {},
+            onCreateSpecialActivity: () {},
+            onFocusAreaSelected: (_) {},
+          ),
+        ),
+      ),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -267,6 +579,7 @@ Future<void> pumpPage(
   int? activeTimerFocusAreaId,
   bool archived = false,
   AppLayoutSize? layout,
+  TextScaler textScaler = TextScaler.noScaling,
 }) => tester.pumpWidget(
   ProviderScope(
     overrides: [
@@ -277,6 +590,10 @@ Future<void> pumpPage(
     ],
     child: MaterialApp(
       theme: AppTheme.light,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+        child: child!,
+      ),
       home: Scaffold(
         body: FocusAreasPage(
           archived: archived,
@@ -321,12 +638,14 @@ FocusArea area(
   String name,
   int priority,
   int? targetMinutes, {
+  String? description,
   DateTime? targetEndDate,
 }) {
   final timestamp = DateTime.utc(2026, 9, 1);
   return FocusArea(
     id: id,
     name: name,
+    description: description,
     priority: priority,
     targetEndDate: targetEndDate,
     createdAt: timestamp,
@@ -353,6 +672,7 @@ class FakeRepository implements FocusAreaRepository {
   bool historicalWork = false;
   int? deletedId;
   bool? deletionConfirmation;
+  Future<List<FocusArea>> Function()? archivedLoad;
 
   @override
   Future<bool> hasHistoricalWork(int id) async => historicalWork;
@@ -379,7 +699,9 @@ class FakeRepository implements FocusAreaRepository {
     return FocusArea(
       id: original.id,
       name: original.name,
+      description: original.description,
       priority: original.priority,
+      targetEndDate: original.targetEndDate,
       createdAt: original.createdAt,
       updatedAt: original.updatedAt,
       targets: original.targets,
@@ -391,9 +713,12 @@ class FakeRepository implements FocusAreaRepository {
   Future<FocusArea> create(FocusAreaCreateInput input) =>
       throw UnimplementedError();
   @override
-  Future<List<FocusArea>> getArchived() async => [
-    for (final id in archivedIds.toList()) await archive(id),
-  ];
+  Future<List<FocusArea>> getArchived() async {
+    final customLoad = archivedLoad;
+    if (customLoad != null) return customLoad();
+    return [for (final id in archivedIds.toList()) await archive(id)];
+  }
+
   @override
   Future<FocusArea> getById(int id) => throw UnimplementedError();
   @override

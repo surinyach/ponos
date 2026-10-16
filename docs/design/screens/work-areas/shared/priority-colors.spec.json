@@ -1,0 +1,66 @@
+{
+  "version": "3.0.0",
+  "source_of_truth": "shared/priority-palette.svg; color hex codes and mapping below",
+  "semantic": "Lower integer = greater priority/urgency; this is a visual code, not a change to target obligation rules",
+  "rule": "for any integer priority >= 5 use P5 colors identically; retain actual numeric label (P6, P7, P8, \u2026)",
+  "rules": {
+    "minimum_priority": 1,
+    "tiers": [
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5+"
+    ],
+    "same_tier_from_priority": 5,
+    "scope": "Both Active and Archived Focus Areas, including badges in detail screens",
+    "sort": "priority ascending then stable ID ascending; duplicate priority values allowed",
+    "expired_priority": "Expiry warning styling (yellow 1-14 days, red >=15 days) is independent of priority: expiration surface wins, priority badge retains its normal badge color",
+    "visual_only": "Priority palette does not alter streak eligibility (P1 obligations), goals, archival semantics or backend data",
+    "do_not_color_full_active_cards_by_priority": "Use consistent white card surfaces unless pre-existing expiration state defines tinted surface; optional card tints are illustrative only"
+  },
+  "priority_tiers": {
+    "P1": {
+      "background": "#FFB4B8",
+      "foreground": "#971B2B",
+      "border": "#DE4050",
+      "optional_card_tint": "#FFF4F4",
+      "name": "Critical",
+      "level": "Highest urgency"
+    },
+    "P2": {
+      "background": "#FFCEB0",
+      "foreground": "#91421C",
+      "border": "#EA8854",
+      "optional_card_tint": "#FFF8F3",
+      "name": "High",
+      "level": "High urgency"
+    },
+    "P3": {
+      "background": "#FCE0AF",
+      "foreground": "#825214",
+      "border": "#DDA34D",
+      "optional_card_tint": "#FFFAF2",
+      "name": "Elevated",
+      "level": "Elevated urgency"
+    },
+    "P4": {
+      "background": "#F4E6AF",
+      "foreground": "#685522",
+      "border": "#D1B95D",
+      "optional_card_tint": "#FFFDF5",
+      "name": "Moderate",
+      "level": "Moderate urgency"
+    },
+    "P5+": {
+      "background": "#DDE7DD",
+      "foreground": "#3E5642",
+      "border": "#A2B5A4",
+      "optional_card_tint": "#F6F9F6",
+      "name": "Low",
+      "level": "Low urgency (P5 and beyond)"
+    }
+  },
+  "fallback": "any value N >= 5 maps to P5+; never cycle the palette or allocate extra unique colors",
+  "accessibility": "Always display numeric priority text; color must not be the only channel; keep badge text foreground contrast legible"
+}

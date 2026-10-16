@@ -1,4 +1,4 @@
-# Ponos · Work Areas / Active Focus Areas — visual references v1
+# Ponos · Work Areas / Active Focus Areas — visual references v3
 
 ## Scope
 
@@ -46,3 +46,9 @@ Targets after the expiration date are not applicable; the sample expired cards s
 ## Important limitations
 
 The SVGs are static visual masters. Interactive focus behavior, menus, animations, scrolling beyond viewport edges, and edit/archive workflows must be implemented and tested in Flutter. Illustrative strings and counts are not runtime data. The assets in this package are reference design deliverables, not production image dependencies.
+
+## Priority color update (v3)
+The Active canonical SVG/PNG pairs and `focus-area-states` examples have been updated to the unified urgency palette: P1 red, P2 orange, P3 amber, P4 pale yellow, and P5+ all the same subdued sage. Use `../shared/priority-colors.spec.json` as the authoritative mapping and keep expiration alert backgrounds unchanged. This is only a styling change, not a change in priority ordering or streak rules.
+
+## Priority color update (v3)
+The Active canonical SVG/PNG pairs and `focus-area-states` examples have been updated to the unified urgency palette: P1 red, P2 orange, P3 amber, P4 pale yellow, and P5+ all the same subdued sage. Use `../shared/priority-colors.spec.json` as the authoritative mapping and keep expiration alert backgrounds unchanged. This is only a styling change, not a change in priority ordering or streak rules.

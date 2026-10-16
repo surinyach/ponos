@@ -1,5 +1,5 @@
 {
-  "package_version": "1.0.0",
+  "package_version": "3.0.0",
   "design_status": "human-approved visual direction for Active Focus Areas; canonical SVGs in this package are implementation-ready geometric interpretations of the approved concept, subject to final human comparison",
   "source_of_truth": {
     "master": "svg/",
@@ -37,7 +37,9 @@
     "danger_bg": "#FDEDF0",
     "danger_border": "#F2CBD1",
     "danger_icon": "#CC2940",
-    "white": "#FFFFFF"
+    "white": "#FFFFFF",
+    "sidebar_separator": "#A4B8CC",
+    "component_border_strong": "#B7C8D9"
   },
   "canonical_viewports": {
     "mobile_390x844": {
@@ -647,5 +649,16 @@
     "No manual reorder controls",
     "Preserve existing timer/historical deletion safety",
     "Canonical raster and master always derived from the same SVG"
-  ]
+  ],
+  "shared_priority_palette": "../shared/priority-colors.spec.json",
+  "priority_color_behavior": {
+    "P1": "red / highest urgency",
+    "P2": "orange / high urgency",
+    "P3": "amber / elevated urgency",
+    "P4": "soft yellow / moderate urgency",
+    "P5_and_higher": "muted sage / low urgency; identical for all N >= 5",
+    "target": "both Active and Archived badges; label always reflects the real priority number",
+    "expiry": "retain warning yellow for 1-14 days and danger red for >=15 days; badge color independent of expiration",
+    "business_logic": "unchanged"
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -44,14 +45,31 @@ class _WorkAreasPageState extends ConsumerState<WorkAreasPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compactContent = constraints.maxWidth < AppBreakpoints.medium;
-        final horizontalPadding = switch (layout) {
+        final platform = Theme.of(context).platform;
+        final desktopPlatform =
+            kIsWeb ||
+            platform == TargetPlatform.windows ||
+            platform == TargetPlatform.macOS ||
+            platform == TargetPlatform.linux;
+        final defaultHorizontalPadding = switch (layout) {
           AppLayoutSize.compact => 14.0,
           AppLayoutSize.medium => 20.0,
           AppLayoutSize.expanded => 40.0,
         };
-        final topPadding = layout == AppLayoutSize.compact
-            ? AppSpacing.xxs
-            : AppSpacing.lg;
+        final horizontalPadding = _showArchived
+            ? switch (layout) {
+                AppLayoutSize.compact => desktopPlatform ? 20.0 : 16.0,
+                AppLayoutSize.medium => 20.0,
+                AppLayoutSize.expanded => 36.0,
+              }
+            : defaultHorizontalPadding;
+        final topPadding = _showArchived
+            ? (layout == AppLayoutSize.compact && !desktopPlatform
+                  ? AppSpacing.xs
+                  : AppSpacing.lg)
+            : (layout == AppLayoutSize.compact
+                  ? AppSpacing.xxs
+                  : AppSpacing.lg);
         final showHeaderActions = !compactContent;
 
         return PonosPageScaffold(
@@ -69,60 +87,63 @@ class _WorkAreasPageState extends ConsumerState<WorkAreasPage> {
             horizontalPadding,
             0,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _WorkAreasHeader(
-                trailing: showHeaderActions && layout == AppLayoutSize.expanded
-                    ? _headerActions(archivedCount)
-                    : null,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: PonosInlineTabs(
-                      key: const Key('work-area-type'),
-                      tabs: const ['Focus Areas', 'Special Activities'],
-                      selectedIndex: _selectedType,
-                      semanticLabel: 'Work Area type',
-                      onSelected: (index) {
-                        setState(() {
-                          _selectedType = index;
-                          if (index != 0) _showArchived = false;
-                        });
-                      },
+          child: _showArchived
+              ? FocusAreasPage(
+                  archived: true,
+                  onBackFromArchived: () =>
+                      setState(() => _showArchived = false),
+                  layout: layout,
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _WorkAreasHeader(
+                      trailing:
+                          showHeaderActions && layout == AppLayoutSize.expanded
+                          ? _headerActions(archivedCount)
+                          : null,
                     ),
-                  ),
-                  if (layout == AppLayoutSize.medium && showHeaderActions) ...[
-                    const SizedBox(width: AppSpacing.md),
-                    _headerActions(archivedCount),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: PonosInlineTabs(
+                            key: const Key('work-area-type'),
+                            tabs: const ['Focus Areas', 'Special Activities'],
+                            selectedIndex: _selectedType,
+                            semanticLabel: 'Work Area type',
+                            onSelected: (index) {
+                              setState(() => _selectedType = index);
+                            },
+                          ),
+                        ),
+                        if (layout == AppLayoutSize.medium &&
+                            showHeaderActions) ...[
+                          const SizedBox(width: AppSpacing.md),
+                          _headerActions(archivedCount),
+                        ],
+                      ],
+                    ),
+                    Expanded(
+                      child: _selectedType == 0
+                          ? FocusAreasPage(
+                              archivedCount: archivedCount,
+                              showCompactActions: !showHeaderActions,
+                              onCreate: widget.onCreateFocusArea,
+                              onAreaSelected: widget.onFocusAreaSelected,
+                              onViewArchived: () =>
+                                  setState(() => _showArchived = true),
+                              layout: layout,
+                            )
+                          : SpecialActivitiesPage(
+                              embedded: true,
+                              showCreateAction: !showHeaderActions,
+                              onCreate: widget.onCreateSpecialActivity,
+                            ),
+                    ),
                   ],
-                ],
-              ),
-              Expanded(
-                child: _selectedType == 0
-                    ? FocusAreasPage(
-                        archived: _showArchived,
-                        archivedCount: archivedCount,
-                        showCompactActions: !showHeaderActions,
-                        onCreate: widget.onCreateFocusArea,
-                        onAreaSelected: widget.onFocusAreaSelected,
-                        onViewArchived: () =>
-                            setState(() => _showArchived = true),
-                        onBackFromArchived: () =>
-                            setState(() => _showArchived = false),
-                        layout: layout,
-                      )
-                    : SpecialActivitiesPage(
-                        embedded: true,
-                        showCreateAction: !showHeaderActions,
-                        onCreate: widget.onCreateSpecialActivity,
-                      ),
-              ),
-            ],
-          ),
+                ),
         );
       },
     );
@@ -137,15 +158,6 @@ class _WorkAreasPageState extends ConsumerState<WorkAreasPage> {
         onPressed: widget.onCreateSpecialActivity,
         primary: true,
         width: 190,
-      );
-    }
-    if (_showArchived) {
-      return _WorkAreaAction(
-        label: 'Back to Focus Areas',
-        icon: Icons.arrow_back,
-        onPressed: () => setState(() => _showArchived = false),
-        primary: false,
-        width: 184,
       );
     }
     return Row(
