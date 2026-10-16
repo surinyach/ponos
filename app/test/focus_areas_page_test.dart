@@ -335,6 +335,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('selecting an archived card opens its details callback', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final archivedArea = area(6, 'Archived details', 2, 60);
+    final repository = FakeRepository(() async => [archivedArea])
+      ..archivedIds.add(6);
+    FocusArea? selected;
+
+    await pumpPage(
+      tester,
+      repository,
+      archived: true,
+      layout: AppLayoutSize.compact,
+      onArchivedSelected: (area) => selected = area,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Archived details'));
+
+    expect(selected?.id, 6);
+  });
+
   testWidgets('uses the archived table on expanded layouts', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -360,6 +383,44 @@ void main() {
       tester.getSize(find.byKey(const Key('priority-badge-1'))),
       const Size(32, 32),
     );
+  });
+
+  testWidgets('active and archived tables share the same foreground outline', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final repository = FakeRepository(
+      () async => [area(1, 'Focus Area', 1, 60)],
+    )..archivedIds.add(1);
+
+    await pumpPage(
+      tester,
+      repository,
+      layout: AppLayoutSize.expanded,
+    );
+    await tester.pumpAndSettle();
+    final active = tester.widget<Container>(
+      find.byKey(const Key('focus-areas-table')),
+    );
+    final activeOutline = active.foregroundDecoration! as BoxDecoration;
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await pumpPage(
+      tester,
+      repository,
+      archived: true,
+      layout: AppLayoutSize.expanded,
+    );
+    await tester.pumpAndSettle();
+    final archived = tester.widget<Container>(
+      find.byKey(const Key('archived-focus-areas-table')),
+    );
+    final archivedOutline = archived.foregroundDecoration! as BoxDecoration;
+
+    expect(archivedOutline.border, activeOutline.border);
+    expect(archivedOutline.borderRadius, activeOutline.borderRadius);
+    expect(archived.child, isA<ClipRRect>());
   });
 
   testWidgets('archived mobile cards use 16px page and internal insets', (
@@ -388,8 +449,7 @@ void main() {
     final badge = tester.getRect(find.byKey(const Key('priority-badge-100')));
     expect(card.left, 16);
     expect(card.right, 390 - 16);
-    // One painted border pixel plus 16 logical pixels of card padding.
-    expect(badge.left - card.left, 17);
+    expect(badge.left - card.left, 16);
     expect(badge.height, 32);
     expect(badge.width, greaterThan(32));
     expect(tester.takeException(), isNull);
@@ -576,6 +636,7 @@ Future<void> pumpPage(
   FocusAreaRepository repository, {
   VoidCallback? onCreate,
   ValueChanged<FocusArea>? onSelected,
+  ValueChanged<FocusArea>? onArchivedSelected,
   int? activeTimerFocusAreaId,
   bool archived = false,
   AppLayoutSize? layout,
@@ -601,6 +662,7 @@ Future<void> pumpPage(
           today: DateTime(2026, 9, 7),
           onCreate: onCreate,
           onAreaSelected: onSelected,
+          onArchivedAreaSelected: onArchivedSelected,
         ),
       ),
     ),

@@ -19,12 +19,14 @@ class WorkAreasPage extends ConsumerStatefulWidget {
     required this.onCreateFocusArea,
     required this.onCreateSpecialActivity,
     required this.onFocusAreaSelected,
+    this.onArchivedFocusAreaSelected,
     super.key,
   });
 
   final VoidCallback onCreateFocusArea;
   final VoidCallback onCreateSpecialActivity;
   final ValueChanged<FocusArea> onFocusAreaSelected;
+  final ValueChanged<FocusArea>? onArchivedFocusAreaSelected;
 
   @override
   ConsumerState<WorkAreasPage> createState() => _WorkAreasPageState();
@@ -90,6 +92,7 @@ class _WorkAreasPageState extends ConsumerState<WorkAreasPage> {
           child: _showArchived
               ? FocusAreasPage(
                   archived: true,
+                  onArchivedAreaSelected: widget.onArchivedFocusAreaSelected,
                   onBackFromArchived: () =>
                       setState(() => _showArchived = false),
                   layout: layout,

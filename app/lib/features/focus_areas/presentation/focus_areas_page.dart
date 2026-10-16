@@ -7,7 +7,6 @@ import '../../../app/navigation/ponos_adaptive_shell.dart';
 import '../../../app/theme/app_assets.dart';
 import '../../../app/theme/app_breakpoints.dart';
 import '../../../app/theme/app_colors.dart';
-import '../../../app/theme/app_priority_colors.dart';
 import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/widgets/ponos_widgets.dart';
@@ -15,8 +14,10 @@ import '../../../core/errors/app_exception.dart';
 import '../../focus_timer/presentation/state/focus_timer_controller.dart';
 import '../../home/presentation/state/today_overview_provider.dart';
 import '../domain/models/focus_area.dart';
+import 'archived_focus_area_actions.dart';
 import 'state/focus_areas_controller.dart';
 import 'state/focus_areas_state.dart';
+import 'widgets/focus_area_priority_badge.dart';
 
 const _warningText = Color(0xFF995A00);
 const _warningBackground = Color(0xFFFFF5DF);
@@ -34,6 +35,7 @@ class FocusAreasPage extends ConsumerWidget {
     this.showCompactActions = true,
     this.onCreate,
     this.onAreaSelected,
+    this.onArchivedAreaSelected,
     this.onViewArchived,
     this.onBackFromArchived,
     this.today,
@@ -46,6 +48,7 @@ class FocusAreasPage extends ConsumerWidget {
   final bool showCompactActions;
   final VoidCallback? onCreate;
   final ValueChanged<FocusArea>? onAreaSelected;
+  final ValueChanged<FocusArea>? onArchivedAreaSelected;
   final VoidCallback? onViewArchived;
   final VoidCallback? onBackFromArchived;
   final DateTime? today;
@@ -56,6 +59,7 @@ class FocusAreasPage extends ConsumerWidget {
     if (archived) {
       return _ArchivedAreas(
         onBack: onBackFromArchived,
+        onAreaSelected: onArchivedAreaSelected,
         layout:
             layout ??
             AppBreakpoints.layoutFor(PonosViewportScope.sizeOf(context).width),
@@ -470,7 +474,7 @@ class _AreaCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _PriorityBadge(priority: area.priority),
+                  FocusAreaPriorityBadge(priority: area.priority),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Column(
@@ -584,8 +588,29 @@ class _AreaTable extends StatelessWidget {
       areas,
       minimum: 69,
     );
-    return Container(
+    return _focusAreaTableSurface(
       key: const Key('focus-areas-table'),
+      child: Column(
+        children: [
+          _TableHeader(priorityColumnWidth: priorityColumnWidth),
+          for (final area in areas)
+            _TableRow(
+              area: area,
+              today: today,
+              priorityColumnWidth: priorityColumnWidth,
+              onPressed: onAreaSelected == null
+                  ? null
+                  : () => onAreaSelected!(area),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _focusAreaTableSurface({required Key key, required Widget child}) =>
+    Container(
+      key: key,
       decoration: BoxDecoration(
         borderRadius: AppRadius.card,
         color: AppColors.white,
@@ -594,26 +619,8 @@ class _AreaTable extends StatelessWidget {
         border: Border.all(color: AppColors.borderStrong),
         borderRadius: AppRadius.card,
       ),
-      child: ClipRRect(
-        borderRadius: AppRadius.card,
-        child: Column(
-          children: [
-            _TableHeader(priorityColumnWidth: priorityColumnWidth),
-            for (final area in areas)
-              _TableRow(
-                area: area,
-                today: today,
-                priorityColumnWidth: priorityColumnWidth,
-                onPressed: onAreaSelected == null
-                    ? null
-                    : () => onAreaSelected!(area),
-              ),
-          ],
-        ),
-      ),
+      child: ClipRRect(borderRadius: AppRadius.card, child: child),
     );
-  }
-}
 
 class _TableHeader extends StatelessWidget {
   const _TableHeader({required this.priorityColumnWidth});
@@ -689,7 +696,7 @@ class _TableRow extends StatelessWidget {
                   width: priorityColumnWidth,
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: _PriorityBadge(priority: area.priority),
+                    child: FocusAreaPriorityBadge(priority: area.priority),
                   ),
                 ),
                 Expanded(
@@ -789,47 +796,6 @@ class _TableRow extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PriorityBadge extends StatelessWidget {
-  const _PriorityBadge({required this.priority});
-
-  final int priority;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppPriorityColors.forPriority(priority);
-    return Semantics(
-      label: 'Priority $priority',
-      child: ExcludeSemantics(
-        child: Container(
-          key: Key('priority-badge-$priority'),
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xxs / 2,
-          ),
-          decoration: BoxDecoration(
-            color: colors.background,
-            border: Border.all(color: colors.border),
-            borderRadius: const BorderRadius.all(Radius.circular(8)),
-          ),
-          child: Center(
-            widthFactor: 1,
-            heightFactor: 1,
-            child: Text(
-              'P$priority',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: colors.foreground,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0,
-              ),
             ),
           ),
         ),
@@ -964,10 +930,15 @@ class _ArchiveMenu extends ConsumerWidget {
 }
 
 class _ArchivedAreas extends ConsumerWidget {
-  const _ArchivedAreas({required this.layout, this.onBack});
+  const _ArchivedAreas({
+    required this.layout,
+    this.onBack,
+    this.onAreaSelected,
+  });
 
   final AppLayoutSize layout;
   final VoidCallback? onBack;
+  final ValueChanged<FocusArea>? onAreaSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1021,8 +992,10 @@ class _ArchivedAreas extends ConsumerWidget {
                       areas: areas,
                       busy: busy,
                       activeTimerAreaId: activeTimerAreaId,
-                      onRestore: (area) => _restoreArea(context, ref, area),
-                      onDelete: (area) => _deleteArchivedArea(
+                      onSelected: onAreaSelected,
+                      onRestore: (area) =>
+                          restoreArchivedFocusArea(context, ref, area),
+                      onDelete: (area) => deleteArchivedFocusArea(
                         context,
                         ref,
                         area,
@@ -1033,8 +1006,10 @@ class _ArchivedAreas extends ConsumerWidget {
                       areas: areas,
                       busy: busy,
                       activeTimerAreaId: activeTimerAreaId,
-                      onRestore: (area) => _restoreArea(context, ref, area),
-                      onDelete: (area) => _deleteArchivedArea(
+                      onSelected: onAreaSelected,
+                      onRestore: (area) =>
+                          restoreArchivedFocusArea(context, ref, area),
+                      onDelete: (area) => deleteArchivedFocusArea(
                         context,
                         ref,
                         area,
@@ -1049,106 +1024,6 @@ class _ArchivedAreas extends ConsumerWidget {
     );
   }
 
-  Future<void> _restoreArea(
-    BuildContext context,
-    WidgetRef ref,
-    FocusArea area,
-  ) async {
-    final success = await ref
-        .read(focusAreasProvider.notifier)
-        .restore(area.id);
-    if (!success && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_errorMessage(ref.read(focusAreasProvider).error)),
-        ),
-      );
-    }
-  }
-
-  Future<void> _deleteArchivedArea(
-    BuildContext context,
-    WidgetRef ref,
-    FocusArea area, {
-    required bool blockedByTimer,
-  }) async {
-    if (blockedByTimer) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'This Focus Area cannot be deleted while its timer is active or paused.',
-          ),
-        ),
-      );
-      return;
-    }
-    final firstConfirmation = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Permanently delete ${area.name}?'),
-        content: const Text('This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete permanently'),
-          ),
-        ],
-      ),
-    );
-    if (firstConfirmation != true || !context.mounted) return;
-
-    final controller = ref.read(focusAreasProvider.notifier);
-    try {
-      final hasHistory = await controller.hasHistoricalWork(area.id);
-      if (!context.mounted) return;
-      var confirmedHistory = false;
-      if (hasHistory) {
-        confirmedHistory =
-            await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Delete historical work too?'),
-                content: const Text(
-                  'This Focus Area has recorded work. Its target history, manual entries, and timer executions will also be permanently deleted.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Keep Focus Area'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Delete all permanently'),
-                  ),
-                ],
-              ),
-            ) ==
-            true;
-        if (!confirmedHistory) return;
-      }
-      final success = await controller.permanentlyDelete(
-        area.id,
-        confirmHistoricalWork: confirmedHistory,
-      );
-      if (!success && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_errorMessage(ref.read(focusAreasProvider).error)),
-          ),
-        );
-      }
-    } catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(_errorMessage(error))));
-      }
-    }
-  }
 }
 
 class _ArchivedHeader extends StatelessWidget {
@@ -1208,6 +1083,7 @@ class _ArchivedAreaCards extends StatelessWidget {
     required this.areas,
     required this.busy,
     required this.activeTimerAreaId,
+    required this.onSelected,
     required this.onRestore,
     required this.onDelete,
   });
@@ -1215,6 +1091,7 @@ class _ArchivedAreaCards extends StatelessWidget {
   final List<FocusArea> areas;
   final bool busy;
   final int? activeTimerAreaId;
+  final ValueChanged<FocusArea>? onSelected;
   final ValueChanged<FocusArea> onRestore;
   final ValueChanged<FocusArea> onDelete;
 
@@ -1227,6 +1104,9 @@ class _ArchivedAreaCards extends StatelessWidget {
           area: areas[index],
           busy: busy,
           blockedByTimer: activeTimerAreaId == areas[index].id,
+          onSelected: onSelected == null
+              ? null
+              : () => onSelected!(areas[index]),
           onRestore: () => onRestore(areas[index]),
           onDelete: () => onDelete(areas[index]),
         ),
@@ -1241,6 +1121,7 @@ class _ArchivedAreaCard extends StatelessWidget {
     required this.area,
     required this.busy,
     required this.blockedByTimer,
+    required this.onSelected,
     required this.onRestore,
     required this.onDelete,
   });
@@ -1248,26 +1129,31 @@ class _ArchivedAreaCard extends StatelessWidget {
   final FocusArea area;
   final bool busy;
   final bool blockedByTimer;
+  final VoidCallback? onSelected;
   final VoidCallback onRestore;
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) => Container(
-    key: Key('archived-focus-area-card-${area.id}'),
-    constraints: const BoxConstraints(minHeight: 106),
-    padding: const EdgeInsets.symmetric(
-      horizontal: AppSpacing.md,
-      vertical: AppSpacing.sm,
-    ),
-    decoration: BoxDecoration(
-      color: AppColors.white,
-      border: Border.all(color: AppColors.borderStrong),
+  Widget build(BuildContext context) => Material(
+    color: AppColors.white,
+    shape: RoundedRectangleBorder(
       borderRadius: AppRadius.card,
+      side: const BorderSide(color: AppColors.borderStrong),
     ),
-    child: Row(
+    clipBehavior: Clip.antiAlias,
+    child: InkWell(
+      onTap: onSelected,
+      child: Container(
+        key: Key('archived-focus-area-card-${area.id}'),
+        constraints: const BoxConstraints(minHeight: 106),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _PriorityBadge(priority: area.priority),
+        FocusAreaPriorityBadge(priority: area.priority),
         const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
@@ -1312,6 +1198,8 @@ class _ArchivedAreaCard extends StatelessWidget {
           onDelete: onDelete,
         ),
       ],
+        ),
+      ),
     ),
   );
 }
@@ -1405,6 +1293,7 @@ class _ArchivedAreaTable extends StatelessWidget {
     required this.areas,
     required this.busy,
     required this.activeTimerAreaId,
+    required this.onSelected,
     required this.onRestore,
     required this.onDelete,
   });
@@ -1412,6 +1301,7 @@ class _ArchivedAreaTable extends StatelessWidget {
   final List<FocusArea> areas;
   final bool busy;
   final int? activeTimerAreaId;
+  final ValueChanged<FocusArea>? onSelected;
   final ValueChanged<FocusArea> onRestore;
   final ValueChanged<FocusArea> onDelete;
 
@@ -1422,14 +1312,8 @@ class _ArchivedAreaTable extends StatelessWidget {
       areas,
       minimum: 96,
     );
-    return Container(
+    return _focusAreaTableSurface(
       key: const Key('archived-focus-areas-table'),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        border: Border.all(color: AppColors.borderStrong),
-        borderRadius: AppRadius.card,
-      ),
-      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _ArchivedTableHeader(priorityColumnWidth: priorityColumnWidth),
@@ -1438,6 +1322,7 @@ class _ArchivedAreaTable extends StatelessWidget {
               area: area,
               busy: busy,
               priorityColumnWidth: priorityColumnWidth,
+              onSelected: onSelected == null ? null : () => onSelected!(area),
               blockedByTimer: activeTimerAreaId == area.id,
               onRestore: () => onRestore(area),
               onDelete: () => onDelete(area),
@@ -1487,6 +1372,7 @@ class _ArchivedTableRow extends StatelessWidget {
     required this.area,
     required this.busy,
     required this.priorityColumnWidth,
+    required this.onSelected,
     required this.blockedByTimer,
     required this.onRestore,
     required this.onDelete,
@@ -1495,24 +1381,29 @@ class _ArchivedTableRow extends StatelessWidget {
   final FocusArea area;
   final bool busy;
   final double priorityColumnWidth;
+  final VoidCallback? onSelected;
   final bool blockedByTimer;
   final VoidCallback onRestore;
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) => Container(
-    constraints: const BoxConstraints(minHeight: 68),
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-    decoration: const BoxDecoration(
-      border: Border(top: BorderSide(color: AppColors.border)),
-    ),
-    child: Row(
+  Widget build(BuildContext context) => Material(
+    color: AppColors.white,
+    child: InkWell(
+      onTap: onSelected,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 68),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.border)),
+        ),
+        child: Row(
       children: [
         SizedBox(
           width: priorityColumnWidth,
           child: Row(
             mainAxisSize: MainAxisSize.min,
-            children: [_PriorityBadge(priority: area.priority)],
+            children: [FocusAreaPriorityBadge(priority: area.priority)],
           ),
         ),
         Expanded(
@@ -1584,6 +1475,8 @@ class _ArchivedTableRow extends StatelessWidget {
           ),
         ),
       ],
+        ),
+      ),
     ),
   );
 }
