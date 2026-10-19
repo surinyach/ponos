@@ -188,8 +188,7 @@ void main() {
   ) async {
     await _pumpAtWidth(tester, 768);
     for (final selected in PonosDestination.values) {
-      await tester.tap(find.text(selected.label));
-      await tester.pump();
+      await _tapDestination(tester, selected);
 
       for (final destination in PonosDestination.values) {
         final state = destination == selected ? 'selected' : 'default';
@@ -335,8 +334,7 @@ void main() {
 
     expect(PonosDestination.values, hasLength(4));
     expect(find.text('Progress'), findsNothing);
-    await tester.tap(find.text('Focus'));
-    await tester.pump();
+    await _tapDestination(tester, PonosDestination.focus);
     expect(find.text('Focus page'), findsOneWidget);
     final navigation = tester.widget<NavigationBar>(find.byType(NavigationBar));
     expect(navigation.selectedIndex, PonosDestination.focus.index);
@@ -355,8 +353,7 @@ void main() {
       await tester.pumpWidget(const _ShellHost());
 
       for (final destination in PonosDestination.values) {
-        await tester.tap(find.text(destination.label));
-        await tester.pump();
+        await _tapDestination(tester, destination);
         expect(find.text('${destination.label} page'), findsOneWidget);
         final selectedIndex = navigationType == NavigationBar
             ? tester
@@ -377,8 +374,7 @@ void main() {
     await tester.pumpWidget(_ShellHost(builds: builds));
 
     expect(builds, {PonosDestination.overview: 1});
-    await tester.tap(find.text('Work Areas'));
-    await tester.pump();
+    await _tapDestination(tester, PonosDestination.workAreas);
     expect(builds[PonosDestination.overview], 1);
     expect(builds[PonosDestination.workAreas], 1);
     expect(builds.containsKey(PonosDestination.focus), isFalse);
@@ -396,15 +392,13 @@ void main() {
     await tester.pump();
     expect(find.text('Overview count: 1'), findsOneWidget);
 
-    await tester.tap(find.text('Work Areas'));
-    await tester.pump();
+    await _tapDestination(tester, PonosDestination.workAreas);
     final overviewContext = tester.element(
       find.byKey(const Key('page-overview'), skipOffstage: false),
     );
     expect(TickerMode.valuesOf(overviewContext).enabled, isFalse);
 
-    await tester.tap(find.text('Overview'));
-    await tester.pump();
+    await _tapDestination(tester, PonosDestination.overview);
     expect(find.text('Overview count: 1'), findsOneWidget);
     expect(
       TickerMode.valuesOf(
@@ -418,8 +412,7 @@ void main() {
     tester,
   ) async {
     await _pumpAtWidth(tester, 768);
-    await tester.tap(find.text('Work Areas'));
-    await tester.pump();
+    await _tapDestination(tester, PonosDestination.workAreas);
     final focusGuard = tester.widget<ExcludeFocus>(
       find
           .ancestor(
@@ -443,22 +436,19 @@ void main() {
       PonosDestination.focus,
       PonosDestination.logWork,
     ]) {
-      await tester.tap(find.text(destination.label));
-      await tester.pump();
+      await _tapDestination(tester, destination);
       await tester.tap(find.byKey(Key('increment-${destination.name}')));
       await tester.pump();
     }
 
-    await tester.tap(find.text('Overview'));
-    await tester.pump();
+    await _tapDestination(tester, PonosDestination.overview);
 
     for (final destination in <PonosDestination>[
       PonosDestination.workAreas,
       PonosDestination.focus,
       PonosDestination.logWork,
     ]) {
-      await tester.tap(find.text(destination.label));
-      await tester.pump();
+      await _tapDestination(tester, destination);
       expect(find.text('${destination.label} count: 1'), findsOneWidget);
     }
   });
@@ -470,8 +460,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const _ShellHost());
 
-    await tester.tap(find.text('Work Areas'));
-    await tester.pump();
+    await _tapDestination(tester, PonosDestination.workAreas);
     await tester.tap(find.byKey(const Key('open-nested-workAreas')));
     await tester.pumpAndSettle();
     expect(find.text('Nested form'), findsOneWidget);
@@ -510,6 +499,20 @@ Future<void> _pumpAtWidth(WidgetTester tester, double width) async {
   await tester.binding.setSurfaceSize(Size(width, 900));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(const _ShellHost());
+}
+
+Future<void> _tapDestination(
+  WidgetTester tester,
+  PonosDestination destination,
+) async {
+  final selectedIndex = find.byType(NavigationRail).evaluate().isNotEmpty
+      ? tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex
+      : tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex;
+  final state = selectedIndex == destination.index ? 'selected' : 'default';
+  final target = find.byKey(Key('navigation-${destination.name}-$state'));
+  expect(target, findsOneWidget);
+  await tester.tapAt(tester.getCenter(target));
+  await tester.pump();
 }
 
 class _ShellHost extends StatefulWidget {
