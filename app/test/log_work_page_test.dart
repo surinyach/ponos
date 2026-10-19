@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/providers/focus_area_providers.dart';
 import 'package:ponos_app/app/providers/work_entry_providers.dart';
 import 'package:ponos_app/core/errors/app_exception.dart';
+import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_input.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
@@ -78,6 +80,12 @@ void main() {
             builder: (context) => Scaffold(
               body: SpecialActivitiesPage(
                 embedded: embedded,
+                onSelected: (activity) => Navigator.of(context).push<void>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        CreateSpecialActivityPage(activity: activity),
+                  ),
+                ),
                 onCreate: () => Navigator.of(context).push<void>(
                   MaterialPageRoute(
                     builder: (_) => const CreateSpecialActivityPage(),
@@ -435,6 +443,221 @@ void main() {
     expect(find.byKey(const Key('special-activity-name')), findsOneWidget);
   });
 
+  testWidgets('selecting an activity opens and saves the populated edit form', (
+    tester,
+  ) async {
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.text('Release day'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Special Activity'), findsOneWidget);
+    expect(
+      tester
+          .widget<TextFormField>(
+            find.byKey(const Key('special-activity-name')),
+          )
+          .controller!
+          .text,
+      'Release day',
+    );
+    await tester.enterText(
+      find.byKey(const Key('special-activity-name')),
+      'Conference',
+    );
+    await tester.enterText(
+      find.byKey(const Key('special-activity-description')),
+      'Annual event',
+    );
+    await tester.tap(find.byKey(const Key('save-special-activity')));
+    await tester.pumpAndSettle();
+
+    expect(activities.updatedId, 4);
+    expect(activities.updated?.name, 'Conference');
+    expect(activities.updated?.description.value, 'Annual event');
+    expect(find.text('Conference'), findsOneWidget);
+  });
+
+  testWidgets('edit form back returns to the Special Activities list', (
+    tester,
+  ) async {
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.text('Release day'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Special Activity'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('special-activity-back')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edit Special Activity'), findsNothing);
+    expect(find.text('Special Activities'), findsOneWidget);
+    expect(find.text('Release day'), findsOneWidget);
+  });
+
+  testWidgets('edit failure remains visible and unsaved back requires confirmation', (
+    tester,
+  ) async {
+    activities.failUpdate = true;
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.text('Release day'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('special-activity-name')),
+      'Duplicate',
+    );
+    await tester.tap(find.byKey(const Key('save-special-activity')));
+    await tester.pumpAndSettle();
+    expect(find.text('Activity update failed'), findsOneWidget);
+    expect(find.text('Edit Special Activity'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('special-activity-back')));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard changes?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirm-discard-special-activity')));
+    await tester.pumpAndSettle();
+    expect(find.text('Special Activities'), findsOneWidget);
+  });
+
+  testWidgets('edit form deletes only after confirmation and returns to list', (
+    tester,
+  ) async {
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.text('Release day'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete-special-activity')));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete Release day?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirm-delete-special-activity')));
+    await tester.pumpAndSettle();
+    expect(activities.deletedId, 4);
+    expect(find.text('Edit Special Activity'), findsNothing);
+  });
+
+  testWidgets('edit form keeps referenced-work deletion errors actionable', (
+    tester,
+  ) async {
+    activities.failDelete = true;
+    await pumpSpecialActivities(tester);
+    await tester.tap(find.text('Release day'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('delete-special-activity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-delete-special-activity')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Special Activity has recorded work and cannot be deleted'),
+      findsOneWidget,
+    );
+    expect(find.text('Edit Special Activity'), findsOneWidget);
+  });
+
+  testWidgets('Special Activity form is card-free and responsive', (
+    tester,
+  ) async {
+    const sizes = [
+      Size(390, 844),
+      Size(500, 700),
+      Size(768, 1024),
+      Size(1440, 900),
+    ];
+    for (final size in sizes) {
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            specialActivityRepositoryProvider.overrideWithValue(activities),
+            focusTimerProvider.overrideWith(
+              () => StaticFocusTimerController(null, FocusTimerStatus.inactive),
+            ),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light.copyWith(
+              platform: size.width == 390
+                  ? TargetPlatform.android
+                  : TargetPlatform.windows,
+            ),
+            home: PonosViewportScope(
+              size: size,
+              child: const Scaffold(body: CreateSpecialActivityPage()),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Card), findsNothing, reason: 'viewport: $size');
+      expect(
+        tester.getRect(find.byKey(const Key('save-special-activity'))).height,
+        greaterThanOrEqualTo(48),
+      );
+      final nameField = tester.getRect(
+        find.byKey(const Key('special-activity-name')),
+      );
+      if (size.width >= 768) {
+        expect(nameField.width, closeTo(620, 0.1));
+        expect(nameField.center.dx, closeTo(size.width / 2, 0.1));
+        expect(
+          tester.getRect(find.byKey(const Key('special-activity-back'))).left,
+          closeTo(size.width >= 840 ? 40 : 20, 0.1),
+        );
+
+        final primary = tester.getRect(
+          find.byKey(const Key('save-special-activity')),
+        );
+        final secondary = tester.getRect(
+          find.byKey(const Key('cancel-special-activity')),
+        );
+        expect(primary.width, closeTo(200, 0.1));
+        expect(secondary.width, closeTo(200, 0.1));
+        expect(secondary.left - primary.right, closeTo(12, 0.1));
+        expect(
+          (primary.left + secondary.right) / 2,
+          closeTo(nameField.center.dx, 0.1),
+        );
+      } else if (size.width == 390) {
+        expect(nameField.left, closeTo(16, 0.1));
+        expect(nameField.right, closeTo(374, 0.1));
+      }
+      expect(tester.takeException(), isNull, reason: 'viewport: $size');
+    }
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+  });
+
+  testWidgets('Special Activity form remains reachable at 200 percent text', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          specialActivityRepositoryProvider.overrideWithValue(activities),
+          focusTimerProvider.overrideWith(
+            () => StaticFocusTimerController(null, FocusTimerStatus.inactive),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light.copyWith(platform: TargetPlatform.android),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: const Scaffold(body: CreateSpecialActivityPage()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(
+      find.byKey(const Key('cancel-special-activity')),
+    );
+    expect(
+      tester.getRect(find.byKey(const Key('cancel-special-activity'))).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('deletes an unused Special Activity only after confirmation', (
     tester,
   ) async {
@@ -629,7 +852,10 @@ class FakeSpecialActivities implements SpecialActivityRepository {
   bool failCreate = false;
   Object? createError;
   bool failDelete = false;
+  bool failUpdate = false;
   int? deletedId;
+  int? updatedId;
+  SpecialActivityUpdateInput? updated;
   final List<SpecialActivity> values = [];
   @override
   Future<List<SpecialActivity>> getActive() async => [
@@ -654,8 +880,21 @@ class FakeSpecialActivities implements SpecialActivityRepository {
   }
 
   @override
-  Future<SpecialActivity> update(int id, SpecialActivityUpdateInput input) =>
-      throw UnimplementedError();
+  Future<SpecialActivity> update(
+    int id,
+    SpecialActivityUpdateInput input,
+  ) async {
+    if (failUpdate) throw const ConflictException('Activity update failed');
+    updatedId = id;
+    updated = input;
+    return SpecialActivity(
+      id: id,
+      name: input.name ?? 'Release day',
+      description: input.description.isPresent
+          ? input.description.value
+          : null,
+    );
+  }
   @override
   Future<void> delete(int id) async {
     if (failDelete) {

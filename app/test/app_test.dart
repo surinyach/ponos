@@ -50,14 +50,33 @@ void main() {
     expect(find.byKey(const Key('new-special-activity')), findsOneWidget);
     await tester.tap(find.byKey(const Key('new-special-activity')));
     await tester.pumpAndSettle();
-    expect(find.text('New Special Activity'), findsOneWidget);
+    expect(
+      find.byKey(const Key('special-activity-form-title')),
+      findsOneWidget,
+    );
 
-    Navigator.of(tester.element(find.text('New Special Activity'))).pop();
+    await tester.tap(find.byKey(const Key('special-activity-back')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('work-area-type')), findsOneWidget);
     expect(
+      tester.widget<PonosInlineTabs>(find.byKey(const Key('work-area-type')))
+          .selectedIndex,
+      1,
+    );
+    expect(
       tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex,
       PonosDestination.workAreas.index,
+    );
+
+    await tester.tap(find.byKey(const Key('new-special-activity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('cancel-special-activity')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('work-area-type')), findsOneWidget);
+    expect(
+      tester.widget<PonosInlineTabs>(find.byKey(const Key('work-area-type')))
+          .selectedIndex,
+      1,
     );
   });
 

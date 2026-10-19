@@ -15,6 +15,7 @@ import '../../focus_areas/presentation/work_areas_page.dart';
 import '../../focus_timer/presentation/focus_timer_page.dart';
 import '../../work_entries/presentation/create_special_activity_page.dart';
 import '../../work_entries/presentation/log_work_page.dart';
+import '../../work_entries/domain/models/special_activity.dart';
 import 'overview_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -64,6 +65,7 @@ class _HomePageState extends State<HomePage> {
       PonosDestination.workAreas => WorkAreasPage(
         onCreateFocusArea: () => _openFocusAreaForm(),
         onCreateSpecialActivity: _openSpecialActivityForm,
+        onSpecialActivitySelected: _openSpecialActivityForm,
         onFocusAreaSelected: (area) => _openFocusAreaForm(area),
         onArchivedFocusAreaSelected: _openArchivedFocusAreaDetails,
       ),
@@ -83,9 +85,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _openSpecialActivityForm() async {
+  Future<void> _openSpecialActivityForm([SpecialActivity? activity]) async {
     await Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (_) => const CreateSpecialActivityPage()),
+      MaterialPageRoute(
+        builder: (_) => _SpecialActivityFormShell(
+          activity: activity,
+          onDestinationSelected: (destination) {
+            Navigator.of(context).pop();
+            _selectDestination(destination);
+          },
+        ),
+      ),
     );
   }
 
@@ -103,6 +113,47 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+class _SpecialActivityFormShell extends StatelessWidget {
+  const _SpecialActivityFormShell({
+    required this.activity,
+    required this.onDestinationSelected,
+  });
+
+  final SpecialActivity? activity;
+  final ValueChanged<PonosDestination> onDestinationSelected;
+
+  @override
+  Widget build(BuildContext context) => PonosAdaptiveShell(
+    selectedDestination: PonosDestination.workAreas,
+    onDestinationSelected: (destination) {
+      if (destination != PonosDestination.workAreas) {
+        onDestinationSelected(destination);
+      }
+    },
+    destinationBuilder: (_) => CreateSpecialActivityPage(activity: activity),
+    appBar: _ponosAppBar(),
+  );
+}
+
+PreferredSizeWidget _ponosAppBar() => AppBar(
+  toolbarHeight: AppSpacing.xxxl,
+  titleSpacing: AppSpacing.md,
+  title: Row(
+    children: [
+      SizedBox.square(
+        dimension: 34,
+        child: SvgPicture.asset(
+          AppAssets.ponosEmblemCompact,
+          excludeFromSemantics: true,
+        ),
+      ),
+      const SizedBox(width: AppSpacing.xs),
+      const Text('Ponos'),
+    ],
+  ),
+  shape: const Border(bottom: BorderSide(color: AppColors.border)),
+);
 
 class _ArchivedDetailsShell extends StatelessWidget {
   const _ArchivedDetailsShell({
@@ -142,22 +193,5 @@ class _ArchivedDetailsShell extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _appBar() => AppBar(
-      toolbarHeight: AppSpacing.xxxl,
-      titleSpacing: AppSpacing.md,
-      title: Row(
-        children: [
-          SizedBox.square(
-            dimension: 34,
-            child: SvgPicture.asset(
-              AppAssets.ponosEmblemCompact,
-              excludeFromSemantics: true,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          const Text('Ponos'),
-        ],
-      ),
-      shape: const Border(bottom: BorderSide(color: AppColors.border)),
-    );
+  PreferredSizeWidget _appBar() => _ponosAppBar();
 }

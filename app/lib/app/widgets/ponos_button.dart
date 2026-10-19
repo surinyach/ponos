@@ -167,7 +167,8 @@ class PonosButton extends StatelessWidget {
         if (states.contains(WidgetState.focused)) {
           return const BorderSide(color: AppColors.accent, width: 2);
         }
-        return secondary
+        return secondary ||
+                (variant == PonosButtonVariant.danger && borderColor != null)
             ? BorderSide(color: borderColor ?? AppColors.border)
             : BorderSide.none;
       }),

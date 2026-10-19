@@ -17,4 +17,5 @@ abstract final class AppColors {
   static const success = Color(0xFF4F7059);
   static const warning = accent;
   static const error = Color(0xFFBA1A1A);
+  static const danger = Color(0xFFC63843);
 }

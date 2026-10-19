@@ -14,12 +14,14 @@ import 'state/special_activities_state.dart';
 class SpecialActivitiesPage extends ConsumerWidget {
   const SpecialActivitiesPage({
     this.onCreate,
+    this.onSelected,
     this.embedded = false,
     this.showCreateAction = true,
     super.key,
   });
 
   final VoidCallback? onCreate;
+  final ValueChanged<SpecialActivity>? onSelected;
   final bool embedded;
   final bool showCreateAction;
 
@@ -103,6 +105,7 @@ class SpecialActivitiesPage extends ConsumerWidget {
                   side: BorderSide(color: AppColors.borderStrong),
                 ),
                 child: ListTile(
+                  onTap: onSelected == null ? null : () => onSelected!(activity),
                   leading: const Icon(
                     Icons.local_activity_outlined,
                     color: AppColors.textSecondary,

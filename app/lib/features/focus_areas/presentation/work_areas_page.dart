@@ -10,6 +10,7 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../app/widgets/ponos_widgets.dart';
 import '../../work_entries/presentation/special_activities_page.dart';
+import '../../work_entries/domain/models/special_activity.dart';
 import '../domain/models/focus_area.dart';
 import 'focus_areas_page.dart';
 import 'state/focus_areas_controller.dart';
@@ -18,6 +19,7 @@ class WorkAreasPage extends ConsumerStatefulWidget {
   const WorkAreasPage({
     required this.onCreateFocusArea,
     required this.onCreateSpecialActivity,
+    this.onSpecialActivitySelected,
     required this.onFocusAreaSelected,
     this.onArchivedFocusAreaSelected,
     super.key,
@@ -25,6 +27,7 @@ class WorkAreasPage extends ConsumerStatefulWidget {
 
   final VoidCallback onCreateFocusArea;
   final VoidCallback onCreateSpecialActivity;
+  final ValueChanged<SpecialActivity>? onSpecialActivitySelected;
   final ValueChanged<FocusArea> onFocusAreaSelected;
   final ValueChanged<FocusArea>? onArchivedFocusAreaSelected;
 
@@ -143,6 +146,7 @@ class _WorkAreasPageState extends ConsumerState<WorkAreasPage> {
                               embedded: true,
                               showCreateAction: !showHeaderActions,
                               onCreate: widget.onCreateSpecialActivity,
+                              onSelected: widget.onSpecialActivitySelected,
                             ),
                     ),
                   ],
