@@ -113,7 +113,7 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
   });
 
   void _loaded(Iterable<SpecialActivity> active) {
-    final activeList = active.toList()..sort(_byId);
+    final activeList = active.toList()..sort(_alphabetically);
     state = SpecialActivitiesState(
       status: activeList.isEmpty
           ? SpecialActivitiesStatus.empty
@@ -122,7 +122,10 @@ class SpecialActivitiesController extends Notifier<SpecialActivitiesState> {
     );
   }
 
-  int _byId(SpecialActivity a, SpecialActivity b) => a.id.compareTo(b.id);
+  int _alphabetically(SpecialActivity a, SpecialActivity b) {
+    final name = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    return name == 0 ? a.id.compareTo(b.id) : name;
+  }
 
   void _failed(Object error) {
     state = SpecialActivitiesState(

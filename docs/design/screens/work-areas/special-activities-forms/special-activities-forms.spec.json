@@ -1,0 +1,584 @@
+{
+  "id": "ponos-special-activities-create-edit",
+  "version": "1.0",
+  "status": "approved visual direction translated into canonical vector references",
+  "scope": "Special Activities Create/Edit forms only (no surrounding white card)",
+  "sourceOfTruthOrder": [
+    "SVG master for visual proportions",
+    "matching 1x PNG (generated directly from SVG)",
+    "this spec for geometry and intent",
+    "existing Flutter API/domain for behavior"
+  ],
+  "palette": {
+    "primary": "#315D8C",
+    "deep": "#1E3550",
+    "canvas": "#F5F8FC",
+    "fieldSurface": "#FFFFFF",
+    "borderStrong": "#B7C8D9",
+    "border": "#DCE5EE",
+    "secondaryText": "#62758A",
+    "danger": "#C63843",
+    "sidebarSeparator": "#A4B8CC"
+  },
+  "typography": {
+    "fontFamily": "Inter",
+    "nameLabels": {
+      "size": 14,
+      "weight": 600
+    },
+    "body": {
+      "size": 14,
+      "weight": 400
+    },
+    "mobileTitle": {
+      "size": 21,
+      "weight": 650
+    },
+    "desktopTitle": {
+      "size": 24,
+      "weight": 650
+    },
+    "buttons": {
+      "size": 14,
+      "weight": 600
+    }
+  },
+  "tokens": {
+    "fieldRadius": 10,
+    "fieldHeight": 48,
+    "buttonRadius": 10,
+    "buttonVisualHeight": 48,
+    "minimumInteractiveTarget": 48,
+    "mobileContentHorizontalInset": 16,
+    "mobileFormLayout": "single column",
+    "mediumAndDesktopFormMaxWidth": 560,
+    "desktopExpandedSidebarWidth": 200,
+    "desktopCollapsedRailWidth": 72,
+    "mobileBottomNavHeight": 72
+  },
+  "interaction": {
+    "create": [
+      "name required",
+      "description optional",
+      "Create",
+      "Cancel"
+    ],
+    "edit": [
+      "name editable",
+      "description editable",
+      "Save Changes",
+      "Delete Special Activity (existing confirmation/restrictions)",
+      "Back with unsaved-change protection"
+    ],
+    "datesAndTargets": "Not included. Special Activities are punctual and are not assigned a date at creation/editing; work_date belongs to work records.",
+    "naming": "Test is only illustrative UI content.",
+    "characterCounters": "Not included. Do not introduce arbitrary character limits.",
+    "deleteNotes": "The approved Edit visual shows a Delete action. Use existing deletion restrictions and confirm flow; the existing list Delete action may remain.",
+    "actionLayout": "Mobile full-width vertically stacked; desktop compact actions right-aligned below fields",
+    "navigation": "Preserve existing shell routes and platform-specific nav behavior rather than duplicating a new shell; images show nav for context."
+  },
+  "responsive": {
+    "compact": "width <600 on mobile, stacked full-width controls",
+    "medium": "600-839, single column constrained form and lateral rail on mobile/tablet",
+    "desktop": "lateral rail at all widths, expanded sidebar >=1200",
+    "overflow": "vertical scrolling for short heights or enlarged text; no clipped inputs/actions"
+  },
+  "accessibility": {
+    "interactiveTargetsMinDp": 48,
+    "textScaleTest": 2.0,
+    "semanticActions": true,
+    "focusVisibility": true,
+    "contrast": "use theme contrast and platform validation"
+  },
+  "geometry": {
+    "mobile-390x844": {
+      "create-empty": {
+        "page": {
+          "width": 390,
+          "height": 844
+        },
+        "platformNavigation": "bottom",
+        "form": {
+          "x": 16,
+          "width": 358,
+          "titleBaselineY": 115,
+          "subtitleBaselineY": 147,
+          "nameLabelBaselineY": 196,
+          "nameInput": [
+            16,
+            208,
+            358,
+            48
+          ],
+          "descriptionLabelBaselineY": 290,
+          "descriptionInput": [
+            16,
+            302,
+            358,
+            110
+          ],
+          "actionsTopY": 447,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "create-filled": {
+        "page": {
+          "width": 390,
+          "height": 844
+        },
+        "platformNavigation": "bottom",
+        "form": {
+          "x": 16,
+          "width": 358,
+          "titleBaselineY": 115,
+          "subtitleBaselineY": 147,
+          "nameLabelBaselineY": 196,
+          "nameInput": [
+            16,
+            208,
+            358,
+            48
+          ],
+          "descriptionLabelBaselineY": 290,
+          "descriptionInput": [
+            16,
+            302,
+            358,
+            110
+          ],
+          "actionsTopY": 447,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-current": {
+        "page": {
+          "width": 390,
+          "height": 844
+        },
+        "platformNavigation": "bottom",
+        "form": {
+          "x": 16,
+          "width": 358,
+          "titleBaselineY": 115,
+          "subtitleBaselineY": 147,
+          "nameLabelBaselineY": 196,
+          "nameInput": [
+            16,
+            208,
+            358,
+            48
+          ],
+          "descriptionLabelBaselineY": 290,
+          "descriptionInput": [
+            16,
+            302,
+            358,
+            110
+          ],
+          "actionsTopY": 447,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-filled": {
+        "page": {
+          "width": 390,
+          "height": 844
+        },
+        "platformNavigation": "bottom",
+        "form": {
+          "x": 16,
+          "width": 358,
+          "titleBaselineY": 115,
+          "subtitleBaselineY": 147,
+          "nameLabelBaselineY": 196,
+          "nameInput": [
+            16,
+            208,
+            358,
+            48
+          ],
+          "descriptionLabelBaselineY": 290,
+          "descriptionInput": [
+            16,
+            302,
+            358,
+            110
+          ],
+          "actionsTopY": 447,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      }
+    },
+    "compact-desktop-500x700": {
+      "create-empty": {
+        "page": {
+          "width": 500,
+          "height": 700
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 108.0,
+          "width": 356,
+          "titleBaselineY": 132,
+          "subtitleBaselineY": 155,
+          "nameLabelBaselineY": 197,
+          "nameInput": [
+            108.0,
+            210,
+            356,
+            48
+          ],
+          "descriptionLabelBaselineY": 289,
+          "descriptionInput": [
+            108.0,
+            302,
+            356,
+            108
+          ],
+          "actionsTopY": 438,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "create-filled": {
+        "page": {
+          "width": 500,
+          "height": 700
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 108.0,
+          "width": 356,
+          "titleBaselineY": 132,
+          "subtitleBaselineY": 155,
+          "nameLabelBaselineY": 197,
+          "nameInput": [
+            108.0,
+            210,
+            356,
+            48
+          ],
+          "descriptionLabelBaselineY": 289,
+          "descriptionInput": [
+            108.0,
+            302,
+            356,
+            108
+          ],
+          "actionsTopY": 438,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-current": {
+        "page": {
+          "width": 500,
+          "height": 700
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 108.0,
+          "width": 356,
+          "titleBaselineY": 132,
+          "subtitleBaselineY": 155,
+          "nameLabelBaselineY": 197,
+          "nameInput": [
+            108.0,
+            210,
+            356,
+            48
+          ],
+          "descriptionLabelBaselineY": 289,
+          "descriptionInput": [
+            108.0,
+            302,
+            356,
+            108
+          ],
+          "actionsTopY": 438,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-filled": {
+        "page": {
+          "width": 500,
+          "height": 700
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 108.0,
+          "width": 356,
+          "titleBaselineY": 132,
+          "subtitleBaselineY": 155,
+          "nameLabelBaselineY": 197,
+          "nameInput": [
+            108.0,
+            210,
+            356,
+            48
+          ],
+          "descriptionLabelBaselineY": 289,
+          "descriptionInput": [
+            108.0,
+            302,
+            356,
+            108
+          ],
+          "actionsTopY": 438,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      }
+    },
+    "medium-768x1024": {
+      "create-empty": {
+        "page": {
+          "width": 768,
+          "height": 1024
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 140.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            140.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            140.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "create-filled": {
+        "page": {
+          "width": 768,
+          "height": 1024
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 140.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            140.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            140.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-current": {
+        "page": {
+          "width": 768,
+          "height": 1024
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 140.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            140.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            140.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-filled": {
+        "page": {
+          "width": 768,
+          "height": 1024
+        },
+        "platformNavigation": "rail",
+        "form": {
+          "x": 140.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            140.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            140.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      }
+    },
+    "desktop-1440x900": {
+      "create-empty": {
+        "page": {
+          "width": 1440,
+          "height": 900
+        },
+        "platformNavigation": "sidebar",
+        "form": {
+          "x": 540.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            540.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            540.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "create-filled": {
+        "page": {
+          "width": 1440,
+          "height": 900
+        },
+        "platformNavigation": "sidebar",
+        "form": {
+          "x": 540.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            540.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            540.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-current": {
+        "page": {
+          "width": 1440,
+          "height": 900
+        },
+        "platformNavigation": "sidebar",
+        "form": {
+          "x": 540.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            540.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            540.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      },
+      "edit-filled": {
+        "page": {
+          "width": 1440,
+          "height": 900
+        },
+        "platformNavigation": "sidebar",
+        "form": {
+          "x": 540.0,
+          "width": 560,
+          "titleBaselineY": 153,
+          "subtitleBaselineY": 176,
+          "nameLabelBaselineY": 218,
+          "nameInput": [
+            540.0,
+            231,
+            560,
+            48
+          ],
+          "descriptionLabelBaselineY": 310,
+          "descriptionInput": [
+            540.0,
+            323,
+            560,
+            108
+          ],
+          "actionsTopY": 459,
+          "actionHeight": 48
+        },
+        "outerFormCard": false
+      }
+    }
+  },
+  "assetNotes": "Reuse app branding and background assets; SVGs contain self-contained visual approximations and are design references, NOT new production asset files."
+}

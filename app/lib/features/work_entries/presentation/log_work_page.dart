@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../focus_areas/presentation/state/focus_areas_controller.dart';
@@ -174,7 +175,10 @@ class _EntryCard extends StatelessWidget {
           Icon(
             entry.specialActivityId == null
                 ? Icons.track_changes_outlined
-                : Icons.star_outline,
+                : Icons.local_activity_outlined,
+            color: entry.specialActivityId == null
+                ? null
+                : AppColors.textSecondary,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

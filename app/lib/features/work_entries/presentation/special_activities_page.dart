@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_spacing.dart';
+import '../../../app/widgets/ponos_button.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../focus_timer/presentation/state/focus_timer_controller.dart';
 import '../domain/models/special_activity.dart';
@@ -9,9 +12,18 @@ import 'state/special_activities_controller.dart';
 import 'state/special_activities_state.dart';
 
 class SpecialActivitiesPage extends ConsumerWidget {
-  const SpecialActivitiesPage({this.onCreate, super.key});
+  const SpecialActivitiesPage({
+    this.onCreate,
+    this.onSelected,
+    this.embedded = false,
+    this.showCreateAction = true,
+    super.key,
+  });
 
   final VoidCallback? onCreate;
+  final ValueChanged<SpecialActivity>? onSelected;
+  final bool embedded;
+  final bool showCreateAction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -25,40 +37,73 @@ class SpecialActivitiesPage extends ConsumerWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
         child: ListView(
-          padding: AppSpacing.pagePadding,
+          padding: embedded
+              ? const EdgeInsets.only(top: AppSpacing.xs)
+              : AppSpacing.pagePadding,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Special Activities',
-                    style: Theme.of(context).textTheme.headlineSmall,
+            if (!embedded)
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Special Activities',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
                   ),
-                ),
-                FilledButton.icon(
+                  if (showCreateAction)
+                    FilledButton.icon(
+                      key: const Key('new-special-activity'),
+                      onPressed: onCreate,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create'),
+                    ),
+                ],
+              ),
+            if (embedded && showCreateAction) ...[
+              SizedBox(
+                width: double.infinity,
+                child: PonosButton.primary(
                   key: const Key('new-special-activity'),
                   onPressed: onCreate,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Create'),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: 'New Special Activity',
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'One-off work without daily targets or priority.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            if (!embedded) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'One-off work without daily targets or priority.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
             if (state.status == SpecialActivitiesStatus.saving ||
                 state.status == SpecialActivitiesStatus.loading)
               const LinearProgressIndicator(),
             if (state.status == SpecialActivitiesStatus.error) ...[
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                state.error is AppException
-                    ? (state.error as AppException).message
-                    : 'Unable to update Special Activities.',
-                key: const Key('special-activity-delete-error'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  state.error is AppException
+                      ? (state.error as AppException).message
+                      : 'Unable to update Special Activities.',
+                  key: const Key('special-activity-delete-error'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: PonosButton.secondary(
+                  key: const Key('retry-special-activities'),
+                  label: 'Try again',
+                  icon: const Icon(Icons.refresh, size: 18),
+                  onPressed: () => ref
+                      .read(specialActivitiesProvider.notifier)
+                      .refresh(),
+                ),
               ),
             ],
             if (state.active.isEmpty &&
@@ -69,8 +114,17 @@ class SpecialActivitiesPage extends ConsumerWidget {
               ),
             for (final activity in state.active)
               Card(
+                color: AppColors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.card,
+                  side: BorderSide(color: AppColors.borderStrong),
+                ),
                 child: ListTile(
-                  leading: const Icon(Icons.star_outline),
+                  onTap: onSelected == null ? null : () => onSelected!(activity),
+                  leading: const Icon(
+                    Icons.local_activity_outlined,
+                    color: AppColors.textSecondary,
+                  ),
                   title: Text(activity.name),
                   subtitle: activity.description == null
                       ? null

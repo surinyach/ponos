@@ -9,10 +9,13 @@ abstract final class AppColors {
   static const background = Color(0xFFF5F8FC);
   static const white = Color(0xFFFFFFFF);
   static const textSecondary = Color(0xFF62758A);
+  static const sidebarSeparator = Color(0xFFA4B8CC);
+  static const borderStrong = Color(0xFFB7C8D9);
   static const border = Color(0xFFDCE5EE);
 
   // The design references do not specify feedback colors yet.
   static const success = Color(0xFF4F7059);
   static const warning = accent;
   static const error = Color(0xFFBA1A1A);
+  static const danger = Color(0xFFC63843);
 }

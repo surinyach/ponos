@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/providers/focus_area_providers.dart';
+import 'package:ponos_app/app/theme/app_spacing.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/core/errors/app_exception.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
@@ -15,6 +16,10 @@ import 'package:ponos_app/features/focus_areas/presentation/focus_area_form_data
 import 'package:ponos_app/features/focus_areas/presentation/focus_area_form_page.dart';
 
 void main() {
+  test('empty Focus Area form contains exactly seven weekdays', () {
+    expect(FocusAreaFormData.empty().targets, hasLength(7));
+  });
+
   testWidgets('validates required fields and weekday targets', (tester) async {
     final repository = FormRepository();
     await openForm(tester, repository);
@@ -25,6 +30,24 @@ void main() {
 
     expect(find.text('Enter a name'), findsOneWidget);
     expect(find.text('Enable at least one weekday'), findsOneWidget);
+    expect(repository.created, isNull);
+  });
+
+  testWidgets('requires positive minutes for an enabled weekday', (
+    tester,
+  ) async {
+    final repository = FormRepository();
+    await openForm(tester, repository);
+
+    await tester.enterText(find.byKey(const Key('focus-area-name')), 'Area');
+    await tester.tap(find.byKey(const Key('target-enabled-1')));
+    await tester.pump();
+    await tester.enterText(find.byKey(const Key('target-minutes-1')), '0');
+    await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
+    await tester.tap(find.byKey(const Key('focus-area-submit')));
+    await tester.pump();
+
+    expect(find.text('Must be at least 1 minute'), findsOneWidget);
     expect(repository.created, isNull);
   });
 
@@ -41,7 +64,7 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('target-enabled-1')));
     await tester.pump();
-    await tester.enterText(find.byKey(const Key('target-minutes-1')), '90');
+    await tester.enterText(find.byKey(const Key('target-minutes-1')), '7');
     await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
     await tester.tap(find.byKey(const Key('focus-area-submit')));
     await tester.pump();
@@ -49,7 +72,7 @@ void main() {
     expect(find.byKey(const Key('focus-area-form-saving')), findsOneWidget);
     expect(repository.created?.name, 'Deep work');
     expect(repository.created?.targets.single.weekday, DateTime.monday);
-    expect(repository.created?.targets.single.targetMinutes, 90);
+    expect(repository.created?.targets.single.targetMinutes, 7);
 
     pending.complete(area(name: 'Deep work'));
     await tester.pumpAndSettle();
@@ -94,7 +117,7 @@ void main() {
 
     expect(find.byKey(const Key('focus-area-form-error')), findsOneWidget);
     expect(find.text('Target period conflicts'), findsOneWidget);
-    expect(find.text('New Focus Area'), findsOneWidget);
+    expect(find.byKey(const Key('focus-area-form-title')), findsOneWidget);
   });
 
   testWidgets('protects unsaved changes before leaving', (tester) async {
@@ -108,7 +131,7 @@ void main() {
 
     await tester.tap(find.text('Keep editing'));
     await tester.pumpAndSettle();
-    expect(find.text('New Focus Area'), findsOneWidget);
+    expect(find.byKey(const Key('focus-area-form-title')), findsOneWidget);
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
@@ -126,11 +149,13 @@ void main() {
         MaterialApp(
           theme: AppTheme.light,
           home: Scaffold(
-            body: FocusAreaForm(
-              initialData: FocusAreaFormData.empty(),
-              submitLabel: 'Create',
-              onChanged: (_) {},
-              onSubmit: (_) {},
+            body: SingleChildScrollView(
+              child: FocusAreaForm(
+                initialData: FocusAreaFormData.empty(),
+                submitLabel: 'Create',
+                onChanged: (_) {},
+                onSubmit: (_) {},
+              ),
             ),
           ),
         ),
@@ -149,6 +174,243 @@ void main() {
     final mobileTargets = tester.getTopLeft(find.text('Weekly targets')).dy;
     expect(mobileTargets, greaterThan(mobileDetails));
   });
+
+  testWidgets('weekday rows use eight pixels of whitespace without dividers', (
+    tester,
+  ) async {
+    await openForm(tester, FormRepository());
+
+    final monday = tester.getRect(find.byKey(const Key('target-row-1')));
+    final tuesday = tester.getRect(find.byKey(const Key('target-row-2')));
+
+    expect(monday.height, greaterThanOrEqualTo(AppSpacing.minimumTouchTarget));
+    expect(tuesday.top - monday.bottom, AppSpacing.xs);
+    expect(find.byType(Divider), findsNothing);
+  });
+
+  testWidgets('weekday spacing survives enabled, focused, and error states', (
+    tester,
+  ) async {
+    await openForm(tester, FormRepository());
+    await tester.tap(find.byKey(const Key('target-enabled-1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('target-minutes-1')));
+    await tester.enterText(find.byKey(const Key('target-minutes-1')), '0');
+    await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
+    await tester.tap(find.byKey(const Key('focus-area-submit')));
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('target-row-1')));
+
+    final monday = tester.getRect(find.byKey(const Key('target-row-1')));
+    final tuesday = tester.getRect(find.byKey(const Key('target-row-2')));
+    expect(find.text('Must be at least 1 minute'), findsOneWidget);
+    expect(tuesday.top - monday.bottom, AppSpacing.xs);
+    expect(monday.height, greaterThan(AppSpacing.minimumTouchTarget));
+    expect(find.byType(Divider), findsNothing);
+  });
+
+  testWidgets('creates with an explicitly selected P1-P5 priority', (
+    tester,
+  ) async {
+    final repository = FormRepository();
+    await openForm(tester, repository);
+
+    expect(find.byKey(const Key('focus-area-priority-1')), findsOneWidget);
+    expect(find.byKey(const Key('focus-area-priority-5')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('focus-area-priority-4')));
+    await tester.enterText(find.byKey(const Key('focus-area-name')), 'Area');
+    await tester.tap(find.byKey(const Key('target-enabled-1')));
+    await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
+    await tester.tap(find.byKey(const Key('focus-area-submit')));
+    await tester.pumpAndSettle();
+
+    expect(repository.created?.priority, 4);
+  });
+
+  testWidgets('preserves a legacy priority above P5 on unrelated edits', (
+    tester,
+  ) async {
+    final repository = FormRepository();
+    await openForm(tester, repository, editing: area(priority: 8));
+
+    expect(find.byKey(const Key('focus-area-priority-8')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('focus-area-name')),
+      'Renamed legacy area',
+    );
+    await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
+    await tester.tap(find.byKey(const Key('focus-area-submit')));
+    await tester.pumpAndSettle();
+
+    expect(repository.updated?.name, 'Renamed legacy area');
+    expect(repository.updated?.priority, isNull);
+  });
+
+  testWidgets('shows local-date expiration and not on the finish date', (
+    tester,
+  ) async {
+    final repository = FormRepository();
+    await openForm(
+      tester,
+      repository,
+      editing: area(targetEndDate: DateTime(2026, 9, 6)),
+    );
+
+    expect(find.text('Expired 1 day ago'), findsOneWidget);
+    expect(
+      find.text('This Focus Area stays active until you archive it.'),
+      findsOneWidget,
+    );
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await openForm(
+      tester,
+      FormRepository(),
+      editing: area(targetEndDate: DateTime(2026, 9, 7)),
+    );
+    expect(
+      find.byKey(const Key('focus-area-expiration-warning')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('archives from edit after confirmation', (tester) async {
+    final repository = FormRepository();
+    await openForm(tester, repository, editing: area());
+
+    await tester.ensureVisible(find.byKey(const Key('focus-area-secondary')));
+    await tester.tap(find.byKey(const Key('focus-area-secondary')));
+    await tester.pumpAndSettle();
+    expect(find.text('Archive Existing area?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirm-archive-focus-area')));
+    await tester.pumpAndSettle();
+
+    expect(repository.archivedId, 1);
+    expect(find.text('Open form'), findsOneWidget);
+  });
+
+  testWidgets('keeps edit open when archiving fails', (tester) async {
+    final repository = FormRepository()
+      ..archiveError = const ConflictException('Archive is unavailable');
+    await openForm(tester, repository, editing: area());
+
+    await tester.ensureVisible(find.byKey(const Key('focus-area-secondary')));
+    await tester.tap(find.byKey(const Key('focus-area-secondary')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-archive-focus-area')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Archive is unavailable'), findsOneWidget);
+    expect(find.byKey(const Key('focus-area-form-title')), findsOneWidget);
+  });
+
+  testWidgets('date picker permits past finish dates', (tester) async {
+    await openForm(tester, FormRepository());
+
+    await tester.tap(find.byKey(const Key('focus-area-end-date')));
+    await tester.pumpAndSettle();
+    final picker = tester.widget<CalendarDatePicker>(
+      find.byType(CalendarDatePicker),
+    );
+    expect(picker.firstDate, DateTime(1900));
+  });
+
+  testWidgets('all weekday controls and actions remain reachable at 320px', (
+    tester,
+  ) async {
+    final repository = FormRepository();
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [focusAreaRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: FocusAreaFormPage(today: DateTime(2026, 9, 7)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('target-enabled-7')));
+    expect(find.text('Sunday'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
+    expect(find.byKey(const Key('focus-area-secondary')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('mobile form remains reachable at 200 percent text scaling', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          focusAreaRepositoryProvider.overrideWithValue(FormRepository()),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: FocusAreaFormPage(today: DateTime(2026, 9, 7)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('target-enabled-7')));
+    await tester.ensureVisible(find.byKey(const Key('focus-area-secondary')));
+    expect(
+      tester.getSize(find.byKey(const Key('focus-area-submit'))).height,
+      greaterThanOrEqualTo(48),
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final viewport in const [
+    Size(320, 568),
+    Size(360, 640),
+    Size(390, 844),
+    Size(430, 932),
+    Size(500, 600),
+    Size(500, 700),
+    Size(600, 800),
+    Size(768, 700),
+    Size(768, 1024),
+    Size(839, 1024),
+    Size(1024, 700),
+    Size(1440, 900),
+  ]) {
+    testWidgets(
+      'form is overflow free and scrollable at ${viewport.width.toInt()}x${viewport.height.toInt()}',
+      (tester) async {
+        await tester.binding.setSurfaceSize(viewport);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              focusAreaRepositoryProvider.overrideWithValue(FormRepository()),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.light,
+              home: FocusAreaFormPage(today: DateTime(2026, 9, 7)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(find.byKey(const Key('target-enabled-7')));
+        await tester.ensureVisible(find.byKey(const Key('focus-area-submit')));
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 
   test('edit input is partial and creates a historical target version', () {
     final existing = area();
@@ -223,12 +485,17 @@ class _Launcher extends StatelessWidget {
   );
 }
 
-FocusArea area({String name = 'Existing area'}) {
+FocusArea area({
+  String name = 'Existing area',
+  int priority = 2,
+  DateTime? targetEndDate,
+}) {
   final timestamp = DateTime.utc(2026, 9, 1);
   return FocusArea(
     id: 1,
     name: name,
-    priority: 2,
+    priority: priority,
+    targetEndDate: targetEndDate,
     createdAt: timestamp,
     updatedAt: timestamp,
     targets: [
@@ -248,6 +515,8 @@ class FormRepository implements FocusAreaRepository {
   FocusAreaUpdateInput? updated;
   Future<FocusArea>? createResult;
   Object? createError;
+  int? archivedId;
+  Object? archiveError;
 
   @override
   Future<bool> hasHistoricalWork(int id) => throw UnimplementedError();
@@ -279,7 +548,11 @@ class FormRepository implements FocusAreaRepository {
   }
 
   @override
-  Future<FocusArea> archive(int id) => throw UnimplementedError();
+  Future<FocusArea> archive(int id) async {
+    archivedId = id;
+    if (archiveError != null) throw archiveError!;
+    return area();
+  }
 
   @override
   Future<List<FocusArea>> getArchived() => throw UnimplementedError();

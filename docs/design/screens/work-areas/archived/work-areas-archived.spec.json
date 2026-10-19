@@ -1,0 +1,657 @@
+{
+  "package_version": "3.0.0",
+  "scope": "Archived Focus Areas list, read-only details, visual components; shared priority-badge colors for Active and Archived",
+  "status": "Visual references for human-approved art direction; implement subject to existing API capabilities and approved behavior",
+  "source_of_truth": {
+    "master": "archived/svg/*.svg",
+    "derived": "archived/reference/*.png",
+    "method": "1x CairoSVG rasterization from matching SVG; images under concept/ are illustrative, not pixel-accuracy references"
+  },
+  "palette": {
+    "bg": "#F5F8FC",
+    "surface": "#FFFFFF",
+    "nav": "#FFFFFF",
+    "primary": "#315D8C",
+    "deep": "#1E3550",
+    "muted": "#62758A",
+    "border": "#B7C8D9",
+    "weak": "#DCE5EE",
+    "separator": "#A4B8CC",
+    "pale": "#EAF1F8",
+    "bronze": "#B78A55",
+    "header": "#EAF1F8",
+    "red": "#DC2626",
+    "redp": "#FFF0F1"
+  },
+  "priority_badges": {
+    "P1": {
+      "background": "#FFB4B8",
+      "foreground": "#971B2B",
+      "border": "#DE4050",
+      "optional_card_tint": "#FFF4F4"
+    },
+    "P2": {
+      "background": "#FFCEB0",
+      "foreground": "#91421C",
+      "border": "#EA8854",
+      "optional_card_tint": "#FFF8F3"
+    },
+    "P3": {
+      "background": "#FCE0AF",
+      "foreground": "#825214",
+      "border": "#DDA34D",
+      "optional_card_tint": "#FFFAF2"
+    },
+    "P4": {
+      "background": "#F4E6AF",
+      "foreground": "#685522",
+      "border": "#D1B95D",
+      "optional_card_tint": "#FFFDF5"
+    },
+    "P5+": {
+      "background": "#DDE7DD",
+      "foreground": "#3E5642",
+      "border": "#A2B5A4",
+      "optional_card_tint": "#F6F9F6"
+    }
+  },
+  "priority_rules": {
+    "ordering": "priority numeric ascending (P1 first), ID ascending on ties",
+    "duplicate_priorities": "allowed; same number uses same badge color",
+    "P6_plus": "same EXACT colors as P5+; numeric label remains P6, P7, ...",
+    "scope": "Apply to both ACTIVE and ARCHIVED Focus Areas; preserve expiration warning/danger card treatments independent of priority"
+  },
+  "business_scope": {
+    "archived_location": "inside Work Areas → Focus Areas, entered via compact View archived control; not a third primary tab",
+    "detail": "read only",
+    "restore": "preserve current restore behavior and existing domain validations",
+    "delete": "preserve existing deletion checks and two-stage warning when history exists; blocked by active/paused timers",
+    "history": "do not invent archive-time priority snapshots or target snapshots unless data source supports them",
+    "metrics": "mockups show time totals for visual reference only; fetch/display only if existing API supports them, otherwise omit and reflow",
+    "search": "search field is visual proposal only; do not add a new search feature without separate approval",
+    "confirmation": "restore dialog is an optional illustrative design; do not change the existing direct restore flow without approval"
+  },
+  "responsive": {
+    "compact": "<600px mobile bottom navigation, compact desktop always lateral rail",
+    "medium": "600-839px, mobile/tablet lateral rail",
+    "expanded": ">=840px, desktop rail; >=1200 expanded sidebar",
+    "constraints": "content-driven height, scrolling permitted when needed, support 200% text scale, targets >=48dp"
+  },
+  "canonical_viewports": {
+    "work-areas-archived-mobile-390x844": {
+      "viewport": [
+        390,
+        844
+      ],
+      "layout": "mobile",
+      "screen": "list",
+      "svg": "svg/work-areas-archived-mobile-390x844.svg",
+      "png": "reference/work-areas-archived-mobile-390x844.png",
+      "geometry_px_at_1x": {
+        "navigation.selected": [
+          122.25,
+          779,
+          48,
+          44
+        ],
+        "navigation": [
+          0,
+          772,
+          390,
+          72
+        ],
+        "app.header": [
+          0,
+          0,
+          390,
+          64
+        ],
+        "archived.search": [
+          14,
+          158,
+          362,
+          42
+        ],
+        "list.area.1": [
+          14,
+          214,
+          362,
+          106
+        ],
+        "priority.badge.1": [
+          28,
+          229,
+          36,
+          36
+        ],
+        "list.area.2": [
+          14,
+          330,
+          362,
+          106
+        ],
+        "priority.badge.2": [
+          28,
+          345,
+          36,
+          36
+        ],
+        "list.area.3": [
+          14,
+          446,
+          362,
+          106
+        ],
+        "priority.badge.3": [
+          28,
+          461,
+          36,
+          36
+        ],
+        "list.area.4": [
+          14,
+          562,
+          362,
+          106
+        ],
+        "priority.badge.4": [
+          28,
+          577,
+          36,
+          36
+        ],
+        "list.area.5": [
+          14,
+          678,
+          362,
+          106
+        ],
+        "priority.badge.5": [
+          28,
+          693,
+          36,
+          36
+        ]
+      }
+    },
+    "work-areas-archived-medium-768x1024": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "layout": "rail",
+      "screen": "list",
+      "svg": "svg/work-areas-archived-medium-768x1024.svg",
+      "png": "reference/work-areas-archived-medium-768x1024.png",
+      "geometry_px_at_1x": {
+        "navigation.rail": [
+          0,
+          0,
+          76,
+          1024
+        ],
+        "archived.search": [
+          96,
+          116,
+          652,
+          42
+        ],
+        "list.area.1": [
+          96,
+          172,
+          652,
+          108
+        ],
+        "priority.badge.1": [
+          110,
+          187,
+          36,
+          36
+        ],
+        "list.area.2": [
+          96,
+          290,
+          652,
+          108
+        ],
+        "priority.badge.2": [
+          110,
+          305,
+          36,
+          36
+        ],
+        "list.area.3": [
+          96,
+          408,
+          652,
+          108
+        ],
+        "priority.badge.3": [
+          110,
+          423,
+          36,
+          36
+        ],
+        "list.area.4": [
+          96,
+          526,
+          652,
+          108
+        ],
+        "priority.badge.4": [
+          110,
+          541,
+          36,
+          36
+        ],
+        "list.area.5": [
+          96,
+          644,
+          652,
+          108
+        ],
+        "priority.badge.5": [
+          110,
+          659,
+          36,
+          36
+        ]
+      }
+    },
+    "work-areas-archived-compact-desktop-500x700": {
+      "viewport": [
+        500,
+        700
+      ],
+      "layout": "rail",
+      "screen": "list",
+      "svg": "svg/work-areas-archived-compact-desktop-500x700.svg",
+      "png": "reference/work-areas-archived-compact-desktop-500x700.png",
+      "geometry_px_at_1x": {
+        "navigation.rail": [
+          0,
+          0,
+          72,
+          700
+        ],
+        "archived.search": [
+          92,
+          116,
+          388,
+          42
+        ],
+        "list.area.1": [
+          92,
+          172,
+          388,
+          108
+        ],
+        "priority.badge.1": [
+          106,
+          187,
+          36,
+          36
+        ],
+        "list.area.2": [
+          92,
+          290,
+          388,
+          108
+        ],
+        "priority.badge.2": [
+          106,
+          305,
+          36,
+          36
+        ],
+        "list.area.3": [
+          92,
+          408,
+          388,
+          108
+        ],
+        "priority.badge.3": [
+          106,
+          423,
+          36,
+          36
+        ],
+        "list.area.4": [
+          92,
+          526,
+          388,
+          108
+        ],
+        "priority.badge.4": [
+          106,
+          541,
+          36,
+          36
+        ],
+        "list.area.5": [
+          92,
+          644,
+          388,
+          108
+        ],
+        "priority.badge.5": [
+          106,
+          659,
+          36,
+          36
+        ]
+      }
+    },
+    "work-areas-archived-desktop-1440x900": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "layout": "sidebar",
+      "screen": "list",
+      "svg": "svg/work-areas-archived-desktop-1440x900.svg",
+      "png": "reference/work-areas-archived-desktop-1440x900.png",
+      "geometry_px_at_1x": {
+        "navigation.sidebar": [
+          0,
+          0,
+          200,
+          900
+        ],
+        "archived.search": [
+          236,
+          110,
+          1168,
+          42
+        ],
+        "list.table": [
+          236,
+          166,
+          1168,
+          385
+        ],
+        "priority.badge.1": [
+          253,
+          227,
+          35,
+          35
+        ],
+        "priority.badge.2": [
+          253,
+          295,
+          35,
+          35
+        ],
+        "priority.badge.3": [
+          253,
+          363,
+          35,
+          35
+        ],
+        "priority.badge.4": [
+          253,
+          431,
+          35,
+          35
+        ],
+        "priority.badge.5": [
+          253,
+          499,
+          35,
+          35
+        ],
+        "list.rows": [
+          236,
+          211,
+          1168,
+          340
+        ]
+      }
+    },
+    "work-areas-archived-details-mobile-390x844": {
+      "viewport": [
+        390,
+        844
+      ],
+      "layout": "mobile",
+      "screen": "detail",
+      "svg": "svg/work-areas-archived-details-mobile-390x844.svg",
+      "png": "reference/work-areas-archived-details-mobile-390x844.png",
+      "geometry_px_at_1x": {
+        "navigation.selected": [
+          122.25,
+          779,
+          48,
+          44
+        ],
+        "navigation": [
+          0,
+          772,
+          390,
+          72
+        ],
+        "app.header": [
+          0,
+          0,
+          390,
+          64
+        ],
+        "priority.badge.1": [
+          337,
+          79,
+          35,
+          35
+        ],
+        "details.description": [
+          14,
+          130,
+          362,
+          94
+        ],
+        "details.weekdays": [
+          14,
+          236,
+          362,
+          266
+        ],
+        "details.metadata": [
+          14,
+          514,
+          362,
+          186
+        ],
+        "actions.delete": [
+          14,
+          743,
+          362,
+          42
+        ],
+        "actions.restore": [
+          14,
+          792,
+          362,
+          42
+        ]
+      }
+    },
+    "work-areas-archived-details-medium-768x1024": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "layout": "rail",
+      "screen": "detail",
+      "svg": "svg/work-areas-archived-details-medium-768x1024.svg",
+      "png": "reference/work-areas-archived-details-medium-768x1024.png",
+      "geometry_px_at_1x": {
+        "navigation.rail": [
+          0,
+          0,
+          76,
+          1024
+        ],
+        "priority.badge.1": [
+          709,
+          29,
+          35,
+          35
+        ],
+        "details.description": [
+          96,
+          80,
+          652,
+          94
+        ],
+        "details.weekdays": [
+          96,
+          186,
+          652,
+          266
+        ],
+        "details.metadata": [
+          96,
+          464,
+          652,
+          186
+        ],
+        "actions.delete": [
+          96,
+          662,
+          652,
+          42
+        ],
+        "actions.restore": [
+          96,
+          712,
+          652,
+          42
+        ]
+      }
+    },
+    "work-areas-archived-details-compact-desktop-500x700": {
+      "viewport": [
+        500,
+        700
+      ],
+      "layout": "rail",
+      "screen": "detail",
+      "svg": "svg/work-areas-archived-details-compact-desktop-500x700.svg",
+      "png": "reference/work-areas-archived-details-compact-desktop-500x700.png",
+      "geometry_px_at_1x": {
+        "navigation.rail": [
+          0,
+          0,
+          72,
+          700
+        ],
+        "priority.badge.1": [
+          441,
+          29,
+          35,
+          35
+        ],
+        "details.description": [
+          92,
+          80,
+          388,
+          94
+        ],
+        "details.weekdays": [
+          92,
+          186,
+          388,
+          266
+        ],
+        "details.metadata": [
+          92,
+          464,
+          388,
+          186
+        ],
+        "actions.delete": [
+          92,
+          662,
+          388,
+          42
+        ],
+        "actions.restore": [
+          92,
+          712,
+          388,
+          42
+        ]
+      }
+    },
+    "work-areas-archived-details-desktop-1440x900": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "layout": "sidebar",
+      "screen": "detail",
+      "svg": "svg/work-areas-archived-details-desktop-1440x900.svg",
+      "png": "reference/work-areas-archived-details-desktop-1440x900.png",
+      "geometry_px_at_1x": {
+        "navigation.sidebar": [
+          0,
+          0,
+          200,
+          900
+        ],
+        "priority.badge.1": [
+          1365,
+          29,
+          35,
+          35
+        ],
+        "details.left": [
+          236,
+          84,
+          642,
+          515
+        ],
+        "details.right": [
+          898,
+          84,
+          506,
+          515
+        ],
+        "actions.delete": [
+          914,
+          432,
+          474,
+          42
+        ],
+        "actions.restore": [
+          914,
+          484,
+          474,
+          44
+        ]
+      }
+    }
+  },
+  "component_assets": {
+    "restore_dialog": "archived/components/restore-confirmation.svg",
+    "delete_dialog": "archived/components/delete-confirmation.svg",
+    "priority_badges": "../active/components/priority-badges.svg"
+  },
+  "notes": [
+    "SVG masters are original vector reconstructions of the approved visual concept; they do not claim byte-for-byte tracing of image-generation mockups.",
+    "Canonical PNGs are direct rasterizations of their respective SVGs.",
+    "Do not overwrite SVG/PNG with Flutter golden outputs.",
+    "All example names, dates, metrics, and descriptions are illustrative fixtures.",
+    "Use existing Ponos emblem SVG and Flutter icon library in runtime instead of rasterizing the reference emblem."
+  ],
+  "shared_priority_palette": "../shared/priority-colors.spec.json",
+  "priority_color_behavior": {
+    "P1": "red / highest urgency",
+    "P2": "orange / high urgency",
+    "P3": "amber / elevated urgency",
+    "P4": "soft yellow / moderate urgency",
+    "P5_and_higher": "muted sage / low urgency; identical for all N >= 5",
+    "target": "both Active and Archived badges; label always reflects the real priority number",
+    "expiry": "retain warning yellow for 1-14 days and danger red for >=15 days; badge color independent of expiration",
+    "business_logic": "unchanged"
+  }
+}

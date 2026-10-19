@@ -1,0 +1,318 @@
+{
+  "package": "Ponos Focus Area Create/Edit visual references",
+  "version": "1.0",
+  "precedence": [
+    "Approved human product decisions",
+    "Existing backend/domain rules",
+    "This package for visual composition",
+    "Existing Ponos design system for widgets/nav"
+  ],
+  "source_of_truth": {
+    "svg": "svg/*.svg",
+    "png": "reference/*.png — direct 1x SVG renders",
+    "spec": "focus-area-forms.spec.json"
+  },
+  "viewports": {
+    "mobile": {
+      "width": 390,
+      "height": 844
+    },
+    "compact-desktop": {
+      "width": 500,
+      "height": 700
+    },
+    "medium": {
+      "width": 768,
+      "height": 1024
+    },
+    "desktop": {
+      "width": 1440,
+      "height": 900
+    }
+  },
+  "states": {
+    "create-empty": "blank Create form with P1 visually selected as an illustrative default; preserve application default unless approved",
+    "create-filled": "illustrative populated create form",
+    "edit-filled": "populated Edit form, priority P2 fixture",
+    "edit-expired": "expired Focus Area warning fixture, yellow 1–14 days; 15+ red per rules",
+    "mobile-scrolled": "scrolled viewport proof that all 7 weekdays and actions are reachable"
+  },
+  "geometry": {
+    "desktop_1440x900": {
+      "sidebar_width": 200,
+      "sidebar_border": "1px #A4B8CC",
+      "page_title_anchor": [
+        232,
+        66
+      ],
+      "form_content_width": 910,
+      "form_panel_gap": 20,
+      "form_panels_approx_width": 445,
+      "panels_top_y": 141,
+      "panels_radius": 16,
+      "buttons_centered_under_panels": true
+    },
+    "medium_768x1024": {
+      "sidebar_width": 80,
+      "column_max_width": 610,
+      "panels_stacked": true,
+      "scroll_fallback": true
+    },
+    "compact_desktop_500x700": {
+      "sidebar_width": 72,
+      "content_horizontal_padding": 18,
+      "panels_stacked": true,
+      "scroll_fallback": true
+    },
+    "mobile_390x844": {
+      "content_horizontal_padding": 16,
+      "top_appbar_height": 70,
+      "bottom_nav_height": 72,
+      "panel_width": 358,
+      "panels_stacked": true,
+      "scroll_fallback": true,
+      "scroll_not_clipped": true
+    }
+  },
+  "design_tokens": {
+    "primary": "#315D8C",
+    "deepBlue": "#1E3550",
+    "background": "#F5F8FC",
+    "surface": "#FFFFFF",
+    "surfaceBorder": "#B7C8D9",
+    "divider": "#DCE5EE",
+    "sidebarBorder": "#A4B8CC",
+    "cardRadius": 16,
+    "controlRadius": 10,
+    "fontFamily": "Inter",
+    "interactionTargetMin": 48
+  },
+  "priority": {
+    "selector_options": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "valid_selection_new_forms": "P1 through P5 only",
+    "labels": [
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5"
+    ],
+    "colors": [
+      {
+        "background": "#FFB4B8",
+        "foreground": "#971B2B",
+        "border": "#DE4050"
+      },
+      {
+        "background": "#FFCEB0",
+        "foreground": "#91421C",
+        "border": "#EA8854"
+      },
+      {
+        "background": "#FCE0AF",
+        "foreground": "#825214",
+        "border": "#DDA34D"
+      },
+      {
+        "background": "#F4E6AF",
+        "foreground": "#685522",
+        "border": "#D1B95D"
+      },
+      {
+        "background": "#DDE7DD",
+        "foreground": "#3E5642",
+        "border": "#A2B5A4"
+      }
+    ],
+    "existing_priority_gt_5": "Legacy records with >5 must not be silently changed or discarded. Preserve current value until explicitly changed. If UI flow for editing such a record needs a product decision, report it before implementing potentially destructive behavior.",
+    "p5_plus_display": "P5 and larger historical priorities share the sage palette in list/detail presentation",
+    "priority_order": "P1 most important, increasing numbers lower urgency; duplicate priorities supported in stored history."
+  },
+  "expiration": {
+    "start": "day after finish date",
+    "yellow_days": "1–14",
+    "red_days": "15+",
+    "stays_active_until_manual_archive": true,
+    "warning_is_independent_of_priority_badge": true,
+    "past_finish_dates_allowed": true
+  },
+  "functional": {
+    "create_fields": [
+      "name required",
+      "description optional",
+      "priority 1–5",
+      "finish_date optional",
+      "weekday target Monday–Sunday"
+    ],
+    "edit_action": "Save Changes",
+    "secondary_action_edit": "Archive Focus Area (not Delete)",
+    "secondary_action_create": "Cancel",
+    "archived_delete": "Permanent deletion only for already-archived areas through existing safeguards",
+    "daily_minute_rule": "Enabled weekday requires arbitrary positive integer minutes; disabled weekday has no obligation",
+    "disabled_minutes": "Any shown disabled minute value is illustrative only; no implied target",
+    "back": "Must work; preserve unsaved changes guard",
+    "data": "No backend contract changes; no fake production data",
+    "scroll": "All 7 weekdays and actions must remain reachable at 320px widths and 200% text scale"
+  },
+  "interaction_notes": [
+    "Represent priority choices as selectable controls with explicit P1–P5 labels and semantics",
+    "Switch and minutes input must act as one weekday row without clipping",
+    "Targets historically versioned per existing backend; editing changes only forward as per existing contract",
+    "Do not shrink targets/fonts to fit viewport; scroll instead"
+  ],
+  "screens": {
+    "focus-area-create-empty-mobile-390x844": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "create-empty",
+      "viewport_type": "mobile"
+    },
+    "focus-area-create-filled-mobile-390x844": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "create-filled",
+      "viewport_type": "mobile"
+    },
+    "focus-area-edit-filled-mobile-390x844": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "edit-filled",
+      "viewport_type": "mobile"
+    },
+    "focus-area-edit-expired-mobile-390x844": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "edit-expired",
+      "viewport_type": "mobile"
+    },
+    "focus-area-create-empty-compact-desktop-500x700": {
+      "viewport": {
+        "width": 500,
+        "height": 700
+      },
+      "state": "create-empty",
+      "viewport_type": "compact-desktop"
+    },
+    "focus-area-create-filled-compact-desktop-500x700": {
+      "viewport": {
+        "width": 500,
+        "height": 700
+      },
+      "state": "create-filled",
+      "viewport_type": "compact-desktop"
+    },
+    "focus-area-edit-filled-compact-desktop-500x700": {
+      "viewport": {
+        "width": 500,
+        "height": 700
+      },
+      "state": "edit-filled",
+      "viewport_type": "compact-desktop"
+    },
+    "focus-area-edit-expired-compact-desktop-500x700": {
+      "viewport": {
+        "width": 500,
+        "height": 700
+      },
+      "state": "edit-expired",
+      "viewport_type": "compact-desktop"
+    },
+    "focus-area-create-empty-medium-768x1024": {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": "create-empty",
+      "viewport_type": "medium"
+    },
+    "focus-area-create-filled-medium-768x1024": {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": "create-filled",
+      "viewport_type": "medium"
+    },
+    "focus-area-edit-filled-medium-768x1024": {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": "edit-filled",
+      "viewport_type": "medium"
+    },
+    "focus-area-edit-expired-medium-768x1024": {
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "state": "edit-expired",
+      "viewport_type": "medium"
+    },
+    "focus-area-create-empty-desktop-1440x900": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "state": "create-empty",
+      "viewport_type": "desktop"
+    },
+    "focus-area-create-filled-desktop-1440x900": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "state": "create-filled",
+      "viewport_type": "desktop"
+    },
+    "focus-area-edit-filled-desktop-1440x900": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "state": "edit-filled",
+      "viewport_type": "desktop"
+    },
+    "focus-area-edit-expired-desktop-1440x900": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "state": "edit-expired",
+      "viewport_type": "desktop"
+    },
+    "focus-area-create-filled-mobile-scrolled-390x844": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "create-filled",
+      "viewport_type": "mobile-scrolled",
+      "purpose": "Illustrates all seven day targets and actions after scrolling; not a distinct semantic breakpoint."
+    },
+    "focus-area-edit-filled-mobile-scrolled-390x844": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "state": "edit-filled",
+      "viewport_type": "mobile-scrolled",
+      "purpose": "Illustrates all seven day targets and actions after scrolling; not a distinct semantic breakpoint."
+    }
+  },
+  "note": "SVG/PNG are visual reference fixtures, not exact Flutter golden tests. Icon artwork may be replaced with existing production assets. Desktop two-panel layouts are approved; compact and medium stack."
+}

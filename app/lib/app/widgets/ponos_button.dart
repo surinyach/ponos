@@ -68,10 +68,11 @@ class PonosButton extends StatelessWidget {
         ? Text(label)
         : Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               icon!,
               const SizedBox(width: AppSpacing.xs),
-              Text(label),
+              Flexible(child: Text(label, textAlign: TextAlign.center)),
             ],
           );
     final style = _style(
@@ -166,7 +167,8 @@ class PonosButton extends StatelessWidget {
         if (states.contains(WidgetState.focused)) {
           return const BorderSide(color: AppColors.accent, width: 2);
         }
-        return secondary
+        return secondary ||
+                (variant == PonosButtonVariant.danger && borderColor != null)
             ? BorderSide(color: borderColor ?? AppColors.border)
             : BorderSide.none;
       }),

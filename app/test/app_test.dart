@@ -7,6 +7,7 @@ import 'package:ponos_app/app/providers/focus_timer_providers.dart';
 import 'package:ponos_app/app/providers/work_goals_providers.dart';
 import 'package:ponos_app/app/theme/app_colors.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
+import 'package:ponos_app/app/widgets/ponos_widgets.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
@@ -41,20 +42,88 @@ void main() {
     expect(find.text('Focus Areas'), findsOneWidget);
     expect(find.text('Special Activities'), findsOneWidget);
     expect(find.byKey(const Key('work-area-type')), findsOneWidget);
-    await tester.tap(find.text('Special Activities'));
+    await tester.ensureVisible(find.text('Special Activities'));
+    tester
+        .widget<PonosInlineTabs>(find.byKey(const Key('work-area-type')))
+        .onSelected!(1);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('new-special-activity')), findsOneWidget);
     await tester.tap(find.byKey(const Key('new-special-activity')));
     await tester.pumpAndSettle();
-    expect(find.text('New Special Activity'), findsOneWidget);
+    expect(
+      find.byKey(const Key('special-activity-form-title')),
+      findsOneWidget,
+    );
 
-    Navigator.of(tester.element(find.text('New Special Activity'))).pop();
+    await tester.tap(find.byKey(const Key('special-activity-back')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('work-area-type')), findsOneWidget);
+    expect(
+      tester.widget<PonosInlineTabs>(find.byKey(const Key('work-area-type')))
+          .selectedIndex,
+      1,
+    );
     expect(
       tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex,
       PonosDestination.workAreas.index,
     );
+
+    await tester.tap(find.byKey(const Key('new-special-activity')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('cancel-special-activity')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('work-area-type')), findsOneWidget);
+    expect(
+      tester.widget<PonosInlineTabs>(find.byKey(const Key('work-area-type')))
+          .selectedIndex,
+      1,
+    );
+  });
+
+  testWidgets('places the compact Special Activity action below the tabs', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(_testApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(PonosDestination.workAreas.icon).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Special Activities'));
+    await tester.pumpAndSettle();
+
+    final tabs = tester.getRect(find.byKey(const Key('work-area-type')));
+    final action = tester.getRect(
+      find.byKey(const Key('new-special-activity')),
+    );
+    expect(action.top, greaterThan(tabs.bottom));
+    expect(action.height, greaterThanOrEqualTo(48));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('keeps the Special Activity action contextual when wider', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    for (final size in const [Size(768, 1024), Size(1440, 900)]) {
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(_testApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(PonosDestination.workAreas.icon).first);
+      await tester.pumpAndSettle();
+      tester
+          .widget<PonosInlineTabs>(find.byKey(const Key('work-area-type')))
+          .onSelected!(1);
+      await tester.pumpAndSettle();
+
+      final action = tester.getRect(
+        find.byKey(const Key('new-special-activity')),
+      );
+      expect(action.width, lessThan(240));
+      expect(action.height, greaterThanOrEqualTo(48));
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('returns from Log Work form to the selected root destination', (
