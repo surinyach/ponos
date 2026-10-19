@@ -159,6 +159,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Special Activities load errors are announced and retryable', (
+    tester,
+  ) async {
+    activities.loadError = const NetworkException('Activities unavailable');
+    await pumpSpecialActivities(tester, embedded: true);
+
+    expect(find.text('Activities unavailable'), findsOneWidget);
+    expect(find.byKey(const Key('retry-special-activities')), findsOneWidget);
+    final semantics = tester.getSemantics(
+      find.byKey(const Key('special-activity-delete-error')),
+    );
+    expect(semantics.flagsCollection.isLiveRegion, isTrue);
+
+    activities.loadError = null;
+    await tester.tap(find.byKey(const Key('retry-special-activities')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Release day'), findsOneWidget);
+    expect(find.text('Activities unavailable'), findsNothing);
+    expect(activities.loadCalls, 2);
+  });
+
   testWidgets('creates an entry for a Focus Area and rejects zero time', (
     tester,
   ) async {
@@ -856,12 +878,15 @@ class FakeSpecialActivities implements SpecialActivityRepository {
   int? deletedId;
   int? updatedId;
   SpecialActivityUpdateInput? updated;
+  Object? loadError;
+  int loadCalls = 0;
   final List<SpecialActivity> values = [];
   @override
-  Future<List<SpecialActivity>> getActive() async => [
-    SpecialActivity(id: 4, name: 'Release day'),
-    ...values,
-  ];
+  Future<List<SpecialActivity>> getActive() async {
+    loadCalls++;
+    if (loadError != null) throw loadError!;
+    return [SpecialActivity(id: 4, name: 'Release day'), ...values];
+  }
   @override
   Future<SpecialActivity> getById(int id) => throw UnimplementedError();
   @override

@@ -179,9 +179,17 @@ void main() {
   });
 
   for (final size in const [
+    Size(320, 568),
+    Size(360, 640),
     Size(390, 844),
+    Size(430, 932),
+    Size(500, 600),
     Size(500, 700),
+    Size(600, 800),
+    Size(768, 700),
     Size(768, 1024),
+    Size(839, 1024),
+    Size(1024, 700),
     Size(1440, 900),
   ]) {
     testWidgets(

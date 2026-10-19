@@ -83,12 +83,27 @@ class SpecialActivitiesPage extends ConsumerWidget {
               const LinearProgressIndicator(),
             if (state.status == SpecialActivitiesStatus.error) ...[
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                state.error is AppException
-                    ? (state.error as AppException).message
-                    : 'Unable to update Special Activities.',
-                key: const Key('special-activity-delete-error'),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  state.error is AppException
+                      ? (state.error as AppException).message
+                      : 'Unable to update Special Activities.',
+                  key: const Key('special-activity-delete-error'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: PonosButton.secondary(
+                  key: const Key('retry-special-activities'),
+                  label: 'Try again',
+                  icon: const Icon(Icons.refresh, size: 18),
+                  onPressed: () => ref
+                      .read(specialActivitiesProvider.notifier)
+                      .refresh(),
+                ),
               ),
             ],
             if (state.active.isEmpty &&

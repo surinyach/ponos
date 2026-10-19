@@ -572,6 +572,41 @@ void main() {
     expect(badgeDecoration.color, AppPriorityColors.p1.background);
   });
 
+  for (final viewport in const [
+    Size(320, 568),
+    Size(360, 640),
+    Size(390, 844),
+    Size(430, 932),
+    Size(500, 600),
+    Size(500, 700),
+    Size(600, 800),
+    Size(768, 700),
+    Size(768, 1024),
+    Size(839, 1024),
+    Size(1024, 700),
+    Size(1440, 900),
+  ]) {
+    testWidgets(
+      'active Work Areas remain usable at ${viewport.width.toInt()}x${viewport.height.toInt()}',
+      (tester) async {
+        await pumpWorkAreas(
+          tester,
+          FakeRepository(
+            () async => [
+              area(1, 'First priority area', 1, 60),
+              area(2, 'Second priority area', 2, 90),
+            ],
+          ),
+          viewport,
+        );
+
+        await tester.ensureVisible(find.text('First priority area'));
+        expect(find.byKey(const Key('new-focus-area')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+
   test('maps every priority from P5 onward to the same sage tier', () {
     expect(AppPriorityColors.forPriority(1), same(AppPriorityColors.p1));
     expect(AppPriorityColors.forPriority(2), same(AppPriorityColors.p2));
