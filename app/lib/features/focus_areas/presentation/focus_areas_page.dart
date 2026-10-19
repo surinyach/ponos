@@ -385,21 +385,30 @@ class _DailySummary extends StatelessWidget {
           const SizedBox(height: 3),
           Row(
             children: [
-              Text(
-                '${_duration(focusedMinutes)} focused',
-                style: textTheme.labelSmall?.copyWith(
-                  fontSize: 10,
-                  height: 12 / 10,
-                  color: AppColors.textSecondary,
+              Expanded(
+                child: Text(
+                  '${_duration(focusedMinutes)} focused',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    height: 12 / 10,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
-              const Spacer(),
-              Text(
-                'of ${_duration(totalMinutes)} targeted',
-                style: textTheme.labelSmall?.copyWith(
-                  fontSize: 10,
-                  height: 12 / 10,
-                  color: AppColors.textSecondary,
+              const SizedBox(width: AppSpacing.xxs),
+              Expanded(
+                child: Text(
+                  'of ${_duration(totalMinutes)} targeted',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    height: 12 / 10,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -1023,7 +1032,6 @@ class _ArchivedAreas extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 class _ArchivedHeader extends StatelessWidget {
@@ -1151,53 +1159,53 @@ class _ArchivedAreaCard extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FocusAreaPriorityBadge(priority: area.priority),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                area.name,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (area.description?.trim().isNotEmpty == true)
-                Text(
-                  area.description!.trim(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 10.5,
-                    color: AppColors.textSecondary,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FocusAreaPriorityBadge(priority: area.priority),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    area.name,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-              const SizedBox(height: AppSpacing.xxs),
-              _ArchivedDateLine(
-                icon: Icons.calendar_today_outlined,
-                label: area.targetEndDate == null
-                    ? 'No finish date'
-                    : 'Finished: ${_formatDate(area.targetEndDate!, includeYear: true)}',
+                  if (area.description?.trim().isNotEmpty == true)
+                    Text(
+                      area.description!.trim(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontSize: 10.5,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  _ArchivedDateLine(
+                    icon: Icons.calendar_today_outlined,
+                    label: area.targetEndDate == null
+                        ? 'No finish date'
+                        : 'Finished: ${_formatDate(area.targetEndDate!, includeYear: true)}',
+                  ),
+                  _ArchivedDateLine(
+                    icon: Icons.inventory_2_outlined,
+                    label: area.archivedAt == null
+                        ? 'Archive date unavailable'
+                        : 'Archived: ${_formatDate(area.archivedAt!.toLocal(), includeYear: true)}',
+                  ),
+                ],
               ),
-              _ArchivedDateLine(
-                icon: Icons.inventory_2_outlined,
-                label: area.archivedAt == null
-                    ? 'Archive date unavailable'
-                    : 'Archived: ${_formatDate(area.archivedAt!.toLocal(), includeYear: true)}',
-              ),
-            ],
-          ),
-        ),
-        _ArchivedOverflowActions(
-          area: area,
-          busy: busy,
-          blockedByTimer: blockedByTimer,
-          onRestore: onRestore,
-          onDelete: onDelete,
-        ),
-      ],
+            ),
+            _ArchivedOverflowActions(
+              area: area,
+              busy: busy,
+              blockedByTimer: blockedByTimer,
+              onRestore: onRestore,
+              onDelete: onDelete,
+            ),
+          ],
         ),
       ),
     ),
@@ -1398,83 +1406,86 @@ class _ArchivedTableRow extends StatelessWidget {
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
         child: Row(
-      children: [
-        SizedBox(
-          width: priorityColumnWidth,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [FocusAreaPriorityBadge(priority: area.priority)],
-          ),
-        ),
-        Expanded(
-          flex: 5,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                area.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w700,
-                ),
+          children: [
+            SizedBox(
+              width: priorityColumnWidth,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [FocusAreaPriorityBadge(priority: area.priority)],
               ),
-              if (area.description?.trim().isNotEmpty == true)
-                Text(
-                  area.description!.trim(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.textSecondary,
+            ),
+            Expanded(
+              flex: 5,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    area.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Text(
-            area.targetEndDate == null
-                ? 'No finish date'
-                : _formatDate(area.targetEndDate!, includeYear: true),
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Text(
-            area.archivedAt == null
-                ? 'Unavailable'
-                : _formatDate(area.archivedAt!.toLocal(), includeYear: true),
-          ),
-        ),
-        SizedBox(
-          width: 104,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              IconButton(
-                key: Key('restore-archived-focus-area-${area.id}'),
-                tooltip: 'Restore ${area.name}',
-                onPressed: busy ? null : onRestore,
-                icon: const Icon(Icons.restore, color: AppColors.primary),
+                  if (area.description?.trim().isNotEmpty == true)
+                    Text(
+                      area.description!.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                ],
               ),
-              IconButton(
-                key: Key('delete-archived-focus-area-${area.id}'),
-                tooltip: blockedByTimer
-                    ? 'Cannot delete while this area has an active timer'
-                    : 'Permanently delete ${area.name}',
-                onPressed: busy ? null : onDelete,
-                icon: const Icon(
-                  Icons.delete_forever_outlined,
-                  color: AppColors.error,
-                ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                area.targetEndDate == null
+                    ? 'No finish date'
+                    : _formatDate(area.targetEndDate!, includeYear: true),
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+            Expanded(
+              flex: 2,
+              child: Text(
+                area.archivedAt == null
+                    ? 'Unavailable'
+                    : _formatDate(
+                        area.archivedAt!.toLocal(),
+                        includeYear: true,
+                      ),
+              ),
+            ),
+            SizedBox(
+              width: 104,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton(
+                    key: Key('restore-archived-focus-area-${area.id}'),
+                    tooltip: 'Restore ${area.name}',
+                    onPressed: busy ? null : onRestore,
+                    icon: const Icon(Icons.restore, color: AppColors.primary),
+                  ),
+                  IconButton(
+                    key: Key('delete-archived-focus-area-${area.id}'),
+                    tooltip: blockedByTimer
+                        ? 'Cannot delete while this area has an active timer'
+                        : 'Permanently delete ${area.name}',
+                    onPressed: busy ? null : onDelete,
+                    icon: const Icon(
+                      Icons.delete_forever_outlined,
+                      color: AppColors.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     ),

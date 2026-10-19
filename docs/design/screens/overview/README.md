@@ -24,4 +24,3 @@ Numbers shown in the design are illustrative. Production widgets must use real p
 ## Today pillar placement
 
 The Greek pillar in the Today card is intentionally inset further from the card edges and action row. Use the exact `greek_pillar_bounds` and `greek_pillar_transform` values in `overview.spec.json` for the canonical viewports. Do not push the asset against the card border or action controls.
-

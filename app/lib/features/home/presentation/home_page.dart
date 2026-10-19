@@ -81,7 +81,15 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _openFocusAreaForm([FocusArea? area]) async {
     await Navigator.of(context).push<void>(
-      MaterialPageRoute(builder: (_) => FocusAreaFormPage(area: area)),
+      MaterialPageRoute(
+        builder: (_) => _FocusAreaFormShell(
+          area: area,
+          onDestinationSelected: (destination) {
+            Navigator.of(context).pop();
+            _selectDestination(destination);
+          },
+        ),
+      ),
     );
   }
 
@@ -112,6 +120,28 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+class _FocusAreaFormShell extends StatelessWidget {
+  const _FocusAreaFormShell({
+    required this.area,
+    required this.onDestinationSelected,
+  });
+
+  final FocusArea? area;
+  final ValueChanged<PonosDestination> onDestinationSelected;
+
+  @override
+  Widget build(BuildContext context) => PonosAdaptiveShell(
+    selectedDestination: PonosDestination.workAreas,
+    onDestinationSelected: (destination) {
+      if (destination != PonosDestination.workAreas) {
+        onDestinationSelected(destination);
+      }
+    },
+    destinationBuilder: (_) => FocusAreaFormPage(area: area),
+    appBar: _ponosAppBar(),
+  );
 }
 
 class _SpecialActivityFormShell extends StatelessWidget {
