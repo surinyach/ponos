@@ -101,10 +101,7 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('timer-start')));
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
-    expect(
-      find.text('Enter focus and rest durations greater than zero.'),
-      findsOneWidget,
-    );
+    expect(find.text('Focus must be at least 1 minute.'), findsOneWidget);
     expect(find.byKey(const Key('active-timer')), findsNothing);
     await tester.ensureVisible(find.byKey(const Key('timer-focus-minutes')));
     await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '15');
@@ -114,6 +111,35 @@ void main() {
     expect(find.text('15:00'), findsOneWidget);
     expect(find.textContaining('Focus · 15 min'), findsOneWidget);
     await container.read(focusTimerProvider.notifier).pause();
+  });
+
+  testWidgets('duration errors identify the invalid fields independently', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(390, 844));
+    final focus = find.byKey(const Key('timer-focus-minutes'));
+    final rest = find.byKey(const Key('timer-rest-minutes'));
+    String? errorFor(Finder field) => tester
+        .widget<TextField>(
+          find.descendant(of: field, matching: find.byType(TextField)),
+        )
+        .decoration
+        ?.errorText;
+    await tester.enterText(focus, '0');
+    await tester.enterText(rest, 'not a number');
+    await tester.ensureVisible(find.byKey(const Key('timer-start')));
+    await tester.tap(find.byKey(const Key('timer-start')));
+    await tester.pump();
+    expect(errorFor(focus), 'Focus must be at least 1 minute.');
+    expect(errorFor(rest), 'Rest must be at least 1 minute.');
+    await tester.ensureVisible(focus);
+    await tester.enterText(focus, '10');
+    await tester.pump();
+    expect(errorFor(focus), isNull);
+    expect(errorFor(rest), isNotNull);
+    await tester.enterText(rest, '5');
+    await tester.pump();
+    expect(errorFor(rest), isNull);
   });
 
   testWidgets('saves a partial execution from the reset dialog', (
@@ -213,6 +239,14 @@ void main() {
     expect(find.byKey(const Key('timer-laurel')), findsOneWidget);
     expect(find.text('READY'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.byKey(const Key('timer-focus-area')));
+    await tester.tap(find.byKey(const Key('timer-focus-area')));
+    await tester.pumpAndSettle();
+    expect(find.text('FOCUS AREAS'), findsOneWidget);
+    expect(find.text('SPECIAL ACTIVITIES'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const Key('timer-option-special-4')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('timer-focus-minutes')));
     await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '20');
     expect(find.text('20'), findsOneWidget);
@@ -433,6 +467,8 @@ void main() {
       await container.read(focusTimerProvider.notifier).pause();
       await tester.pump();
       expect(find.text('Paused'), findsOneWidget);
+      expect(find.byKey(const Key('timer-config-summary')), findsOneWidget);
+      expect(find.byKey(const Key('timer-focus-area')), findsNothing);
       if (size.height >= 800) {
         final scroll = tester.state<ScrollableState>(
           find
@@ -453,6 +489,8 @@ void main() {
       await container.read(focusTimerProvider.notifier).synchronize();
       await tester.pump();
       expect(find.text('REST'), findsOneWidget);
+      expect(find.byKey(const Key('timer-config-summary')), findsOneWidget);
+      expect(find.byKey(const Key('timer-focus-area')), findsNothing);
       if (size.height >= 800) {
         final scroll = tester.state<ScrollableState>(
           find
@@ -491,6 +529,8 @@ void main() {
     await tester.ensureVisible(find.byKey(const Key('timer-focus-area')));
     await tester.tap(find.byKey(const Key('timer-focus-area')));
     await tester.pumpAndSettle();
+    expect(find.text('FOCUS AREAS'), findsOneWidget);
+    expect(find.text('SPECIAL ACTIVITIES'), findsOneWidget);
     expect(find.text('Archived'), findsNothing);
     await tester.tap(find.text('Release day').last);
     await tester.pumpAndSettle();
@@ -511,6 +551,83 @@ void main() {
     expect(recorder.executions.single.specialActivityId, 4);
     expect(recorder.executions.single.focusAreaId, isNull);
   });
+
+  for (final size in [const Size(390, 844), const Size(1440, 900)]) {
+    testWidgets('identical activity names remain distinguishable at $size', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpPage(tester, size: size);
+      final selector = find.byKey(const Key('timer-focus-area'));
+      await tester.ensureVisible(selector);
+      await tester.tap(selector);
+      await tester.pumpAndSettle();
+      expect(find.text('FOCUS AREAS'), findsOneWidget);
+      expect(find.text('SPECIAL ACTIVITIES'), findsOneWidget);
+      expect(find.byKey(const Key('timer-option-focus-2')), findsOneWidget);
+      expect(find.byKey(const Key('timer-option-special-4')), findsOneWidget);
+      final divider = tester.getRect(
+        find.byKey(const Key('timer-activity-group-divider')),
+      );
+      final heading = tester.getRect(find.text('SPECIAL ACTIVITIES'));
+      final preceding = tester.getRect(
+        find.descendant(
+          of: find.byKey(const Key('timer-option-focus-2')),
+          matching: find.text('Release day'),
+        ),
+      );
+      expect(divider.left, heading.left);
+      expect(divider.left, lessThan(preceding.left));
+      expect(divider.top, greaterThan(preceding.bottom));
+      expect(heading.top, greaterThan(divider.bottom));
+      expect(
+        (divider.top - preceding.bottom) - (heading.top - divider.bottom),
+        inInclusiveRange(-4, 4),
+      );
+      await tester.tap(find.byKey(const Key('timer-option-focus-2')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: selector,
+          matching: find.byIcon(Icons.track_changes_outlined),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp('Focus Area: Release day')),
+        findsOneWidget,
+      );
+      await tester.tap(selector);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('timer-option-special-4')));
+      await tester.pumpAndSettle();
+      expect(
+        find.descendant(
+          of: selector,
+          matching: find.byIcon(Icons.local_activity_outlined),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp('Special Activity: Release day')),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.byKey(const Key('timer-start')));
+      await tester.tap(find.byKey(const Key('timer-start')));
+      await tester.pump();
+      expect(
+        container.read(focusTimerProvider).activeTimer?.specialActivityId,
+        4,
+      );
+      expect(
+        container.read(focusTimerProvider).activeTimer?.focusAreaId,
+        isNull,
+      );
+      await container.read(focusTimerProvider.notifier).pause();
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    });
+  }
 
   testWidgets('completes Special Activity focus and rest time naturally', (
     tester,
@@ -556,6 +673,14 @@ class LoadedFocusAreasController extends FocusAreasController {
         id: 1,
         name: 'Work placement',
         priority: 1,
+        createdAt: DateTime.utc(2026, 9, 1),
+        updatedAt: DateTime.utc(2026, 9, 1),
+        targets: const [],
+      ),
+      FocusArea(
+        id: 2,
+        name: 'Release day',
+        priority: 2,
         createdAt: DateTime.utc(2026, 9, 1),
         updatedAt: DateTime.utc(2026, 9, 1),
         targets: const [],

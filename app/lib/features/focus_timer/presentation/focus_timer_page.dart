@@ -32,6 +32,8 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
   final _restMinutes = TextEditingController(text: '5');
   String? _selectedSubject;
   String? _configurationError;
+  String? _focusError;
+  String? _restError;
 
   @override
   void dispose() {
@@ -190,6 +192,10 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
                 focusMinutes: _focusMinutes,
                 restMinutes: _restMinutes,
                 error: _configurationError,
+                focusError: _focusError,
+                restError: _restError,
+                onFocusChanged: (_) => setState(() => _focusError = null),
+                onRestChanged: (_) => setState(() => _restError = null),
                 onSubjectChanged: (value) =>
                     setState(() => _selectedSubject = value),
                 compact: true,
@@ -315,6 +321,10 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
           focusMinutes: _focusMinutes,
           restMinutes: _restMinutes,
           error: _configurationError,
+          focusError: _focusError,
+          restError: _restError,
+          onFocusChanged: (_) => setState(() => _focusError = null),
+          onRestChanged: (_) => setState(() => _restError = null),
           onSubjectChanged: (value) => setState(() => _selectedSubject = value),
         );
         final guide = _ReadyTimer(
@@ -365,18 +375,29 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
     final rest = int.tryParse(_restMinutes.text.trim());
     final areas = ref.read(focusAreasProvider).areas;
     final activities = ref.read(specialActivitiesProvider).active;
+    final focusError = focus == null || focus <= 0
+        ? 'Focus must be at least 1 minute.'
+        : null;
+    final restError = rest == null || rest <= 0
+        ? 'Rest must be at least 1 minute.'
+        : null;
     if ((areas.isEmpty && activities.isEmpty) ||
-        focus == null ||
-        rest == null ||
-        focus <= 0 ||
-        rest <= 0) {
+        focusError != null ||
+        restError != null) {
       setState(() {
-        _configurationError =
-            'Enter focus and rest durations greater than zero.';
+        _focusError = focusError;
+        _restError = restError;
+        _configurationError = areas.isEmpty && activities.isEmpty
+            ? 'Select a Work Area.'
+            : null;
       });
       return;
     }
-    setState(() => _configurationError = null);
+    setState(() {
+      _configurationError = null;
+      _focusError = null;
+      _restError = null;
+    });
     final subject = _validSelection(areas, activities).split(':');
     final started = await ref
         .read(focusTimerProvider.notifier)
@@ -385,8 +406,8 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
           specialActivityId: subject[0] == 'special'
               ? int.parse(subject[1])
               : null,
-          focusDuration: Duration(minutes: focus),
-          restDuration: Duration(minutes: rest),
+          focusDuration: Duration(minutes: focus!),
+          restDuration: Duration(minutes: rest!),
         );
     if (!started && mounted) {
       setState(() => _configurationError = 'The timer could not be started.');
@@ -451,7 +472,11 @@ class _ConfigurationCard extends StatelessWidget {
     required this.focusMinutes,
     required this.restMinutes,
     required this.onSubjectChanged,
+    required this.onFocusChanged,
+    required this.onRestChanged,
     this.error,
+    this.focusError,
+    this.restError,
     this.compact = false,
   });
 
@@ -461,7 +486,9 @@ class _ConfigurationCard extends StatelessWidget {
   final TextEditingController focusMinutes;
   final TextEditingController restMinutes;
   final ValueChanged<String?> onSubjectChanged;
+  final ValueChanged<String> onFocusChanged, onRestChanged;
   final String? error;
+  final String? focusError, restError;
   final bool compact;
 
   @override
@@ -485,39 +512,80 @@ class _ConfigurationCard extends StatelessWidget {
           isExpanded: true,
           initialValue: selectedSubject,
           decoration: const InputDecoration(labelText: 'Activity'),
+          selectedItemBuilder: (context) => [
+            if (areas.isNotEmpty) const SizedBox.shrink(),
+            for (final area in areas)
+              _SelectedWorkArea(name: area.name, isSpecial: false),
+            if (activities.isNotEmpty) const SizedBox.shrink(),
+            for (final activity in activities)
+              _SelectedWorkArea(name: activity.name, isSpecial: true),
+          ],
           items: [
+            if (areas.isNotEmpty)
+              const DropdownMenuItem<String>(
+                enabled: false,
+                child: _WorkAreaGroupHeading(label: 'Focus Areas'),
+              ),
             for (final area in areas)
               DropdownMenuItem(
+                key: ValueKey('timer-option-focus-${area.id}'),
                 value: 'focus:${area.id}',
-                child: Text(area.name),
+                child: _SelectedWorkArea(name: area.name, isSpecial: false),
+              ),
+            if (activities.isNotEmpty)
+              DropdownMenuItem<String>(
+                enabled: false,
+                child: _WorkAreaGroupHeading(
+                  label: 'Special Activities',
+                  separated: areas.isNotEmpty,
+                ),
               ),
             for (final activity in activities)
               DropdownMenuItem(
+                key: ValueKey('timer-option-special-${activity.id}'),
                 value: 'special:${activity.id}',
-                child: Text(activity.name),
+                child: _SelectedWorkArea(name: activity.name, isSpecial: true),
               ),
           ],
           onChanged: onSubjectChanged,
         ),
         SizedBox(height: compact ? AppSpacing.xs : AppSpacing.md),
-        Row(
-          children: [
-            Expanded(
-              child: _MinutesField(
-                key: const Key('timer-focus-minutes'),
-                controller: focusMinutes,
-                label: 'Focus minutes',
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: _MinutesField(
-                key: const Key('timer-rest-minutes'),
-                controller: restMinutes,
-                label: 'Rest minutes',
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final stacked =
+                MediaQuery.textScalerOf(context).scale(120) * 2 +
+                    AppSpacing.md >
+                constraints.maxWidth;
+            final width = stacked
+                ? constraints.maxWidth
+                : (constraints.maxWidth - AppSpacing.md) / 2;
+            return Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.xs,
+              children: [
+                SizedBox(
+                  width: width,
+                  child: _MinutesField(
+                    key: const Key('timer-focus-minutes'),
+                    controller: focusMinutes,
+                    label: 'Focus minutes',
+                    error: focusError,
+                    onChanged: onFocusChanged,
+                  ),
+                ),
+                SizedBox(
+                  width: width,
+                  child: _MinutesField(
+                    key: const Key('timer-rest-minutes'),
+                    controller: restMinutes,
+                    label: 'Rest minutes',
+                    error: restError,
+                    onChanged: onRestChanged,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
         if (error != null) ...[
           const SizedBox(height: AppSpacing.sm),
@@ -527,6 +595,80 @@ class _ConfigurationCard extends StatelessWidget {
           ),
         ],
       ],
+    ),
+  );
+}
+
+class _WorkAreaGroupHeading extends StatelessWidget {
+  const _WorkAreaGroupHeading({required this.label, this.separated = false});
+  final String label;
+  final bool separated;
+
+  @override
+  Widget build(BuildContext context) {
+    final heading = Text(
+      label.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w600,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+    return Semantics(
+      header: true,
+      label: label,
+      child: ExcludeSemantics(
+        child: SizedBox(
+          width: double.infinity,
+          height: AppSpacing.minimumTouchTarget,
+          child: separated
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(
+                      key: Key('timer-activity-group-divider'),
+                      color: AppColors.border,
+                      height: 1,
+                      thickness: 1,
+                    ),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: heading,
+                      ),
+                    ),
+                  ],
+                )
+              : Align(alignment: Alignment.centerLeft, child: heading),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedWorkArea extends StatelessWidget {
+  const _SelectedWorkArea({required this.name, required this.isSpecial});
+  final String name;
+  final bool isSpecial;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: '${isSpecial ? 'Special Activity' : 'Focus Area'}: $name',
+    child: ExcludeSemantics(
+      child: Row(
+        children: [
+          Icon(
+            isSpecial
+                ? Icons.local_activity_outlined
+                : Icons.track_changes_outlined,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
+        ],
+      ),
     ),
   );
 }
@@ -749,17 +891,29 @@ class _MinutesField extends StatelessWidget {
   const _MinutesField({
     required this.controller,
     required this.label,
+    required this.onChanged,
+    this.error,
     super.key,
   });
 
   final TextEditingController controller;
   final String label;
+  final String? error;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) => TextField(
     controller: controller,
     keyboardType: TextInputType.number,
-    decoration: InputDecoration(labelText: label, suffixText: 'min'),
+    onChanged: onChanged,
+    decoration: InputDecoration(
+      labelText: label,
+      suffixText: 'min',
+      errorText: error,
+      errorMaxLines: 3,
+      filled: true,
+      fillColor: AppColors.background,
+    ),
   );
 }
 
