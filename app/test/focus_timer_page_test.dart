@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/providers/focus_timer_providers.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_controller.dart';
@@ -51,7 +52,13 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: Scaffold(body: FocusTimerPage())),
+        child: MaterialApp(
+          home: Scaffold(
+            body: size == null
+                ? const FocusTimerPage()
+                : PonosViewportScope(size: size, child: const FocusTimerPage()),
+          ),
+        ),
       ),
     );
     await tester.pump();
@@ -82,7 +89,7 @@ void main() {
 
     await tester.tap(find.text('Discard'));
     await tester.pumpAndSettle();
-    expect(find.text('New execution'), findsOneWidget);
+    expect(find.text('Session setup'), findsOneWidget);
     expect(recorder.executions, isEmpty);
   });
 
@@ -90,6 +97,7 @@ void main() {
     tester,
   ) async {
     await pumpPage(tester);
+    await tester.ensureVisible(find.byKey(const Key('timer-start')));
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
     clock.advance(const Duration(minutes: 4));
@@ -101,13 +109,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(recorder.executions.single.focusedTime, const Duration(minutes: 4));
-    expect(find.text('New execution'), findsOneWidget);
+    expect(find.text('Session setup'), findsOneWidget);
   });
 
   testWidgets('returns to setup after natural completion', (tester) async {
     await pumpPage(tester);
+    await tester.ensureVisible(find.byKey(const Key('timer-focus-minutes')));
     await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '1');
     await tester.enterText(find.byKey(const Key('timer-rest-minutes')), '1');
+    await tester.ensureVisible(find.byKey(const Key('timer-start')));
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
 
@@ -121,7 +131,7 @@ void main() {
     await tester.pump();
     expect(find.byKey(const Key('active-timer')), findsNothing);
     expect(find.byKey(const Key('timer-remaining')), findsNothing);
-    expect(find.text('New execution'), findsOneWidget);
+    expect(find.text('Session setup'), findsOneWidget);
     expect(recorder.executions, hasLength(1));
   });
 
@@ -133,15 +143,62 @@ void main() {
     expect(find.byKey(const Key('focus-timer-compact')), findsNothing);
   });
 
+  testWidgets('desktop content stays left aligned at its maximum width', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(1600, 900));
+    await tester.pump();
+    final heading = tester.getRect(find.text('Focus timer'));
+    final setup = tester.getRect(find.byKey(const Key('focus-timer-wide')));
+    expect(heading.left, 40);
+    expect(setup.left, heading.left);
+    expect(setup.width, 1160);
+    await tester.tap(find.byKey(const Key('timer-start')));
+    await tester.pump();
+    final active = tester.getRect(find.byKey(const Key('active-timer')));
+    expect(active.left, heading.left);
+    expect(
+      tester.getTopLeft(find.text('Session details')).dx,
+      greaterThan(active.right),
+    );
+    expect(tester.takeException(), isNull);
+    await container.read(focusTimerProvider.notifier).pause();
+  });
+
+  for (final size in [
+    const Size(390, 844),
+    const Size(500, 700),
+    const Size(768, 1024),
+    const Size(1440, 900),
+  ]) {
+    testWidgets('setup and active layout remain usable at $size', (
+      tester,
+    ) async {
+      await pumpPage(tester, size: size);
+      expect(find.text('READY'), findsOneWidget);
+      expect(find.text('Session setup'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.ensureVisible(find.byKey(const Key('timer-start')));
+      await tester.tap(find.byKey(const Key('timer-start')));
+      await tester.pump();
+      expect(find.text('Session details'), findsOneWidget);
+      expect(find.text('FOCUS'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await container.read(focusTimerProvider.notifier).pause();
+    });
+  }
+
   testWidgets('selects an active Special Activity and persists its execution', (
     tester,
   ) async {
     await pumpPage(tester, size: const Size(500, 800));
+    await tester.ensureVisible(find.byKey(const Key('timer-focus-area')));
     await tester.tap(find.byKey(const Key('timer-focus-area')));
     await tester.pumpAndSettle();
     expect(find.text('Archived'), findsNothing);
     await tester.tap(find.text('Release day').last);
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('timer-start')));
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
     expect(
@@ -163,12 +220,14 @@ void main() {
     tester,
   ) async {
     await pumpPage(tester);
+    await tester.ensureVisible(find.byKey(const Key('timer-focus-area')));
     await tester.tap(find.byKey(const Key('timer-focus-area')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Release day').last);
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '1');
     await tester.enterText(find.byKey(const Key('timer-rest-minutes')), '1');
+    await tester.ensureVisible(find.byKey(const Key('timer-start')));
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
     clock.advance(const Duration(minutes: 1, seconds: 5));
@@ -180,7 +239,7 @@ void main() {
     expect(recorder.executions.single.specialActivityId, 4);
     expect(recorder.executions.single.focusedTime, const Duration(minutes: 1));
     expect(recorder.executions.single.restTime, const Duration(minutes: 1));
-    expect(find.text('New execution'), findsOneWidget);
+    expect(find.text('Session setup'), findsOneWidget);
   });
 }
 

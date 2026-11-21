@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/app_radius.dart';
 import '../../../app/theme/app_spacing.dart';
+import '../../../app/theme/app_colors.dart';
+import '../../../app/theme/app_breakpoints.dart';
+import '../../../app/navigation/ponos_adaptive_shell.dart';
+import '../../../app/widgets/ponos_card.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/state/focus_areas_controller.dart';
@@ -40,12 +44,25 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
     final areasState = ref.watch(focusAreasProvider);
     final activitiesState = ref.watch(specialActivitiesProvider);
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        padding: AppSpacing.pagePadding,
+    final layout = AppBreakpoints.layoutFor(
+      PonosViewportScope.sizeOf(context).width,
+    );
+    final horizontalPadding = switch (layout) {
+      AppLayoutSize.compact => AppSpacing.md,
+      AppLayoutSize.medium => AppSpacing.lg,
+      AppLayoutSize.expanded => AppSpacing.xl + AppSpacing.xs,
+    };
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: layout == AppLayoutSize.compact
+            ? AppSpacing.md
+            : AppSpacing.lg,
+      ),
+      child: Align(
+        alignment: Alignment.topLeft,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1000),
+          constraints: const BoxConstraints(maxWidth: 1160),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -76,26 +93,57 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
                       label: const Text('Try again'),
                     ),
                   ),
-                _ => _ActiveTimerPanel(
-                  state: timer,
-                  areaName: timer.activeTimer?.specialActivityId != null
-                      ? _specialName(
-                          activitiesState.active,
-                          timer.activeTimer!.specialActivityId!,
-                        )
-                      : _areaName(
-                          areasState.areas,
-                          timer.activeTimer?.focusAreaId,
-                        ),
-                  onPause: ref.read(focusTimerProvider.notifier).pause,
-                  onResume: ref.read(focusTimerProvider.notifier).resume,
-                  onReset: _showResetOptions,
-                ),
+                _ => _activeLayout(timer, areasState, activitiesState),
               },
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _activeLayout(
+    FocusTimerState timer,
+    FocusAreasState areasState,
+    SpecialActivitiesState activitiesState,
+  ) {
+    final active = timer.activeTimer!;
+    final name = active.specialActivityId != null
+        ? _specialName(activitiesState.active, active.specialActivityId!)
+        : _areaName(areasState.areas, active.focusAreaId);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final panel = _ActiveTimerPanel(
+          state: timer,
+          areaName: name,
+          onPause: ref.read(focusTimerProvider.notifier).pause,
+          onResume: ref.read(focusTimerProvider.notifier).resume,
+          onReset: _showResetOptions,
+        );
+        final details = _SessionDetails(
+          name: name,
+          focus: active.focusDuration,
+          rest: active.restDuration,
+        );
+        if (constraints.maxWidth >= AppBreakpoints.expanded) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 7, child: panel),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(flex: 4, child: details),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            panel,
+            const SizedBox(height: AppSpacing.md),
+            details,
+          ],
+        );
+      },
     );
   }
 
@@ -136,7 +184,7 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 760;
+        final wide = constraints.maxWidth >= AppBreakpoints.expanded;
         final configuration = _ConfigurationCard(
           areas: areasState.areas,
           activities: activitiesState.active,
@@ -148,23 +196,20 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
           restMinutes: _restMinutes,
           error: _configurationError,
           onSubjectChanged: (value) => setState(() => _selectedSubject = value),
-          onStart: _start,
         );
-        final guide = const _MessageCard(
-          icon: Icons.hourglass_top_rounded,
-          title: 'Prepare your cycle',
-          message:
-              'Choose one activity and set the focus and rest durations. '
-              'Neither phase can be skipped once the execution starts.',
+        final guide = _ReadyTimer(
+          focusMinutes: _focusMinutes,
+          restMinutes: _restMinutes,
+          onStart: _start,
         );
         if (wide) {
           return Row(
             key: const Key('focus-timer-wide'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(flex: 3, child: configuration),
+              Expanded(flex: 7, child: guide),
               const SizedBox(width: AppSpacing.lg),
-              Expanded(flex: 2, child: guide),
+              Expanded(flex: 4, child: configuration),
             ],
           );
         }
@@ -172,9 +217,9 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
           key: const Key('focus-timer-compact'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            configuration,
-            const SizedBox(height: AppSpacing.md),
             guide,
+            const SizedBox(height: AppSpacing.md),
+            configuration,
           ],
         );
       },
@@ -286,7 +331,6 @@ class _ConfigurationCard extends StatelessWidget {
     required this.focusMinutes,
     required this.restMinutes,
     required this.onSubjectChanged,
-    required this.onStart,
     this.error,
   });
 
@@ -296,72 +340,202 @@ class _ConfigurationCard extends StatelessWidget {
   final TextEditingController focusMinutes;
   final TextEditingController restMinutes;
   final ValueChanged<String?> onSubjectChanged;
-  final VoidCallback onStart;
   final String? error;
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('New execution', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.lg),
-          DropdownButtonFormField<String>(
-            key: const Key('timer-focus-area'),
-            initialValue: selectedSubject,
-            decoration: const InputDecoration(labelText: 'Activity'),
-            items: [
-              for (final area in areas)
-                DropdownMenuItem(
-                  value: 'focus:${area.id}',
-                  child: Text(area.name),
-                ),
-              for (final activity in activities)
-                DropdownMenuItem(
-                  value: 'special:${activity.id}',
-                  child: Text(activity.name),
-                ),
-            ],
-            onChanged: onSubjectChanged,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Expanded(
-                child: _MinutesField(
-                  key: const Key('timer-focus-minutes'),
-                  controller: focusMinutes,
-                  label: 'Focus minutes',
-                ),
+  Widget build(BuildContext context) => PonosCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Session setup', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Choose where your work is recorded and the length of each phase.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        DropdownButtonFormField<String>(
+          key: const Key('timer-focus-area'),
+          initialValue: selectedSubject,
+          decoration: const InputDecoration(labelText: 'Activity'),
+          items: [
+            for (final area in areas)
+              DropdownMenuItem(
+                value: 'focus:${area.id}',
+                child: Text(area.name),
               ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: _MinutesField(
-                  key: const Key('timer-rest-minutes'),
-                  controller: restMinutes,
-                  label: 'Rest minutes',
-                ),
+            for (final activity in activities)
+              DropdownMenuItem(
+                value: 'special:${activity.id}',
+                child: Text(activity.name),
               ),
-            ],
-          ),
-          if (error != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ],
+          onChanged: onSubjectChanged,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: _MinutesField(
+                key: const Key('timer-focus-minutes'),
+                controller: focusMinutes,
+                label: 'Focus minutes',
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _MinutesField(
+                key: const Key('timer-rest-minutes'),
+                controller: restMinutes,
+                label: 'Rest minutes',
+              ),
             ),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            key: const Key('timer-start'),
-            onPressed: onStart,
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Start focus'),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            error!,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
+      ],
+    ),
+  );
+}
+
+class _ReadyTimer extends StatelessWidget {
+  const _ReadyTimer({
+    required this.focusMinutes,
+    required this.restMinutes,
+    required this.onStart,
+  });
+  final TextEditingController focusMinutes;
+  final TextEditingController restMinutes;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) => PonosCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('CURRENT CYCLE', style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: AppSpacing.xl),
+        ListenableBuilder(
+          listenable: focusMinutes,
+          builder: (context, _) => _TimerDial(
+            label: 'READY',
+            value: _formatDuration(
+              Duration(minutes: int.tryParse(focusMinutes.text) ?? 0),
+            ),
+            subtitle: 'Ready for a focused cycle',
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        _PhaseStrip(focus: focusMinutes, rest: restMinutes),
+        const SizedBox(height: AppSpacing.md),
+        FilledButton.icon(
+          key: const Key('timer-start'),
+          onPressed: onStart,
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: const Text('Start focus'),
+        ),
+      ],
+    ),
+  );
+}
+
+class _TimerDial extends StatelessWidget {
+  const _TimerDial({
+    required this.label,
+    required this.value,
+    required this.subtitle,
+  });
+  final String label, value, subtitle;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: AspectRatio(
+        aspectRatio: 1,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.border, width: 4),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(label, style: Theme.of(context).textTheme.labelLarge),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  value,
+                  key: label == 'READY' ? null : const Key('timer-remaining'),
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
       ),
+    ),
+  );
+}
+
+class _PhaseStrip extends StatelessWidget {
+  const _PhaseStrip({required this.focus, required this.rest});
+  final TextEditingController focus, rest;
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([focus, rest]),
+    builder: (context, _) => Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      children: [
+        Chip(label: Text('01 · Focus  ${focus.text} min')),
+        Chip(label: Text('02 · Rest  ${rest.text} min')),
+      ],
+    ),
+  );
+}
+
+class _SessionDetails extends StatelessWidget {
+  const _SessionDetails({
+    required this.name,
+    required this.focus,
+    required this.rest,
+  });
+  final String name;
+  final Duration focus, rest;
+  @override
+  Widget build(BuildContext context) => PonosCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Session details', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.md),
+        Text('Work Area', style: Theme.of(context).textTheme.labelMedium),
+        Text(name, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: AppSpacing.md),
+        Wrap(
+          spacing: AppSpacing.lg,
+          runSpacing: AppSpacing.sm,
+          children: [
+            Text('Focus · ${focus.inMinutes} min'),
+            Text('Rest · ${rest.inMinutes} min'),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        const Text('One execution · Focus followed by Rest'),
+      ],
     ),
   );
 }
@@ -410,76 +584,78 @@ class _ActiveTimerPanel extends StatelessWidget {
                   state.phaseDuration.inMilliseconds)
               .clamp(0.0, 1.0);
 
-    return Card(
+    return PonosCard(
       key: const Key('active-timer'),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          children: [
-            Text(areaName, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            Chip(
-              avatar: Icon(
-                timer.phase == FocusTimerPhase.focus
-                    ? Icons.bolt_rounded
-                    : Icons.self_improvement_rounded,
-                size: 18,
-              ),
-              label: Text(
-                timer.phase == FocusTimerPhase.focus
-                    ? 'Focus phase'
-                    : 'Rest phase',
-              ),
+      child: Column(
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'CURRENT CYCLE',
+              style: Theme.of(context).textTheme.labelMedium,
             ),
-            const SizedBox(height: AppSpacing.lg),
+          ),
+          Text(areaName, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: AppSpacing.sm),
+          Chip(
+            avatar: Icon(
+              timer.phase == FocusTimerPhase.focus
+                  ? Icons.bolt_rounded
+                  : Icons.self_improvement_rounded,
+              size: 18,
+            ),
+            label: Text(
+              timer.phase == FocusTimerPhase.focus
+                  ? 'Focus phase'
+                  : 'Rest phase',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _TimerDial(
+            label: timer.phase == FocusTimerPhase.focus ? 'FOCUS' : 'REST',
+            value: _formatDuration(state.phaseRemaining),
+            subtitle: paused ? 'Paused' : 'Time remaining',
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            child: LinearProgressIndicator(value: progress, minHeight: 8),
+          ),
+          if (state.status == FocusTimerStatus.error) ...[
+            const SizedBox(height: AppSpacing.md),
             Text(
-              _formatDuration(state.phaseRemaining),
-              key: const Key('timer-remaining'),
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              _errorMessage(state.error),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              child: LinearProgressIndicator(value: progress, minHeight: 8),
-            ),
-            if (state.status == FocusTimerStatus.error) ...[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _errorMessage(state.error),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            const SizedBox(height: AppSpacing.xl),
-            if (saving)
-              const CircularProgressIndicator()
-            else
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                alignment: WrapAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    key: Key(paused ? 'timer-resume' : 'timer-pause'),
-                    onPressed: paused ? onResume : onPause,
-                    icon: Icon(
-                      paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                    ),
-                    label: Text(paused ? 'Resume' : 'Pause'),
-                  ),
-                  if (paused)
-                    OutlinedButton.icon(
-                      key: const Key('timer-reset'),
-                      onPressed: onReset,
-                      icon: const Icon(Icons.restart_alt_rounded),
-                      label: const Text('Reset'),
-                    ),
-                ],
-              ),
           ],
-        ),
+          const SizedBox(height: AppSpacing.xl),
+          if (saving)
+            const CircularProgressIndicator()
+          else
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              alignment: WrapAlignment.center,
+              children: [
+                FilledButton.icon(
+                  key: Key(paused ? 'timer-resume' : 'timer-pause'),
+                  onPressed: paused ? onResume : onPause,
+                  icon: Icon(
+                    paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                  ),
+                  label: Text(paused ? 'Resume' : 'Pause'),
+                ),
+                if (paused)
+                  OutlinedButton.icon(
+                    key: const Key('timer-reset'),
+                    onPressed: onReset,
+                    icon: const Icon(Icons.restart_alt_rounded),
+                    label: const Text('Reset'),
+                  ),
+              ],
+            ),
+        ],
       ),
     );
   }
