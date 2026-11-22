@@ -1,14 +1,14 @@
 # Focus Timer domain rules
 
-These rules are fixed requirements for the Focus Timer. They define expected
+These rules define the current requirements for the Focus Timer. They define expected
 behavior independently of Flutter widgets, state management, storage, and API
 implementation details.
 
 ## Execution model
 
-- One execution contains exactly one focus phase followed by exactly one rest
-  phase.
+- One execution contains one focus phase, optionally followed by one rest phase.
 - Focus and rest durations are configured before starting each execution.
+- Focus duration must be positive; a zero rest duration means no rest phase.
 - Each execution is linked to exactly one work subject: either a Focus Area or
   a Special Activity.
 - The linked work subject remains fixed during an active execution, but a
@@ -22,12 +22,13 @@ The valid natural sequence is:
 focus running <-> focus paused
       |
       | focus duration reached
-      v
-rest running <-> rest paused
+      +-- rest duration is zero --> completed and persisted
       |
-      | rest duration reached
-      v
-completed and persisted
+      +-- rest duration is positive --> rest running <-> rest paused
+                                                |
+                                                | rest duration reached
+                                                v
+                                       completed and persisted
 ```
 
 ## Pause and reset
@@ -42,10 +43,12 @@ completed and persisted
 
 ## Completion and transition effects
 
-- Reaching the configured focus duration automatically starts the rest phase.
+- Reaching the configured focus duration automatically starts the rest phase
+  when its duration is positive; otherwise it completes the execution directly.
 - The automatic focus-to-rest transition triggers an alarm and a platform
   notification.
-- Naturally completing the rest phase completes and persists the execution.
+- Natural completion persists the execution, including zero rest time for a
+  focus-only execution. Focus-only completion does not trigger a rest-start alert.
 - Natural completion never offers a discard path.
 
 ## Accuracy and recovery
@@ -77,5 +80,5 @@ completed and persisted
 - Every persisted execution includes the immutable local `work_date` captured
   when it started. Daily queries use this value rather than `ended_at`.
 
-These requirements are the source of truth for the upcoming timer domain
+These requirements are the source of truth for the timer domain
 model, backend contract, persistence, Flutter state, and platform integrations.

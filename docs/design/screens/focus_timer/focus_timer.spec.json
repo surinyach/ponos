@@ -9,14 +9,14 @@
     "card": "white, 17px rounded, 1px #DCE5EE border",
     "focus_phase": "Blue inner progress, explicit Focus label; bronze laurel progress accent",
     "rest_phase": "Bronze inner progress, explicit Rest label; bronze laurel progress accent",
-    "paused": "explicit Paused badge, orbit animation stops",
+    "paused": "explicit Paused status; static laurel progress remains unchanged",
     "session_configuration": "editable only before start; active session shows compact read-only details",
-    "mobile": "Countdown and action controls before session details; allow vertical scroll as needed, no clipped controls"
+    "mobile": "Approved refinement: compact configuration below the timer; use available height without unnecessary scrolling and allow scrolling when content cannot fit"
   },
   "source_of_truth": {
-    "authoritative": "prototype/focus-timer.html",
+    "historical_prototype": "prototype/focus-timer.html",
     "static_snapshots": "reference/*.png",
-    "rule": "Only visual design source. No repo parity verification was available; compare to actual checked-out develop source."
+    "rule": "The prototype, snapshots, and canonical_viewports geometry document the original concept. Later approved Flutter layout refinements and docs/focus-timer-domain-rules.md take precedence; the prototype does not depict No rest."
   },
   "canonical_viewports": {
     "desktop_1440x900": {
@@ -281,15 +281,15 @@
     "completed"
   ],
   "interaction_contract": {
-    "one_cycle": "one Focus period followed by one Rest period, no skip action",
+    "one_cycle": "one positive Focus period, optionally followed by a positive Rest period; zero Rest means focus-only, with no skip action",
     "start": "start focus phase",
     "pause_resume": "both Focus and Rest phases can be paused/resumed",
     "reset": "available only when paused; dialog Save partial / Discard / Cancel",
-    "natural_completion": "completion state; production app persists record and notifies user",
-    "configuration": "Work Area, Focus minutes and Rest minutes selected before cycle; choices grouped by Focus Areas / Special Activities",
+    "natural_completion": "persist and notify, then return to setup; zero Rest completes directly after Focus without a Rest-start alert",
+    "configuration": "Work Area, positive Focus minutes and non-negative Rest minutes selected before cycle; 0 displays No rest; choices grouped by Focus Areas / Special Activities",
     "time_source": "in production use existing Riverpod state and timestamp-based accurate timer; HTML demo is illustrative",
     "active_phase_feedback": "always convey via visible label, not color alone",
-    "motion": "subtle orbital movement and pulse while running; honor prefers-reduced-motion",
+    "motion": "phase progress follows timer state; pause decorative motion and respect reduced-motion settings",
     "accessibility": "48px touch targets where possible, keyboard focus, labels, semantically descriptive status",
     "do_not_change": "backend, state machine, phase transitions, persistence, notification logic, business rules"
   },

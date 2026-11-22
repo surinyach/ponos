@@ -180,7 +180,7 @@ void main() {
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
     expect(errorFor(focus), 'Focus must be at least 1 minute.');
-    expect(errorFor(rest), 'Rest must be at least 1 minute.');
+    expect(errorFor(rest), 'Rest must be 0 minutes or more.');
     await tester.ensureVisible(focus);
     await tester.enterText(focus, '10');
     await tester.pump();
@@ -190,6 +190,49 @@ void main() {
     await tester.pump();
     expect(errorFor(rest), isNull);
   });
+
+  testWidgets('zero rest displays No rest and remains editable', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(390, 844));
+    final rest = find.byKey(const Key('timer-rest-minutes'));
+    await tester.enterText(rest, '0');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    expect(find.text('No rest'), findsOneWidget);
+    await tester.tap(rest);
+    await tester.pump();
+    expect(find.text('0'), findsOneWidget);
+    await tester.enterText(rest, '5');
+    await tester.pump();
+    expect(find.text('5'), findsOneWidget);
+  });
+
+  for (final size in [const Size(390, 844), const Size(1440, 900)]) {
+    testWidgets('focus-only configuration and completion at $size', (
+      tester,
+    ) async {
+      await pumpPage(tester, size: size);
+      await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '1');
+      await tester.enterText(find.byKey(const Key('timer-rest-minutes')), '0');
+      await tester.ensureVisible(find.byKey(const Key('timer-start')));
+      await tester.tap(find.byKey(const Key('timer-start')));
+      await tester.pump();
+      expect(find.textContaining('No rest'), findsWidgets);
+      expect(find.text('REST'), findsNothing);
+      clock.advance(const Duration(minutes: 1));
+      await container.read(focusTimerProvider.notifier).synchronize();
+      await tester.pump();
+      expect(find.text('REST'), findsNothing);
+      expect(
+        recorder.executions.single.focusedTime,
+        const Duration(minutes: 1),
+      );
+      expect(recorder.executions.single.restTime, Duration.zero);
+      expect(find.text('No rest'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('saves a partial execution from the reset dialog', (
     tester,

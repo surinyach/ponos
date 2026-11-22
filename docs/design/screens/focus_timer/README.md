@@ -5,14 +5,18 @@ This folder is intended to live under `docs/design/screens/focus_timer/` in the 
 ## Contents
 
 - `README.md` — usage notes and implementation guardrails.
-- `focus_timer.spec.json` — layout and conformance metadata.
+- `focus_timer.spec.json` — original concept layout and conformance metadata.
 - `design_rules.md` — non-negotiable UI/behavior guardrails for implementation.
-- `reference/` — canonical screenshots for approved timer states and breakpoints.
-- `prototype/focus-timer.html` — interactive visual reference for the redesign.
+- `reference/` — screenshots of the original timer concept.
+- `prototype/focus-timer.html` — historical interactive visual concept.
 
 ## Scope
 
-This bundle is for a **visual redesign only**.
+This bundle records the original visual concept. Its screenshots, prototype,
+and measured geometry predate the approved compact mobile refinements and
+focus-only sessions; they are not exact baselines for the current app. The
+current Flutter presentation and the approved refinements take precedence.
+The prototype is illustrative and does not implement No rest.
 
 Keep unchanged:
 - timer business rules
@@ -40,7 +44,8 @@ Keep unchanged:
 
 ## Important behavior constraints
 
-1. One execution = one Focus phase followed by one Rest phase.
+1. One execution has a Focus phase and an optional Rest phase. Entering 0 in
+   the Rest minutes field selects **No rest**; Focus duration stays positive.
 2. Reset is available only while paused.
 3. Save-partial vs discard appears only from reset flow.
 4. Focus Areas and Special Activities remain valid selectable work items.
@@ -48,6 +53,12 @@ Keep unchanged:
 
 ## Notes for the implementer
 
-- Treat the screenshots as the canonical visual reference.
-- Use the HTML prototype to understand proportions and interaction composition.
-- Validate the redesign against the checked-out `develop` branch before implementation, since this bundle was prepared from approved visual direction plus previously reviewed timer behavior rather than a live repo fetch.
+- Use the screenshots and prototype as historical visual references; do not
+  infer current layout or behavior from them where approved refinements differ.
+- Mobile uses a compact full-height composition with configuration beneath the
+  timer and scrolling when content cannot fit. Desktop retains its left-aligned
+  timer/configuration composition. During an execution configuration is read-only.
+- With No rest, Focus completes and persists immediately with zero rest time,
+  without a Rest-start alert. A positive Rest duration retains the existing
+  Focus-to-Rest transition.
+- The domain rules are documented in `../../../focus-timer-domain-rules.md`.

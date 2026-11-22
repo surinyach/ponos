@@ -46,7 +46,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
         (focusAreaId != null && focusAreaId <= 0) ||
         (specialActivityId != null && specialActivityId <= 0) ||
         focusDuration <= Duration.zero ||
-        restDuration <= Duration.zero) {
+        restDuration.isNegative) {
       return false;
     }
     await _ignoreNotificationFailure(_notifications.requestPermissions);
@@ -100,7 +100,7 @@ class FocusTimerController extends Notifier<FocusTimerState> {
       clearRunningSince: true,
     );
     final didPause = await _replace(paused);
-    if (didPause) await _cancelPhaseAlert(current.phase);
+    if (didPause) await _cancelPhaseAlert(current);
     return didPause;
   }
 
@@ -193,6 +193,16 @@ class FocusTimerController extends Notifier<FocusTimerState> {
       final transitionAt = timer.runningSince!.add(
         timer.focusDuration - timer.accumulatedFocusTime,
       );
+      if (timer.restDuration == Duration.zero) {
+        await _completeExecution(
+          timer.copyWith(
+            accumulatedFocusTime: timer.focusDuration,
+            runningSince: transitionAt,
+          ),
+          transitionAt,
+        );
+        return;
+      }
       final restTimer = timer.copyWith(
         phase: FocusTimerPhase.rest,
         accumulatedFocusTime: timer.focusDuration,
@@ -238,6 +248,13 @@ class FocusTimerController extends Notifier<FocusTimerState> {
           timer.accumulatedRestTime,
     );
     final completed = timer.copyWith(accumulatedRestTime: timer.restDuration);
+    await _completeExecution(completed, endedAt);
+  }
+
+  Future<void> _completeExecution(
+    ActiveFocusTimer completed,
+    DateTime endedAt,
+  ) async {
     state = _snapshot(completed, status: FocusTimerStatus.persisting);
     try {
       final execution = _draft(completed, endedAt);
@@ -276,18 +293,22 @@ class FocusTimerController extends Notifier<FocusTimerState> {
         ? scheduledAt.add(timer.restStartDelayRemaining)
         : scheduledAt;
     final alert = timer.phase == FocusTimerPhase.focus
-        ? FocusTimerAlert.focusComplete
+        ? (timer.restDuration == Duration.zero
+              ? FocusTimerAlert.focusOnlyComplete
+              : FocusTimerAlert.focusComplete)
         : FocusTimerAlert.restComplete;
     await _ignoreNotificationFailure(
       () => _notifications.schedule(alert, alertAt),
     );
   }
 
-  Future<void> _cancelPhaseAlert(FocusTimerPhase phase) =>
+  Future<void> _cancelPhaseAlert(ActiveFocusTimer timer) =>
       _ignoreNotificationFailure(
         () => _notifications.cancel(
-          phase == FocusTimerPhase.focus
-              ? FocusTimerAlert.focusComplete
+          timer.phase == FocusTimerPhase.focus
+              ? (timer.restDuration == Duration.zero
+                    ? FocusTimerAlert.focusOnlyComplete
+                    : FocusTimerAlert.focusComplete)
               : FocusTimerAlert.restComplete,
         ),
       );

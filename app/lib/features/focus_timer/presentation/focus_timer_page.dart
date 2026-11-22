@@ -388,14 +388,14 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
 
   Future<void> _start() async {
     final focus = int.tryParse(_focusMinutes.text.trim());
-    final rest = int.tryParse(_restMinutes.text.trim());
+    final rest = _parseRestMinutes(_restMinutes.text);
     final areas = ref.read(focusAreasProvider).areas;
     final activities = ref.read(specialActivitiesProvider).active;
     final focusError = focus == null || focus <= 0
         ? 'Focus must be at least 1 minute.'
         : null;
-    final restError = rest == null || rest <= 0
-        ? 'Rest must be at least 1 minute.'
+    final restError = rest == null || rest < 0
+        ? 'Rest must be 0 minutes or more.'
         : null;
     if ((areas.isEmpty && activities.isEmpty) ||
         focusError != null ||
@@ -414,6 +414,8 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
       _focusError = null;
       _restError = null;
     });
+    if (rest == 0) _restMinutes.text = 'No rest';
+    FocusScope.of(context).unfocus();
     final subject = _validSelection(areas, activities).split(':');
     final started = await ref
         .read(focusTimerProvider.notifier)
@@ -618,6 +620,7 @@ class _ConfigurationCard extends StatelessWidget {
                     key: const Key('timer-rest-minutes'),
                     controller: restMinutes,
                     label: 'Rest minutes',
+                    allowNoRest: true,
                     error: restError,
                     onChanged: onRestChanged,
                   ),
@@ -896,7 +899,13 @@ class _PhaseStrip extends StatelessWidget {
       runSpacing: AppSpacing.xs,
       children: [
         Chip(label: Text('01 · Focus  ${focus.text} min')),
-        Chip(label: Text('02 · Rest  ${rest.text} min')),
+        Chip(
+          label: Text(
+            _parseRestMinutes(rest.text) == 0
+                ? '02 · No rest'
+                : '02 · Rest  ${rest.text} min',
+          ),
+        ),
       ],
     ),
   );
@@ -925,22 +934,27 @@ class _SessionDetails extends StatelessWidget {
           runSpacing: AppSpacing.sm,
           children: [
             Text('Focus · ${focus.inMinutes} min'),
-            Text('Rest · ${rest.inMinutes} min'),
+            Text(_restLabel(rest.inMinutes)),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
-        const Text('One execution · Focus followed by Rest'),
+        Text(
+          rest == Duration.zero
+              ? 'One execution · Focus only'
+              : 'One execution · Focus followed by Rest',
+        ),
       ],
     ),
   );
 }
 
-class _MinutesField extends StatelessWidget {
+class _MinutesField extends StatefulWidget {
   const _MinutesField({
     required this.controller,
     required this.label,
     required this.onChanged,
     this.error,
+    this.allowNoRest = false,
     super.key,
   });
 
@@ -948,16 +962,53 @@ class _MinutesField extends StatelessWidget {
   final String label;
   final String? error;
   final ValueChanged<String> onChanged;
+  final bool allowNoRest;
+
+  @override
+  State<_MinutesField> createState() => _MinutesFieldState();
+}
+
+class _MinutesFieldState extends State<_MinutesField> {
+  final _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_updateRestDisplay);
+  }
+
+  void _updateRestDisplay() {
+    if (!widget.allowNoRest) return;
+    final text = widget.controller.text;
+    if (_focusNode.hasFocus && text == 'No rest') {
+      widget.controller.value = const TextEditingValue(
+        text: '0',
+        selection: TextSelection(baseOffset: 0, extentOffset: 1),
+      );
+    } else if (!_focusNode.hasFocus && int.tryParse(text.trim()) == 0) {
+      widget.controller.text = 'No rest';
+    }
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => TextField(
-    controller: controller,
+    controller: widget.controller,
+    focusNode: _focusNode,
     keyboardType: TextInputType.number,
-    onChanged: onChanged,
+    onChanged: widget.onChanged,
     decoration: InputDecoration(
-      labelText: label,
-      suffixText: 'min',
-      errorText: error,
+      labelText: widget.label,
+      suffixText: widget.allowNoRest && widget.controller.text == 'No rest'
+          ? null
+          : 'min',
+      errorText: widget.error,
       errorMaxLines: 3,
       filled: true,
       fillColor: AppColors.background,
@@ -1122,7 +1173,7 @@ class _ActiveTimerPanel extends StatelessWidget {
             if (compact) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'Focus · ${timer.focusDuration.inMinutes} min   •   Rest · ${timer.restDuration.inMinutes} min',
+                'Focus · ${timer.focusDuration.inMinutes} min   •   ${_restLabel(timer.restDuration.inMinutes)}',
                 key: const Key('timer-config-summary'),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
@@ -1242,6 +1293,12 @@ class _MessageCard extends StatelessWidget {
     ),
   );
 }
+
+int? _parseRestMinutes(String value) =>
+    value.trim() == 'No rest' ? 0 : int.tryParse(value.trim());
+
+String _restLabel(int? minutes) =>
+    minutes == 0 ? 'No rest' : 'Rest · ${minutes ?? ''} min';
 
 String _formatDuration(Duration duration) {
   final seconds = duration.inSeconds;

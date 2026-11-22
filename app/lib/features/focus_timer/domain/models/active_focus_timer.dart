@@ -26,7 +26,7 @@ class ActiveFocusTimer {
        assert(focusAreaId == null || focusAreaId > 0),
        assert(specialActivityId == null || specialActivityId > 0),
        assert(focusDuration.inMicroseconds > 0),
-       assert(restDuration.inMicroseconds > 0),
+       assert(!restDuration.isNegative),
        assert(!accumulatedFocusTime.isNegative),
        assert(!accumulatedRestTime.isNegative),
        assert(!restStartDelayRemaining.isNegative),

@@ -3,6 +3,27 @@ import 'package:ponos_app/features/focus_timer/data/active_focus_timer_codec.dar
 import 'package:ponos_app/features/focus_timer/domain/models/active_focus_timer.dart';
 
 void main() {
+  test('round-trips a paused focus-only timer for recovery', () {
+    final timer = ActiveFocusTimer(
+      focusAreaId: 1,
+      workDate: DateTime(2026, 9, 8),
+      startedAt: DateTime.utc(2026, 9, 8, 8),
+      startedAtUtcOffset: Duration.zero,
+      focusDuration: const Duration(minutes: 25),
+      restDuration: Duration.zero,
+      phase: FocusTimerPhase.focus,
+      activity: FocusTimerActivity.paused,
+      accumulatedFocusTime: const Duration(minutes: 3),
+      accumulatedRestTime: Duration.zero,
+      focusTransitionNotified: false,
+    );
+    final restored = const ActiveFocusTimerCodec().decode(
+      const ActiveFocusTimerCodec().encode(timer),
+    );
+    expect(restored.restDuration, Duration.zero);
+    expect(restored.isPaused, isTrue);
+    expect(restored.accumulatedFocusTime, const Duration(minutes: 3));
+  });
   test('restores a Special Activity timer without inventing a Focus Area', () {
     final original = ActiveFocusTimer(
       specialActivityId: 4,
