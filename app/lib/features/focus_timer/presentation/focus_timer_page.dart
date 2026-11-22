@@ -8,6 +8,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_breakpoints.dart';
 import '../../../app/navigation/ponos_adaptive_shell.dart';
 import '../../../app/widgets/ponos_card.dart';
+import '../../../app/widgets/ponos_button.dart';
+import '../../../app/widgets/ponos_state_panel.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../focus_areas/domain/models/focus_area.dart';
 import '../../focus_areas/presentation/state/focus_areas_controller.dart';
@@ -44,6 +46,18 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(focusTimerProvider, (previous, next) {
+      if (previous?.status == FocusTimerStatus.persisting &&
+          previous?.activeTimer?.isPaused == false &&
+          next.status == FocusTimerStatus.inactive) {
+        _showFeedback('Focus cycle completed and saved.');
+      } else if (previous?.status == FocusTimerStatus.restoring &&
+          next.activeTimer != null &&
+          (next.status == FocusTimerStatus.running ||
+              next.status == FocusTimerStatus.paused)) {
+        _showFeedback('Timer restored.');
+      }
+    });
     final timer = ref.watch(focusTimerProvider);
     final areasState = ref.watch(focusAreasProvider);
     final activitiesState = ref.watch(specialActivitiesProvider);
@@ -89,7 +103,9 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
               ),
               const SizedBox(height: AppSpacing.lg),
               switch (timer.status) {
-                FocusTimerStatus.restoring => const _LoadingState(),
+                FocusTimerStatus.restoring => const _LoadingState(
+                  title: 'Restoring timer',
+                ),
                 FocusTimerStatus.inactive => _buildSetup(
                   areasState,
                   activitiesState,
@@ -137,7 +153,7 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
                 .clamp(0.0, double.infinity);
         Widget content;
         if (timer.status == FocusTimerStatus.restoring) {
-          content = const _LoadingState();
+          content = const _LoadingState(title: 'Restoring timer');
         } else if (timer.status == FocusTimerStatus.error &&
             timer.activeTimer == null) {
           content = _MessageCard(
@@ -418,22 +434,38 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
     final choice = await showDialog<_ResetChoice>(
       context: context,
       builder: (context) => AlertDialog(
+        scrollable: true,
         title: const Text('Reset execution?'),
-        content: const Text(
-          'Save the elapsed time as a partial execution, or discard it.',
+        content: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Save partial records the focus and rest time completed so far, then resets the timer.',
+            ),
+            SizedBox(height: AppSpacing.sm),
+            Text('Discard resets the timer without saving this execution.'),
+          ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, _ResetChoice.discard),
-            child: const Text('Discard'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, _ResetChoice.savePartial),
-            child: const Text('Save partial'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PonosButton.primary(
+                label: 'Save partial',
+                onPressed: () =>
+                    Navigator.pop(context, _ResetChoice.savePartial),
+              ),
+              PonosButton.danger(
+                label: 'Discard',
+                onPressed: () => Navigator.pop(context, _ResetChoice.discard),
+              ),
+              PonosButton.ghost(
+                label: 'Cancel',
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
           ),
         ],
       ),
@@ -441,10 +473,17 @@ class _FocusTimerPageState extends ConsumerState<FocusTimerPage> {
     if (!mounted || choice == null) return;
     final controller = ref.read(focusTimerProvider.notifier);
     if (choice == _ResetChoice.savePartial) {
-      await controller.resetAndSavePartial();
+      final saved = await controller.resetAndSavePartial();
+      if (saved && mounted) _showFeedback('Partial execution saved.');
     } else {
       await controller.resetAndDiscard();
     }
+  }
+
+  void _showFeedback(String message) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.hideCurrentSnackBar();
+    messenger?.showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _areaName(List<FocusArea> areas, int? id) =>
@@ -719,11 +758,11 @@ class _ReadyTimer extends StatelessWidget {
             _PhaseStrip(focus: focusMinutes, rest: restMinutes),
             const SizedBox(height: AppSpacing.md),
           ],
-          FilledButton.icon(
+          PonosButton.primary(
             key: const Key('timer-start'),
             onPressed: onStart,
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Start focus'),
+            label: 'Start focus',
           ),
         ],
       ),
@@ -777,12 +816,21 @@ class _TimerDial extends StatelessWidget {
               measuredHeight(value, textTheme.displayLarge, singleLine: true) +
               measuredHeight(subtitle, textTheme.bodySmall) >
           diameter * .7;
-      final time = Text(
-        value,
-        key: label == 'READY' ? null : const Key('timer-remaining'),
-        textAlign: TextAlign.center,
-        style: textTheme.displayLarge?.copyWith(
-          fontFeatures: const [FontFeature.tabularFigures()],
+      final time = Semantics(
+        key: const Key('timer-countdown-semantics'),
+        liveRegion: false,
+        label: label == 'READY'
+            ? 'Focus duration $value'
+            : '$label time remaining $value',
+        child: ExcludeSemantics(
+          child: Text(
+            value,
+            key: label == 'READY' ? null : const Key('timer-remaining'),
+            textAlign: TextAlign.center,
+            style: textTheme.displayLarge?.copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ),
       );
       final text = Column(
@@ -792,7 +840,7 @@ class _TimerDial extends StatelessWidget {
           Text(
             label,
             style: textTheme.labelLarge?.copyWith(
-              color: isRest ? AppColors.accent : AppColors.primary,
+              color: isRest ? AppColors.primaryDark : AppColors.primary,
             ),
           ),
           if (needsSeparateText)
@@ -969,24 +1017,21 @@ class _ActiveTimerPanel extends StatelessWidget {
             ),
             Text(areaName, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            Chip(
-              avatar: Icon(
-                timer.phase == FocusTimerPhase.focus
-                    ? Icons.bolt_rounded
-                    : Icons.self_improvement_rounded,
-                size: 18,
-              ),
-              label: Text(
-                timer.phase == FocusTimerPhase.focus
-                    ? 'Focus phase'
-                    : 'Rest phase',
-              ),
+            _TimerPhaseStatus(
+              phase: timer.phase,
+              paused: paused,
+              saving: saving,
+              hasError: state.status == FocusTimerStatus.error,
             ),
             SizedBox(height: compact ? AppSpacing.xs : AppSpacing.lg),
             _TimerDial(
               label: timer.phase == FocusTimerPhase.focus ? 'FOCUS' : 'REST',
               value: _formatDuration(state.phaseRemaining),
-              subtitle: paused ? 'Paused' : 'Time remaining',
+              subtitle: paused
+                  ? 'Paused'
+                  : timer.phase == FocusTimerPhase.rest
+                  ? 'Focus complete'
+                  : 'Time remaining',
               progress: progress,
               isRest: timer.phase == FocusTimerPhase.rest,
               maxSize: dialSize,
@@ -994,41 +1039,85 @@ class _ActiveTimerPanel extends StatelessWidget {
             SizedBox(height: compact ? AppSpacing.xs : AppSpacing.lg),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
-              child: LinearProgressIndicator(value: progress, minHeight: 8),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                color: timer.phase == FocusTimerPhase.rest
+                    ? AppColors.accent
+                    : AppColors.primary,
+              ),
             ),
             if (state.status == FocusTimerStatus.error) ...[
               const SizedBox(height: AppSpacing.md),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _errorMessage(state.error),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  textAlign: TextAlign.center,
+                ),
+              ),
               Text(
-                _errorMessage(state.error),
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+                'Your timer is still available.',
                 textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
             SizedBox(height: compact ? AppSpacing.sm : AppSpacing.xl),
             if (saving)
-              const CircularProgressIndicator()
+              Semantics(
+                liveRegion: true,
+                label: 'Saving execution',
+                child: const Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: AppSpacing.xs),
+                    Text('Saving execution…'),
+                  ],
+                ),
+              )
             else
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                alignment: WrapAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    key: Key(paused ? 'timer-resume' : 'timer-pause'),
-                    onPressed: paused ? onResume : onPause,
-                    icon: Icon(
-                      paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                    ),
-                    label: Text(paused ? 'Resume' : 'Pause'),
-                  ),
-                  if (paused)
-                    OutlinedButton.icon(
-                      key: const Key('timer-reset'),
-                      onPressed: onReset,
-                      icon: const Icon(Icons.restart_alt_rounded),
-                      label: const Text('Reset'),
-                    ),
-                ],
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stack =
+                      paused &&
+                      MediaQuery.textScalerOf(context).scale(120) * 2 +
+                              AppSpacing.sm >
+                          constraints.maxWidth;
+                  final width = paused && !stack
+                      ? (constraints.maxWidth - AppSpacing.sm) / 2
+                      : constraints.maxWidth;
+                  return Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: [
+                      SizedBox(
+                        width: width,
+                        child: PonosButton.primary(
+                          key: Key(paused ? 'timer-resume' : 'timer-pause'),
+                          onPressed: paused ? onResume : onPause,
+                          icon: Icon(
+                            paused
+                                ? Icons.play_arrow_rounded
+                                : Icons.pause_rounded,
+                          ),
+                          label: paused ? 'Resume' : 'Pause',
+                        ),
+                      ),
+                      if (paused)
+                        SizedBox(
+                          width: width,
+                          child: PonosButton.secondary(
+                            key: const Key('timer-reset'),
+                            onPressed: onReset,
+                            icon: const Icon(Icons.restart_alt_rounded),
+                            label: 'Reset',
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             if (compact) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -1046,16 +1135,77 @@ class _ActiveTimerPanel extends StatelessWidget {
   }
 }
 
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
+class _TimerPhaseStatus extends StatelessWidget {
+  const _TimerPhaseStatus({
+    required this.phase,
+    required this.paused,
+    required this.saving,
+    required this.hasError,
+  });
+  final FocusTimerPhase phase;
+  final bool paused, saving, hasError;
 
   @override
-  Widget build(BuildContext context) => const Center(
-    child: Padding(
-      padding: EdgeInsets.all(AppSpacing.xl),
-      child: CircularProgressIndicator(),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final isRest = phase == FocusTimerPhase.rest;
+    final phaseName = isRest ? 'Rest' : 'Focus';
+    final label = hasError
+        ? '$phaseName · Error'
+        : saving
+        ? '$phaseName · Saving'
+        : paused
+        ? '$phaseName · Paused'
+        : '$phaseName phase';
+    final color = hasError
+        ? AppColors.error
+        : isRest
+        ? AppColors.accent
+        : AppColors.primary;
+    return Semantics(
+      liveRegion: true,
+      child: AnimatedSwitcher(
+        key: const Key('timer-phase-transition'),
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 180),
+        layoutBuilder: (current, previous) =>
+            current ?? const SizedBox.shrink(),
+        child: Chip(
+          key: ValueKey(label),
+          backgroundColor: Color.alphaBlend(
+            color.withValues(alpha: .08),
+            AppColors.white,
+          ),
+          side: BorderSide(color: color.withValues(alpha: .35)),
+          avatar: Icon(
+            hasError
+                ? Icons.error_outline
+                : paused
+                ? Icons.pause_rounded
+                : isRest
+                ? Icons.self_improvement_rounded
+                : Icons.bolt_rounded,
+            size: 18,
+            color: color,
+          ),
+          label: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: hasError ? AppColors.error : AppColors.primaryDark,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingState extends StatelessWidget {
+  const _LoadingState({this.title = 'Loading activities'});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => PonosStatePanel.loading(title: title);
 }
 
 class _MessageCard extends StatelessWidget {
@@ -1072,23 +1222,23 @@ class _MessageCard extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 44),
-          const SizedBox(height: AppSpacing.md),
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.xs),
-          Text(message, textAlign: TextAlign.center),
-          if (action != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            action!,
-          ],
-        ],
-      ),
+  Widget build(BuildContext context) => PonosCard(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 44, color: AppColors.textSecondary),
+        const SizedBox(height: AppSpacing.md),
+        Text(title, style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+        if (action != null) ...[const SizedBox(height: AppSpacing.lg), action!],
+      ],
     ),
   );
 }

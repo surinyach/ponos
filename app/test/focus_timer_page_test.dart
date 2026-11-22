@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/navigation/ponos_destination.dart';
 import 'package:ponos_app/app/providers/focus_timer_providers.dart';
+import 'package:ponos_app/app/theme/app_colors.dart';
+import 'package:ponos_app/app/theme/app_theme.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_controller.dart';
 import 'package:ponos_app/features/focus_areas/presentation/state/focus_areas_state.dart';
@@ -65,6 +70,50 @@ void main() {
     );
     await tester.pump();
   }
+
+  testWidgets('restoring shows progress and restores a paused execution', (
+    tester,
+  ) async {
+    store.pendingLoad = Completer<ActiveFocusTimer?>();
+    await pumpPage(tester, size: const Size(390, 844));
+    expect(find.text('Restoring timer'), findsOneWidget);
+    expect(find.byKey(const Key('timer-start')), findsNothing);
+    store.pendingLoad!.complete(
+      ActiveFocusTimer(
+        focusAreaId: 1,
+        workDate: DateTime(2026, 9, 8),
+        startedAt: DateTime.utc(2026, 9, 8, 8),
+        startedAtUtcOffset: Duration.zero,
+        focusDuration: const Duration(minutes: 25),
+        restDuration: const Duration(minutes: 5),
+        phase: FocusTimerPhase.rest,
+        activity: FocusTimerActivity.paused,
+        accumulatedFocusTime: const Duration(minutes: 25),
+        accumulatedRestTime: const Duration(minutes: 2),
+        focusTransitionNotified: true,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('REST'), findsOneWidget);
+    expect(find.text('Rest · Paused'), findsOneWidget);
+    expect(find.text('03:00'), findsOneWidget);
+    expect(find.byKey(const Key('timer-resume')), findsOneWidget);
+    expect(find.text('Timer restored.'), findsOneWidget);
+  });
+
+  testWidgets('restoration failure exposes retry and recovers', (tester) async {
+    store.pendingLoad = Completer<ActiveFocusTimer?>();
+    await pumpPage(tester);
+    expect(find.text('Restoring timer'), findsOneWidget);
+    store.pendingLoad!.completeError(StateError('unavailable'));
+    await tester.pump();
+    expect(find.text('Unable to restore the timer'), findsOneWidget);
+    store.pendingLoad = null;
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    expect(find.text('READY'), findsOneWidget);
+  });
 
   testWidgets('configures, starts, pauses, and discards an execution', (
     tester,
@@ -159,6 +208,63 @@ void main() {
 
     expect(recorder.executions.single.focusedTime, const Duration(minutes: 4));
     expect(find.text('Session setup'), findsOneWidget);
+    expect(find.text('Partial execution saved.'), findsOneWidget);
+  });
+
+  testWidgets('reset cancel leaves the paused timer intact', (tester) async {
+    await pumpPage(tester, size: const Size(390, 844));
+    await tester.tap(find.byKey(const Key('timer-start')));
+    await tester.pump();
+    expect(find.byKey(const Key('timer-reset')), findsNothing);
+    await tester.tap(find.byKey(const Key('timer-pause')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('timer-reset')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Save partial records'), findsOneWidget);
+    expect(find.textContaining('Discard resets'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timer-resume')), findsOneWidget);
+    expect(container.read(focusTimerProvider).activeTimer?.isPaused, isTrue);
+    expect(recorder.executions, isEmpty);
+  });
+
+  testWidgets('partial save displays progress and retains timer on failure', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(390, 844));
+    await tester.tap(find.byKey(const Key('timer-start')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('timer-pause')));
+    await tester.pump();
+    recorder.pending = Completer<void>();
+    await tester.tap(find.byKey(const Key('timer-reset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save partial'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('Saving execution…'), findsOneWidget);
+    expect(find.text('Focus · Saving'), findsOneWidget);
+    expect(find.byKey(const Key('timer-resume')), findsNothing);
+    recorder.pending!.completeError(StateError('offline'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Something went wrong. Please try again.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('timer-resume')), findsOneWidget);
+    expect(find.text('Focus · Error'), findsOneWidget);
+    expect(find.text('Your timer is still available.'), findsOneWidget);
+    expect(container.read(focusTimerProvider).activeTimer?.isPaused, isTrue);
+    expect(recorder.executions, isEmpty);
+    recorder.pending = null;
+    await tester.ensureVisible(find.byKey(const Key('timer-reset')));
+    await tester.tap(find.byKey(const Key('timer-reset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save partial'));
+    await tester.pumpAndSettle();
+    expect(recorder.executions, hasLength(1));
+    expect(find.text('Partial execution saved.'), findsOneWidget);
   });
 
   testWidgets('returns to setup after natural completion', (tester) async {
@@ -174,6 +280,7 @@ void main() {
     await container.read(focusTimerProvider.notifier).synchronize();
     await tester.pump();
     expect(find.text('Rest phase'), findsOneWidget);
+    expect(find.text('Focus complete'), findsOneWidget);
 
     clock.advance(const Duration(minutes: 1));
     await container.read(focusTimerProvider.notifier).synchronize();
@@ -182,6 +289,8 @@ void main() {
     expect(find.byKey(const Key('timer-remaining')), findsNothing);
     expect(find.text('Session setup'), findsOneWidget);
     expect(recorder.executions, hasLength(1));
+    await tester.pump();
+    expect(find.text('Focus cycle completed and saved.'), findsOneWidget);
   });
 
   testWidgets('laurel follows each phase and remains still while paused', (
@@ -196,22 +305,37 @@ void main() {
     expect(painter().progress, 0);
     await tester.tap(find.byKey(const Key('timer-start')));
     await tester.pump();
+    expect(find.text('Focus phase'), findsOneWidget);
+    expect(
+      tester
+          .widget<AnimatedSwitcher>(
+            find.byKey(const Key('timer-phase-transition')),
+          )
+          .duration,
+      const Duration(milliseconds: 180),
+    );
     clock.advance(const Duration(minutes: 10));
     await container.read(focusTimerProvider.notifier).synchronize();
     await tester.pump();
     expect(painter().progress, closeTo(.4, .001));
     expect(painter().isRest, isFalse);
+    expect(find.text('15:00'), findsOneWidget);
     await container.read(focusTimerProvider.notifier).pause();
     clock.advance(const Duration(minutes: 3));
     await container.read(focusTimerProvider.notifier).synchronize();
     await tester.pump();
     expect(painter().progress, closeTo(.4, .001));
+    expect(find.text('Focus · Paused'), findsOneWidget);
+    expect(find.text('15:00'), findsOneWidget);
     await container.read(focusTimerProvider.notifier).resume();
     clock.advance(const Duration(minutes: 15, seconds: 5));
     await container.read(focusTimerProvider.notifier).synchronize();
     await tester.pump();
     expect(painter().isRest, isTrue);
     expect(painter().progress, closeTo(0, .001));
+    expect(find.text('Rest phase'), findsOneWidget);
+    expect(find.text('Focus complete'), findsOneWidget);
+    expect(find.text('05:00'), findsOneWidget);
     await container.read(focusTimerProvider.notifier).pause();
   });
 
@@ -256,7 +380,25 @@ void main() {
     await tester.pump();
     expect(find.text('FOCUS'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    expect(
+      tester
+          .widget<AnimatedSwitcher>(
+            find.byKey(const Key('timer-phase-transition')),
+          )
+          .duration,
+      Duration.zero,
+    );
     await container.read(focusTimerProvider.notifier).pause();
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('timer-reset')));
+    await tester.tap(find.byKey(const Key('timer-reset')));
+    await tester.pumpAndSettle();
+    expect(find.text('Save partial'), findsOneWidget);
+    expect(find.text('Discard'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('desktop laurel remains usable with 200 percent text', (
@@ -287,6 +429,16 @@ void main() {
     expect(find.text('FOCUS'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await container.read(focusTimerProvider.notifier).pause();
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('timer-reset')));
+    await tester.tap(find.byKey(const Key('timer-reset')));
+    await tester.pumpAndSettle();
+    expect(find.text('Save partial'), findsOneWidget);
+    expect(find.text('Discard'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
   });
 
   testWidgets('small mobile viewport allows enlarged content to scroll', (
@@ -324,6 +476,50 @@ void main() {
     await container.read(focusTimerProvider.notifier).pause();
   });
 
+  testWidgets('rest reset dialog remains usable at 200 percent text', (
+    tester,
+  ) async {
+    const size = Size(390, 844);
+    await tester.binding.setSurfaceSize(size);
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(size: size, textScaler: TextScaler.linear(2)),
+            child: Scaffold(body: FocusTimerPage()),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('timer-focus-minutes')));
+    await tester.enterText(find.byKey(const Key('timer-focus-minutes')), '1');
+    await tester.ensureVisible(find.byKey(const Key('timer-start')));
+    await tester.tap(find.byKey(const Key('timer-start')));
+    await tester.pump();
+    clock.advance(const Duration(minutes: 1, seconds: 5));
+    await container.read(focusTimerProvider.notifier).synchronize();
+    await tester.pump();
+    expect(find.text('REST'), findsOneWidget);
+    expect(find.byKey(const Key('timer-reset')), findsNothing);
+    await container.read(focusTimerProvider.notifier).pause();
+    await tester.pump();
+    await tester.ensureVisible(find.byKey(const Key('timer-reset')));
+    await tester.tap(find.byKey(const Key('timer-reset')));
+    await tester.pumpAndSettle();
+    expect(find.text('Save partial'), findsOneWidget);
+    expect(find.text('Discard'), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('Cancel'));
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('timer-resume')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('uses the wide setup layout on web-sized screens', (
     tester,
   ) async {
@@ -353,6 +549,182 @@ void main() {
     expect(tester.takeException(), isNull);
     await container.read(focusTimerProvider.notifier).pause();
   });
+
+  testWidgets('timer controls support keyboard focus and activation', (
+    tester,
+  ) async {
+    await pumpPage(tester, size: const Size(1440, 900));
+    final start = find.byKey(const Key('timer-start'));
+    await tester.ensureVisible(start);
+    final focusNode = Focus.of(tester.element(find.text('Start focus')));
+    focusNode.requestFocus();
+    await tester.pump();
+    expect(focusNode.hasFocus, isTrue);
+    final button = tester.widget<FilledButton>(
+      find.descendant(of: start, matching: find.byType(FilledButton)),
+    );
+    expect(
+      button.style!.side!.resolve({WidgetState.focused})!.color,
+      AppColors.accent,
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pump();
+    expect(find.byKey(const Key('timer-pause')), findsOneWidget);
+    await container.read(focusTimerProvider.notifier).pause();
+  });
+
+  test('timer text and primary controls meet light-theme contrast', () {
+    double contrast(Color a, Color b) {
+      final light = a.computeLuminance();
+      final dark = b.computeLuminance();
+      return light > dark
+          ? (light + .05) / (dark + .05)
+          : (dark + .05) / (light + .05);
+    }
+
+    expect(
+      contrast(AppColors.primaryDark, AppColors.white),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      contrast(AppColors.primary, AppColors.white),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(
+      contrast(AppColors.textSecondary, AppColors.white),
+      greaterThanOrEqualTo(4.5),
+    );
+    expect(AppTheme.light.brightness, Brightness.light);
+  });
+
+  for (final size in [
+    const Size(390, 844),
+    const Size(360, 800),
+    const Size(320, 568),
+    const Size(844, 390),
+    const Size(800, 360),
+    const Size(768, 1024),
+    const Size(1024, 768),
+    const Size(1440, 900),
+  ]) {
+    for (final scale in [1.0, 1.5, 2.0]) {
+      testWidgets(
+        'timer remains accessible at $size and ${scale * 100}% text',
+        (tester) async {
+          await tester.binding.setSurfaceSize(size);
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: MaterialApp(
+                theme: AppTheme.light.copyWith(
+                  platform: TargetPlatform.android,
+                ),
+                home: MediaQuery(
+                  data: MediaQueryData(
+                    size: size,
+                    textScaler: TextScaler.linear(scale),
+                  ),
+                  // The expanded shell's branding overflows at enlarged text;
+                  // isolate the timer while preserving its available width.
+                  child: size.width == 1440 && scale > 1
+                      ? const Scaffold(
+                          body: Padding(
+                            padding: EdgeInsets.only(left: 200),
+                            child: FocusTimerPage(),
+                          ),
+                        )
+                      : PonosAdaptiveShell(
+                          selectedDestination: PonosDestination.focus,
+                          onDestinationSelected: (_) {},
+                          destinationBuilder: (_) => const FocusTimerPage(),
+                          appBar: AppBar(
+                            toolbarHeight: 64,
+                            title: const Text('Ponos'),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          expect(tester.takeException(), isNull);
+          for (final key in [
+            'timer-focus-area',
+            'timer-focus-minutes',
+            'timer-rest-minutes',
+            'timer-start',
+          ]) {
+            await tester.ensureVisible(find.byKey(Key(key)));
+            await tester.pump();
+            final target = tester.getSize(find.byKey(Key(key)));
+            expect(
+              target.width,
+              greaterThanOrEqualTo(48),
+              reason: '$key at $size / $scale',
+            );
+            expect(
+              target.height,
+              greaterThanOrEqualTo(48),
+              reason: '$key at $size / $scale',
+            );
+          }
+          await tester.ensureVisible(
+            find.byKey(const Key('timer-focus-minutes')),
+          );
+          await tester.enterText(
+            find.byKey(const Key('timer-focus-minutes')),
+            '1',
+          );
+          await tester.ensureVisible(
+            find.byKey(const Key('timer-rest-minutes')),
+          );
+          await tester.enterText(
+            find.byKey(const Key('timer-rest-minutes')),
+            '1',
+          );
+          await tester.ensureVisible(find.byKey(const Key('timer-start')));
+          await tester.tap(find.byKey(const Key('timer-start')));
+          await tester.pump();
+          expect(find.text('FOCUS'), findsOneWidget);
+          final countdown = tester.widget<Semantics>(
+            find.byKey(const Key('timer-countdown-semantics')),
+          );
+          expect(countdown.properties.liveRegion, isFalse);
+          expect(countdown.properties.label, contains('FOCUS time remaining'));
+          expect(
+            find.ancestor(
+              of: find.byKey(const Key('timer-laurel')),
+              matching: find.byType(ExcludeSemantics),
+            ),
+            findsWidgets,
+          );
+          expect(tester.takeException(), isNull);
+          await container.read(focusTimerProvider.notifier).pause();
+          await tester.pump();
+          await tester.ensureVisible(find.byKey(const Key('timer-reset')));
+          expect(
+            tester.getSize(find.byKey(const Key('timer-reset'))).height,
+            greaterThanOrEqualTo(48),
+          );
+          expect(find.text('Paused'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          await container.read(focusTimerProvider.notifier).resume();
+          clock.advance(const Duration(minutes: 1, seconds: 5));
+          await container.read(focusTimerProvider.notifier).synchronize();
+          await tester.pump();
+          expect(find.text('REST'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+          clock.advance(const Duration(minutes: 1));
+          await container.read(focusTimerProvider.notifier).synchronize();
+          await tester.pump();
+          expect(find.text('READY'), findsOneWidget);
+          expect(recorder.executions, hasLength(1));
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
 
   for (final size in [
     const Size(390, 844),
@@ -698,8 +1070,10 @@ class FakeClock {
 
 class MemoryTimerStore implements ActiveFocusTimerStore {
   ActiveFocusTimer? value;
+  Completer<ActiveFocusTimer?>? pendingLoad;
   @override
-  Future<ActiveFocusTimer?> load() async => value;
+  Future<ActiveFocusTimer?> load() async =>
+      pendingLoad == null ? value : await pendingLoad!.future;
   @override
   Future<void> save(ActiveFocusTimer timer) async => value = timer;
   @override
@@ -708,8 +1082,10 @@ class MemoryTimerStore implements ActiveFocusTimerStore {
 
 class RecordingExecutionRecorder implements TimerExecutionRepository {
   final executions = <TimerExecutionDraft>[];
+  Completer<void>? pending;
   @override
   Future<void> save(TimerExecutionDraft execution) async {
+    await pending?.future;
     executions.add(execution);
   }
 }
