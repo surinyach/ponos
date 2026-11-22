@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../app/navigation/ponos_adaptive_shell.dart';
 import '../../../app/navigation/ponos_destination.dart';
-import '../../../app/theme/app_assets.dart';
+import '../../../app/widgets/ponos_logo.dart';
 import '../../../app/theme/app_breakpoints.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_spacing.dart';
@@ -39,13 +38,7 @@ class _HomePageState extends State<HomePage> {
         titleSpacing: AppSpacing.md,
         title: Row(
           children: [
-            SizedBox.square(
-              dimension: 34,
-              child: SvgPicture.asset(
-                AppAssets.ponosEmblemCompact,
-                excludeFromSemantics: true,
-              ),
-            ),
+            const PonosLogo(size: 34),
             const SizedBox(width: AppSpacing.xs),
             const Text('Ponos'),
           ],
@@ -171,13 +164,7 @@ PreferredSizeWidget _ponosAppBar() => AppBar(
   titleSpacing: AppSpacing.md,
   title: Row(
     children: [
-      SizedBox.square(
-        dimension: 34,
-        child: SvgPicture.asset(
-          AppAssets.ponosEmblemCompact,
-          excludeFromSemantics: true,
-        ),
-      ),
+      const PonosLogo(size: 34),
       const SizedBox(width: AppSpacing.xs),
       const Text('Ponos'),
     ],

@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-
-import '../theme/app_assets.dart';
+import '../widgets/ponos_logo.dart';
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
@@ -404,14 +402,7 @@ class _ExpandedRailBrand extends StatelessWidget {
           height: 40,
           child: Row(
             children: [
-              SizedBox.square(
-                dimension: 40,
-                child: SvgPicture.asset(
-                  AppAssets.ponosEmblemFull,
-                  fit: BoxFit.contain,
-                  excludeFromSemantics: true,
-                ),
-              ),
+              const PonosLogo(size: 40),
               const SizedBox(width: 10),
               Text(
                 'Ponos',
@@ -435,14 +426,7 @@ class _CompactRailBrand extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     key: const Key('ponos-compact-rail-brand'),
     padding: const EdgeInsets.only(top: 10, bottom: AppSpacing.xs),
-    child: SizedBox.square(
-      dimension: 42,
-      child: SvgPicture.asset(
-        AppAssets.ponosEmblemCompact,
-        fit: BoxFit.contain,
-        excludeFromSemantics: true,
-      ),
-    ),
+    child: const PonosLogo(size: 42),
   );
 }
 
