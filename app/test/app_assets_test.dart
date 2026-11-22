@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/theme/app_assets.dart';
+import 'package:ponos_app/app/theme/app_colors.dart';
+import 'package:ponos_app/app/widgets/ponos_logo.dart';
 
 import 'support/ponos_asset_specimen.dart';
 
@@ -11,6 +13,37 @@ void main() {
     final inter = FontLoader('Inter')
       ..addFont(rootBundle.load(AppAssets.interVariable));
     await inter.load();
+  });
+
+  testWidgets('approved logo resolves at header and sidebar sizes', (
+    tester,
+  ) async {
+    expect(
+      (await rootBundle.load(AppAssets.ponosLogo)).lengthInBytes,
+      greaterThan(0),
+    );
+    for (final size in [34.0, 40.0, 42.0]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Center(child: PonosLogo(size: size)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(PonosLogo)), Size.square(size));
+      expect(
+        tester.widget<Image>(find.byType(Image)).excludeFromSemantics,
+        isTrue,
+      );
+      expect(
+        tester.widget<Image>(find.byType(Image)).color,
+        AppColors.brandBronze,
+      );
+      expect(
+        tester.widget<Image>(find.byType(Image)).colorBlendMode,
+        BlendMode.srcIn,
+      );
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets('every production SVG resolves and renders', (tester) async {

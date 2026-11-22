@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/navigation/ponos_destination.dart';
@@ -10,6 +9,7 @@ import 'package:ponos_app/app/theme/app_assets.dart';
 import 'package:ponos_app/app/theme/app_colors.dart';
 import 'package:ponos_app/app/theme/app_spacing.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
+import 'package:ponos_app/app/widgets/ponos_logo.dart';
 
 import 'support/ponos_navigation_specimen.dart';
 
@@ -127,7 +127,11 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('ponos-expanded-rail-brand')), findsOneWidget);
-    expect(find.byType(SvgPicture), findsOneWidget);
+    final logo = tester.widget<PonosLogo>(find.byType(PonosLogo));
+    expect(logo.size, 40);
+    final image = tester.widget<Image>(find.byType(Image));
+    expect((image.image as AssetImage).assetName, AppAssets.ponosLogo);
+    expect(image.excludeFromSemantics, isTrue);
   });
 
   testWidgets('selected destination has icon and weight cues beyond color', (
@@ -486,6 +490,15 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(const PonosNavigationSpecimenApp());
       await tester.pump();
+      if (find.byType(PonosLogo).evaluate().isNotEmpty) {
+        await tester.runAsync(
+          () => precacheImage(
+            const AssetImage(AppAssets.ponosLogo),
+            tester.element(find.byType(PonosLogo)),
+          ),
+        );
+        await tester.pump();
+      }
       expect(tester.takeException(), isNull);
       await expectLater(
         find.byType(PonosAdaptiveShell),

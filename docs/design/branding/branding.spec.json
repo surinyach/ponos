@@ -1,0 +1,27 @@
+{
+  "package_location": "docs/design/branding/",
+  "purpose": "Approved Ponos logo visual reference and source images for Flutter app/icon integration",
+  "logo_composition": [
+    "gold laurel branches",
+    "gold mountain/progress shape",
+    "gold upper arc",
+    "small gold star at base",
+    "Ponos light surface background (#EAF1F8)"
+  ],
+  "source_of_truth": "reference/approved_logo_original.png",
+  "assets": {
+    "android_launcher": "assets/ponos_logo_surface_1024.png",
+    "header": "assets/transparent_emblem_1024.png",
+    "android_adaptive_foreground": "assets/android_adaptive_foreground_432.png",
+    "android_adaptive_background": "assets/android_adaptive_background_surface_432.png",
+    "optional_transparent": "assets/transparent_emblem_1024.png"
+  },
+  "production_runtime_assets": "Implementer must copy needed files to the Flutter app asset tree and register them. docs/design is reference-only.",
+  "background_color": "#EAF1F8",
+  "background_token": "AppColors.surfaceTinted",
+  "header_tint": "#98723D",
+  "header_tint_token": "AppColors.brandBronze",
+  "header_background": "transparent",
+  "text_in_logo": false,
+  "wordmark_in_ui": "Ponos"
+}

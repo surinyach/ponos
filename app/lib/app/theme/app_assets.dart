@@ -7,6 +7,7 @@ abstract final class AppAssets {
 
   static const ponosEmblemFull = 'assets/branding/ponos_emblem_full.svg';
   static const ponosEmblemCompact = 'assets/branding/ponos_emblem_compact.svg';
+  static const ponosLogo = 'assets/branding/ponos_emblem_transparent.png';
 
   static const dividerPrimary = 'assets/decorative/divider_primary.svg';
   static const dividerAccent = 'assets/decorative/divider_accent.svg';

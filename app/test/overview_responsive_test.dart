@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ponos_app/app/navigation/ponos_adaptive_shell.dart';
 import 'package:ponos_app/app/providers/work_goals_providers.dart';
+import 'package:ponos_app/app/theme/app_assets.dart';
 import 'package:ponos_app/app/theme/app_theme.dart';
+import 'package:ponos_app/app/widgets/ponos_logo.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/focus_area_target.dart';
 import 'package:ponos_app/features/focus_areas/domain/models/today_overview.dart';
@@ -844,6 +846,13 @@ void main() {
           Size(viewport.width, viewport.height),
           platform: viewport.platform,
         );
+        await tester.runAsync(
+          () => precacheImage(
+            const AssetImage(AppAssets.ponosLogo),
+            tester.element(find.byType(PonosLogo)),
+          ),
+        );
+        await tester.pump();
         await expectLater(
           find.byType(PonosAdaptiveShell),
           matchesGoldenFile(
