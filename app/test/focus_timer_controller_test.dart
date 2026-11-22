@@ -43,6 +43,126 @@ void main() {
 
   tearDown(() => container.dispose());
 
+  test(
+    'focus-only completion never enters rest and stores actual time',
+    () async {
+      await initialize();
+      final phases = <FocusTimerPhase>[];
+      final subscription = container.listen(focusTimerProvider, (_, state) {
+        if (state.activeTimer case final timer?) phases.add(timer.phase);
+      });
+      addTearDown(subscription.close);
+      expect(
+        await controller.start(
+          focusAreaId: 4,
+          focusDuration: const Duration(minutes: 1),
+          restDuration: Duration.zero,
+        ),
+        isTrue,
+      );
+      expect(
+        notifications.scheduled.single.alert,
+        FocusTimerAlert.focusOnlyComplete,
+      );
+      clock.advance(const Duration(seconds: 20));
+      await controller.pause();
+      expect(notifications.cancelled.last, FocusTimerAlert.focusOnlyComplete);
+      clock.advance(const Duration(minutes: 3));
+      await controller.resume();
+      clock.advance(const Duration(seconds: 40));
+      await controller.synchronize();
+      expect(current().status, FocusTimerStatus.inactive);
+      expect(phases, isNot(contains(FocusTimerPhase.rest)));
+      expect(
+        recorder.executions.single.focusedTime,
+        const Duration(minutes: 1),
+      );
+      expect(recorder.executions.single.restTime, Duration.zero);
+      expect(
+        notifications.scheduled.every(
+          (event) => event.alert == FocusTimerAlert.focusOnlyComplete,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test('focus-only partial save and discard preserve reset behavior', () async {
+    await initialize();
+    await controller.start(
+      focusAreaId: 1,
+      focusDuration: const Duration(minutes: 1),
+      restDuration: Duration.zero,
+    );
+    clock.advance(const Duration(seconds: 20));
+    await controller.pause();
+    expect(await controller.resetAndSavePartial(), isTrue);
+    expect(recorder.executions.single.focusedTime, const Duration(seconds: 20));
+    expect(recorder.executions.single.restTime, Duration.zero);
+    await controller.start(
+      focusAreaId: 1,
+      focusDuration: const Duration(minutes: 1),
+      restDuration: Duration.zero,
+    );
+    await controller.pause();
+    expect(await controller.resetAndDiscard(), isTrue);
+    expect(recorder.executions, hasLength(1));
+  });
+
+  test(
+    'focus-only running execution restores and completes after closure',
+    () async {
+      await initialize();
+      await controller.start(
+        focusAreaId: 1,
+        focusDuration: const Duration(minutes: 1),
+        restDuration: Duration.zero,
+      );
+      clock.advance(const Duration(minutes: 2));
+      await controller.restore();
+      expect(current().status, FocusTimerStatus.inactive);
+      expect(
+        recorder.executions.single.focusedTime,
+        const Duration(minutes: 1),
+      );
+      expect(recorder.executions.single.restTime, Duration.zero);
+      expect(
+        notifications.scheduled.every(
+          (event) => event.alert == FocusTimerAlert.focusOnlyComplete,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  test(
+    'focus-only completion can be retried after persistence fails',
+    () async {
+      await initialize();
+      await controller.start(
+        focusAreaId: 1,
+        focusDuration: const Duration(minutes: 1),
+        restDuration: Duration.zero,
+      );
+      recorder.error = StateError('offline');
+      clock.advance(const Duration(minutes: 2));
+      await controller.synchronize();
+      expect(current().status, FocusTimerStatus.error);
+      expect(current().activeTimer!.phase, FocusTimerPhase.focus);
+      recorder.error = null;
+      await controller.synchronize();
+      expect(
+        recorder.executions.single.endedAt,
+        DateTime.utc(2026, 9, 8, 21, 1),
+      );
+      expect(
+        recorder.executions.single.focusedTime,
+        const Duration(minutes: 1),
+      );
+      expect(recorder.executions.single.restTime, Duration.zero);
+    },
+  );
+
   test('starts and calculates focus elapsed time from timestamps', () async {
     await initialize();
 

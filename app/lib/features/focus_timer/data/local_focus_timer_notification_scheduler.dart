@@ -166,16 +166,19 @@ class LocalFocusTimerNotificationScheduler
   int _id(FocusTimerAlert alert) => switch (alert) {
     FocusTimerAlert.focusComplete => _focusId,
     FocusTimerAlert.restComplete => _restId,
+    FocusTimerAlert.focusOnlyComplete => _focusId,
   };
 
   String _title(FocusTimerAlert alert) => switch (alert) {
     FocusTimerAlert.focusComplete => 'Focus complete',
     FocusTimerAlert.restComplete => 'Execution complete',
+    FocusTimerAlert.focusOnlyComplete => 'Execution complete',
   };
 
   String _body(FocusTimerAlert alert) => switch (alert) {
     FocusTimerAlert.focusComplete => 'Time to rest.',
     FocusTimerAlert.restComplete => 'Your rest is complete.',
+    FocusTimerAlert.focusOnlyComplete => 'Your focus session is complete.',
   };
 
   static const _details = NotificationDetails(

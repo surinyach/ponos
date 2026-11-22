@@ -1,0 +1,305 @@
+{
+  "version": "2.0-concept",
+  "design": {
+    "desktop_navigation": "200px sidebar at >=1200px",
+    "medium_navigation": "76px collapsed rail from 601px to 1199px",
+    "mobile_navigation": "64px header and 72px fixed bottom nav up to 600px",
+    "timer": "Laurel of effort: two branches of vector leaves plus 100-unit radius inner phase progress line; current-phase progress drives fill; SVG viewBox 320x320.",
+    "primary_action": "47px desktop / 45px mobile, 10px corner radius",
+    "card": "white, 17px rounded, 1px #DCE5EE border",
+    "focus_phase": "Blue inner progress, explicit Focus label; bronze laurel progress accent",
+    "rest_phase": "Bronze inner progress, explicit Rest label; bronze laurel progress accent",
+    "paused": "explicit Paused status; static laurel progress remains unchanged",
+    "session_configuration": "editable only before start; active session shows compact read-only details",
+    "mobile": "Approved refinement: compact configuration below the timer; use available height without unnecessary scrolling and allow scrolling when content cannot fit"
+  },
+  "source_of_truth": {
+    "historical_prototype": "prototype/focus-timer.html",
+    "static_snapshots": "reference/*.png",
+    "rule": "The prototype, snapshots, and canonical_viewports geometry document the original concept. Later approved Flutter layout refinements and docs/focus-timer-domain-rules.md take precedence; the prototype does not depict No rest."
+  },
+  "canonical_viewports": {
+    "desktop_1440x900": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "bounds": {
+        "navigation_rail": [
+          0,
+          0,
+          200,
+          900
+        ],
+        "heading": [
+          240,
+          27,
+          1160,
+          53
+        ],
+        "timer_panel": [
+          240,
+          102,
+          731,
+          589
+        ],
+        "dial": [
+          424,
+          165,
+          362,
+          362
+        ],
+        "phase_strip": [
+          267,
+          533,
+          677,
+          39
+        ],
+        "actions": [
+          267,
+          591,
+          677,
+          47
+        ],
+        "session_details": [
+          991,
+          102,
+          409,
+          292
+        ],
+        "cycle_timeline": [
+          991,
+          411,
+          409,
+          189
+        ]
+      },
+      "body_scroll_height": 900,
+      "horizontal_overflow": false
+    },
+    "mobile_390x844": {
+      "viewport": [
+        390,
+        844
+      ],
+      "bounds": {
+        "mobile_header": [
+          0,
+          0,
+          390,
+          64
+        ],
+        "bottom_nav": [
+          0,
+          772,
+          390,
+          72
+        ],
+        "heading": [
+          14,
+          82,
+          362,
+          44
+        ],
+        "timer_panel": [
+          14,
+          139,
+          362,
+          432
+        ],
+        "dial": [
+          67,
+          181,
+          256,
+          256
+        ],
+        "phase_strip": [
+          31,
+          437,
+          328,
+          36
+        ],
+        "actions": [
+          31,
+          485,
+          328,
+          45
+        ],
+        "session_details": [
+          14,
+          584,
+          362,
+          286
+        ]
+      },
+      "body_scroll_height": 962,
+      "horizontal_overflow": false
+    },
+    "medium_768x1024": {
+      "viewport": [
+        768,
+        1024
+      ],
+      "bounds": {
+        "navigation_rail": [
+          0,
+          0,
+          76,
+          1027
+        ],
+        "heading": [
+          100,
+          24,
+          644,
+          50
+        ],
+        "timer_panel": [
+          100,
+          96,
+          644,
+          560
+        ],
+        "dial": [
+          252,
+          155,
+          340,
+          340
+        ],
+        "phase_strip": [
+          125,
+          501,
+          594,
+          39
+        ],
+        "actions": [
+          125,
+          559,
+          594,
+          47
+        ],
+        "session_details": [
+          100,
+          676,
+          314,
+          327
+        ],
+        "cycle_timeline": [
+          431,
+          676,
+          314,
+          327
+        ]
+      },
+      "body_scroll_height": 1027,
+      "horizontal_overflow": false
+    },
+    "compact_desktop_500x700": {
+      "viewport": [
+        500,
+        700
+      ],
+      "bounds": {
+        "mobile_header": [
+          0,
+          0,
+          500,
+          64
+        ],
+        "bottom_nav": [
+          0,
+          628,
+          500,
+          72
+        ],
+        "heading": [
+          14,
+          82,
+          472,
+          44
+        ],
+        "timer_panel": [
+          14,
+          139,
+          472,
+          432
+        ],
+        "dial": [
+          122,
+          181,
+          256,
+          256
+        ],
+        "phase_strip": [
+          31,
+          437,
+          438,
+          36
+        ],
+        "actions": [
+          31,
+          485,
+          438,
+          45
+        ],
+        "session_details": [
+          14,
+          584,
+          472,
+          270
+        ]
+      },
+      "body_scroll_height": 946,
+      "horizontal_overflow": false
+    }
+  },
+  "palette": {
+    "primary": "#315D8C",
+    "deep": "#1E3550",
+    "background": "#F5F8FC",
+    "surface": "#FFFFFF",
+    "pale": "#EAF1F8",
+    "bronze": "#B78A55",
+    "bronze_tint": "#F8F2EA",
+    "muted": "#62758A",
+    "border": "#DCE5EE",
+    "rail": "#FBFCFE"
+  },
+  "typography": {
+    "family": "Inter",
+    "fallback": "Arial, system-ui, sans-serif",
+    "page_title": "26px/700 desktop,21px/700 mobile",
+    "countdown": "72px desktop,48px mobile, tabular figures",
+    "phase": "13px/700 desktop,11px/700 mobile, uppercase tracking 2px",
+    "field_label": "12px/700",
+    "helper": "11-12px/400"
+  },
+  "prototype_states": [
+    "setup",
+    "focus",
+    "paused",
+    "rest",
+    "completed"
+  ],
+  "interaction_contract": {
+    "one_cycle": "one positive Focus period, optionally followed by a positive Rest period; zero Rest means focus-only, with no skip action",
+    "start": "start focus phase",
+    "pause_resume": "both Focus and Rest phases can be paused/resumed",
+    "reset": "available only when paused; dialog Save partial / Discard / Cancel",
+    "natural_completion": "persist and notify, then return to setup; zero Rest completes directly after Focus without a Rest-start alert",
+    "configuration": "Work Area, positive Focus minutes and non-negative Rest minutes selected before cycle; 0 displays No rest; choices grouped by Focus Areas / Special Activities",
+    "time_source": "in production use existing Riverpod state and timestamp-based accurate timer; HTML demo is illustrative",
+    "active_phase_feedback": "always convey via visible label, not color alone",
+    "motion": "phase progress follows timer state; pause decorative motion and respect reduced-motion settings",
+    "accessibility": "48px touch targets where possible, keyboard focus, labels, semantically descriptive status",
+    "do_not_change": "backend, state machine, phase transitions, persistence, notification logic, business rules"
+  },
+  "implementation_steps": [
+    "Approve desktop hero/layout",
+    "Approve 390x844 mobile layout",
+    "Refine timer ring and phase transition motion",
+    "Refine configuration and reset confirmation",
+    "Validate remaining viewports and states",
+    "Update Flutter goldens only after approval"
+  ],
+  "sample_data_warning": "All displayed times, activities and labels are illustrative. Bind Flutter UI to existing live Riverpod/controller values. Do not hardcode sample statistics."
+}

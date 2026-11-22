@@ -6,7 +6,7 @@ abstract interface class ActiveFocusTimerStore {
   Future<void> clear();
 }
 
-enum FocusTimerAlert { focusComplete, restComplete }
+enum FocusTimerAlert { focusComplete, restComplete, focusOnlyComplete }
 
 /// Boundary for timestamp-based alarm and notification scheduling.
 abstract interface class FocusTimerNotificationScheduler {

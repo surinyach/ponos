@@ -68,8 +68,8 @@ def execution_payload(focus_area_id: int) -> dict[str, object]:
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("focused_seconds", "rest_seconds"),
-    [(1500, 300), (420, 0)],
-    ids=["completed", "partial"],
+    [(1500, 300), (420, 0), (1500, 0)],
+    ids=["completed", "partial", "focus-only-completed"],
 )
 async def test_persists_completed_and_partial_executions(
     client,
